@@ -10,6 +10,6 @@ type MemoriaConfig struct {
 	MemoryDelay      int    `json:"memory_delay"`
 	SwapPath         string `json:"swapfile_path"`
 	SwapDelay        int    `json:"swap_delay"`
-	NivelLog         string `json:"log_level"`
+	LogLevel         string `json:"log_level"`
 	DumpPath         string `json:"dump_path"`
 }
