@@ -2,6 +2,7 @@ package config
 
 type CPUConfig struct{
 	PortCpu int `json:"port_cpu"`
+	IpCPu string `json:"ip_cpu"`
 	IpMemory string `json:"ip_memory"`
 	PortMemory int `json:"port_memory"`
 	IpKernel string `json:"ip_kernel"`
