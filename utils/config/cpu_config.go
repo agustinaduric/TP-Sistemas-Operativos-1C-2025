@@ -13,4 +13,5 @@ type CPUConfig struct{
 	CacheReplacement string `json:"cache_replacement"`
 	CacheDelay int `json:"cache_delay"`
 	LogLevel string `json:"log_level"`
+	Mensaje string `json:"mensaje"`
 }

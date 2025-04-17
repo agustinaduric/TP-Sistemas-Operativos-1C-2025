@@ -10,4 +10,5 @@ type KernelConfig struct{
 	LogLevel string `json:"log_level"`
 	PortKernel int `json:"port_kernel"`
 	IpKernel string `json:"ip_kernel"`
+	Mensaje string `json:"mensaje"`
 }

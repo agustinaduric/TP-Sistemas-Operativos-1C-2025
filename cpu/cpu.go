@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/sisoputnfrba/tp-golang/cpu/funciones"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 )
 
+
 func main() {
-	var cfg config.CPUConfig
-	err := config.CargarConfig("cpu/config/cpu.config.json", &cfg)
-	if err != nil{
-		log.Fatalf("Error en cargar config CPU %v", err)
-	}
-	fmt.Println("Config de CPU OK") // borrar
+   
+   configCargadito := fCpu.IniciarConfiguracionCpu("cpu/config/cpu.config.json")
+   fmt.Println(configCargadito.Mensaje)
+	
+   config.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory,configCargadito.Mensaje )
+   
+   config.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel,configCargadito.Mensaje )
 }
+

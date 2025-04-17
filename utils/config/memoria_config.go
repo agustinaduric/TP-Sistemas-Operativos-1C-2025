@@ -12,4 +12,5 @@ type MemoriaConfig struct {
 	SwapDelay        int    `json:"swap_delay"`
 	LogLevel         string `json:"log_level"`
 	DumpPath         string `json:"dump_path"`
+	Mensaje string `json:"mensaje"`
 }

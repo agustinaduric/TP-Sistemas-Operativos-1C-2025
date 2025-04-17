@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
-	"log"
+
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/kernel/funciones"
 )
 
 func main() {
-	var cfg config.IOConfig
-	err := config.CargarConfig("kernel/config/kernel.config.json", &cfg)
-	if err != nil{
-		log.Fatalf("Error en cargar config kernel %v", err)
-	}
-	fmt.Println("Config de kernel OK") // borrar
+	
+	configCargadito := fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
+	
+	config.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory,configCargadito.Mensaje)
+	fkernel.LevantarServidorKernel(configCargadito)
 }
+ 

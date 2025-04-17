@@ -6,4 +6,5 @@ type IOConfig struct{
 	IpKernel string `json:"ip_kernel"`
 	PortKernel int `json:"port_kernel"`
 	LogLevel string `json:"log_level"`
+	Mensaje string `json:"mensaje"`
 }

@@ -1,18 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"github.com/sisoputnfrba/tp-golang/utils/config"
+
+	"github.com/sisoputnfrba/tp-golang/memoria/funciones"
 )
 
+
 func main() {
-	var cfg config.IOConfig
-	err := config.CargarConfig("memoria/config/memoria.config.json", &cfg)
-	if err != nil{
-		log.Fatalf("Error en cargar config memoria %v", err)
-	}
-	fmt.Println("Config de memoria OK") // borrar
+	configCargadito := fmemoria.IniciarConfiguracionMemoria("memoria/config/memoria.config.json")
+	fmemoria.LevantarServidorMemoria(configCargadito)
+ 	
 }
 
 /* ***estaba en el archivo viejo de memoria***
