@@ -9,6 +9,6 @@ func main() {
 
 	configCargadito := fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
 
-	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, configCargadito.Mensaje)
+	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, "Soy kernel,hola memoria")
 	fkernel.LevantarServidorKernel(configCargadito)
 }

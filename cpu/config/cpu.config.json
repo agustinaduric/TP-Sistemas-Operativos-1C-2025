@@ -10,6 +10,5 @@
     "cache_entries": 10,
     "cache_replacement": "CLOCK",
     "cache_delay": 10,
-    "log_level": "DEBUG",
-    "mensaje": "Soy CPU"
+    "log_level": "DEBUG"
 }

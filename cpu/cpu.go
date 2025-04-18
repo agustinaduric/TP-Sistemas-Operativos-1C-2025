@@ -10,9 +10,9 @@ import (
 func main() {
 
 	configCargadito := fCpu.IniciarConfiguracionCpu("cpu/config/cpu.config.json")
-	fmt.Println(configCargadito.Mensaje)
+	fmt.Println("Soy cpu")
 
-	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, configCargadito.Mensaje)
+	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, "Soy cpu, hola memoria")
 
-	comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, configCargadito.Mensaje)
+	comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "Soy cpu,hola kernel")
 }

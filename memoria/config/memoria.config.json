@@ -9,6 +9,5 @@
     "swapfile_path": "/home/utnso/swapfile.bin",
     "swap_delay": 15000,
     "log_level": "DEBUG",
-    "dump_path": "/home/utnso/dump_files/",
-    "mensaje": "Soy memoria"
+    "dump_path": "/home/utnso/dump_files/"
 }
