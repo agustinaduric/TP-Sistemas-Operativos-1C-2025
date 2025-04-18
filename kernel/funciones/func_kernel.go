@@ -1,11 +1,13 @@
 package fkernel
 
 import (
-	"log"
-	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"encoding/json"
-	"os"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
+	"github.com/sisoputnfrba/tp-golang/utils/config"
 )
 
 func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
@@ -22,9 +24,9 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 	return config
 }
 
-func LevantarServidorKernel(configCargadito config.KernelConfig){
+func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mensaje", config.RecibirMensaje)
+	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
 
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 

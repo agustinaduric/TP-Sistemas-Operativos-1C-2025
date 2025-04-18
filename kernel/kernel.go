@@ -1,16 +1,14 @@
 package main
 
 import (
-
-	"github.com/sisoputnfrba/tp-golang/utils/config"
-	"github.com/sisoputnfrba/tp-golang/kernel/funciones"
+	fkernel "github.com/sisoputnfrba/tp-golang/kernel/funciones"
+	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 )
 
 func main() {
-	
+
 	configCargadito := fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
-	
-	config.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory,configCargadito.Mensaje)
+
+	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, configCargadito.Mensaje)
 	fkernel.LevantarServidorKernel(configCargadito)
 }
- 
