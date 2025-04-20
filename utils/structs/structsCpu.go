@@ -24,8 +24,8 @@ type CPU struct {
 	Id        int              //Para reconocer a los multiples cpus
 	PIDActual int              // PID del proceso en Exec
 	PCActual  int              // PC actual dentro del proceso
-	TLB       []EntradaTLB     // tamaño = Config.TLBEntries
-	Cache     []EntradaCache   // tamaño = Config.CacheEntries
+	TLB       []EntradaTLB     // 
+	Cache     []EntradaCache   // 
 }
 
 type Instrucion struct {
