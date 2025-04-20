@@ -7,7 +7,7 @@ type ProcesoMemoria struct {
 	EnSwap       bool
 	Metricas     MetricasMemoria
 }
-
+/*
 type EntradaTablaDePaginas struct {
 	Presente       bool            //Cambiar nombre por alguno mejor, no me gusta
 	Frame          int             // numero de marco si es ultimo nivel
@@ -18,6 +18,9 @@ type TablaDePaginas struct {
 	Entradas []*EntradaTablaDePaginas
 }
 
+Se nota que no estudie la teoria, revisar mas tarde
+
+*/
 var MemoriaUsuario []byte
 
 type MetricasMemoria struct {
