@@ -3,7 +3,7 @@ package structs
 type ProcesoMemoria struct {
 	PID          int
 	Tamanio      int
-	TablaPaginas *TablaDePaginas
+	//TablaPaginas *TablaDePaginas
 	EnSwap       bool
 	Metricas     MetricasMemoria
 }
