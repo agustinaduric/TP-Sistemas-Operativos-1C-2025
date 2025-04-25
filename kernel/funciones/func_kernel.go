@@ -36,3 +36,14 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 		log.Fatalf("Error al levantar el servidor: %v", err)
 	}
 }
+
+func PlaniLargoFIFO (){
+  //tiene que empezar frenado y esperar un ENTER
+  while(1){
+     //semaforo iniciar / finalizar procesos
+
+    
+  }
+}
+ 
+ 
