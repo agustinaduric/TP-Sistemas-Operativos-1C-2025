@@ -36,3 +36,40 @@ func LevantarServidorMemoria(configCargadito config.MemoriaConfig) {
 		log.Fatalf("Error al levantar el servidor: %v", err)
 	}
 }
+
+func IniciarMemoriaUsuario(configCargadito config.MemoriaConfig) []byte {
+	return make([]byte, configCargadito.MemorySize)
+}
+
+func CantidadMarcos(configCargadito config.MemoriaConfig) int {
+	return configCargadito.MemorySize / configCargadito.PageSize
+}
+
+func IniciarBitMapMemoriaUsuario(configCargadito config.MemoriaConfig) []int { //QUiero creer que se inicializan todos en 0
+	return make([]int, CantidadMarcos(configCargadito))
+}
+
+func MarcosDisponibles(configCargadito config.MemoriaConfig, bitMapMemoriaUsuario []int) int {
+	var contador int = 0
+	for i := 0; i < CantidadMarcos(configCargadito); i++ {
+		if bitMapMemoriaUsuario[i] == 1 {
+			contador++
+		}
+	}
+	return contador
+}
+
+func hayEspacio(configCargadito config.MemoriaConfig, bitMapMemoriaUsuario []int, tamanioProceso int) bool {
+	divisionTamPag := tamanioProceso / configCargadito.PageSize
+	var cantidadDeMarcosRequeridos int
+	if divisionTamPag == 0 {
+		cantidadDeMarcosRequeridos = divisionTamPag
+	} else {
+		cantidadDeMarcosRequeridos = divisionTamPag + 1
+	}
+
+	if cantidadDeMarcosRequeridos <= MarcosDisponibles(configCargadito, bitMapMemoriaUsuario) {
+		return true
+	}
+	return false
+}
