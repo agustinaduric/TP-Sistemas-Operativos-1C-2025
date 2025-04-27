@@ -1,10 +1,12 @@
 package fmemoria
 
 import (
+	"bufio"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -95,4 +97,30 @@ func crearTablaRecursiva(nivelActual, nivelesTotal, entradas int) *structs.Tabla
 		tabla.SiguienteNivel = nil
 	}
 	return tabla
+}
+
+func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
+	archivo, err := os.Open(ruta)
+	if err != nil {
+		return nil, err
+	}
+	defer archivo.Close()
+
+	var instrucciones []structs.Instruccion
+	escáner := bufio.NewScanner(archivo)
+	for escáner.Scan() {
+		línea := strings.TrimSpace(escáner.Text())
+		if línea == "" {
+			continue
+		}
+		partes := strings.Fields(línea)
+		instrucciones = append(instrucciones, structs.Instruccion{
+			Operacion:  partes[0],
+			Argumentos: partes[1:],
+		})
+	}
+	if err := escáner.Err(); err != nil {
+		return nil, err
+	}
+	return instrucciones, nil
 }

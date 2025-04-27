@@ -15,9 +15,10 @@ const (
 	SUSP_READY   Estado = "SUSP_READY"
 	EXIT         Estado = "EXIT"
 )
+
 type Instruccion struct {
 	Operacion  string
-	Parametros []string
+	Argumentos []string
 }
 type PCB struct {
 	PID              int
@@ -30,5 +31,4 @@ type PCB struct {
 	MetricasEstado   map[Estado]int           // cant entradas estado
 	TiemposEstado    map[Estado]time.Duration // tiempo en cada estado
 	IOPendiente      string                   // nombre de IO en la que esta bloqueado
-	Instruccion      Instruccion   //comentario del comentario, tengo dudas con esta
 }

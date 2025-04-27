@@ -7,7 +7,7 @@ type ProcesoMemoria struct {
 	EnSwap         bool
 	Metricas       MetricasMemoria
 	Path           string
-	Instrucciones  string
+	Instrucciones  []Instruccion
 }
 
 type TablaDePaginas struct {
