@@ -23,3 +23,5 @@ var (
 	ColaSuspBlocked ColaProcesos
 	ColaSuspReady   ColaProcesos
 )
+
+var IOsRegistrados map[string]*DispositivoIO
