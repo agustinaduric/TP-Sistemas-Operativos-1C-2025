@@ -8,6 +8,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func IniciarConfiguracionMemoria(filePath string) config.MemoriaConfig {
@@ -59,6 +60,7 @@ func MarcosDisponibles(configCargadito config.MemoriaConfig, bitMapMemoriaUsuari
 	return contador
 }
 
+// trankilo compilador idiota, la vamos a usar
 func hayEspacio(configCargadito config.MemoriaConfig, bitMapMemoriaUsuario []int, tamanioProceso int) bool {
 	divisionTamPag := tamanioProceso / configCargadito.PageSize
 	var cantidadDeMarcosRequeridos int
@@ -72,4 +74,25 @@ func hayEspacio(configCargadito config.MemoriaConfig, bitMapMemoriaUsuario []int
 		return true
 	}
 	return false
+}
+
+func InicializarTablas(proceso *structs.ProcesoMemoria, niveles, entradas int) {
+	proceso.TablaDePaginas = crearTablaRecursiva(1, niveles, entradas)
+}
+
+func crearTablaRecursiva(nivelActual, nivelesTotal, entradas int) *structs.TablaDePaginas {
+	tabla := &structs.TablaDePaginas{
+		NivelDeTabla: nivelActual,
+		PaginaMarco:  make([]structs.PaginaMarco, entradas),
+	}
+	for i := 0; i < entradas; i++ {
+		tabla.PaginaMarco[i].Pagina = -1
+		tabla.PaginaMarco[i].Marco = -1
+	}
+	if nivelActual < nivelesTotal {
+		tabla.SiguienteNivel = crearTablaRecursiva(nivelActual+1, nivelesTotal, entradas)
+	} else {
+		tabla.SiguienteNivel = nil
+	}
+	return tabla
 }

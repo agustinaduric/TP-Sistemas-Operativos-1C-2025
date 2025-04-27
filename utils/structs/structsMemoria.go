@@ -1,24 +1,24 @@
 package structs
 
 type ProcesoMemoria struct {
-	PID          int
-	Tamanio      int
+	PID            int
+	Tamanio        int
 	TablaDePaginas *TablaDePaginas
-	EnSwap       bool
-	Metricas     MetricasMemoria
-	Path	     string
-	Instrucciones string
+	EnSwap         bool
+	Metricas       MetricasMemoria
+	Path           string
+	Instrucciones  string
 }
 
 type TablaDePaginas struct {
-    NivelDeTabla int 	
-    PaginaMarco []PaginaMarco		//		
-    SiguienteNivel   *TablaDePaginas  // puntero a la tabla del siguiente nivel
+	NivelDeTabla   int
+	PaginaMarco    []PaginaMarco
+	SiguienteNivel *TablaDePaginas // puntero a la tabla del siguiente nivel
 }
 
 type PaginaMarco struct {
 	Pagina int
-	Marco int
+	Marco  int
 }
 
 var MemoriaUsuario []byte
