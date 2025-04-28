@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -60,4 +59,30 @@ func HandlerRecibirIO(w http.ResponseWriter, r *http.Request){
 	}
 	// registro el IO
 	structs.IOsRegistrados[nuevoIO.Nombre] = &nuevoIO
+}
+
+// para el proceso que quiere usar la IO segun CPU:
+func HandlerSyscallIO(w http.ResponseWriter, r *http.Request){
+	var NuevaSolicitudIO structs.SolicitudIO 
+	jsonParser := json.NewDecoder(r.Body)
+	err := jsonParser.Decode(&NuevaSolicitudIO)
+	if err != nil {
+		http.Error(w,"Error en decodificar mje: "+ err.Error(), http.StatusBadRequest)
+		return
+	}
+	// procedo a ver si existe la io
+	_,hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+	if hayMatch{
+		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+		if dispositivo.PIDActual != 0{  // ocupado
+			pbc := structs.ProcesoEjecutando
+			pbc.Estado = structs.BLOCKED // lo mando a blocked
+			pbc.IOPendiente = dispositivo.Nombre
+			structs.ColaBlocked[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlocked[NuevaSolicitudIO.NombreIO], pbc) // agrego a cola de bloqueados por IO
+		} else { // libre
+			// mandar a io el pid y el tiempo
+		}
+	} else{
+		// mandar proceso a exit
+	}
 }
