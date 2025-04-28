@@ -15,5 +15,5 @@ type DispositivoIO struct {
 type SolicitudIO struct {
 	PID      int
 	Duracion time.Duration
-	Servicio string
+	NombreIO string
 }
