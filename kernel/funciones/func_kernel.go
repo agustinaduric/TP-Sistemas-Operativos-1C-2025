@@ -8,6 +8,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
@@ -36,7 +37,7 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 		log.Fatalf("Error al levantar el servidor: %v", err)
 	}
 }
-
+/*
 func PlaniLargoFIFO (){
   //tiene que empezar frenado y esperar un ENTER
   while(1){
@@ -44,6 +45,19 @@ func PlaniLargoFIFO (){
 
     
   }
+}*/
+ 
+ // recibe IO y lo agrega a  IOsRegistrados
+func handlerRecibirIO(w http.ResponseWriter, r *http.Request){
+	var nuevoIO structs.DispositivoIO
+	// me llego un json y lo decodifico para tener los datos del io
+	jsonParser := json.NewDecoder(r.Body)
+	err := jsonParser.Decode(&nuevoIO)
+	// pregunto si hay error
+	if err != nil {
+		http.Error(w,"Error en decodificar mje: "+ err.Error(), http.StatusBadRequest)
+		return
+	}
+	// registro el IO
+	structs.IOsRegistrados[nuevoIO.Nombre] = &nuevoIO
 }
- 
- 
