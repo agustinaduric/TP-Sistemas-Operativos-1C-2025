@@ -3,6 +3,7 @@ package fmemoria
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+var procesos = make(map[int]*structs.ProcesoMemoria)
 
 func IniciarConfiguracionMemoria(filePath string) config.MemoriaConfig {
 	var config config.MemoriaConfig
@@ -60,6 +63,18 @@ func MarcosDisponibles(configCargadito config.MemoriaConfig, bitMapMemoriaUsuari
 		}
 	}
 	return contador
+}
+
+func BuscarInstruccion(pid int, pc int) (structs.Instruccion, error) {
+	proceso, existe := procesos[pid]
+	if !existe {
+		return structs.Instruccion{}, fmt.Errorf("BuscarInstruccion: el pid %d no existe", pid)
+	}
+	if pc < 0 || pc >= len(proceso.Instrucciones) {
+		return structs.Instruccion{}, fmt.Errorf("BuscarInstruccion: pc %d fuera de rango [0,%d) para pid %d",
+			pc, len(proceso.Instrucciones), pid)
+	}
+	return proceso.Instrucciones[pc], nil
 }
 
 // trankilo compilador idiota, la vamos a usar
