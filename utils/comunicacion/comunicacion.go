@@ -43,3 +43,17 @@ func EnviarMensaje(ip string, puerto int, mensajeTxt string) {
 
 	log.Printf("respuesta del servidor: %s", resp.Status)
 }
+
+func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.SolicitudIO){
+	body, err := json.Marshal(soliUsoIO)
+	if err != nil {
+		log.Printf("error codificando solicitudIO: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/mensaje", ip, puerto) // TODO: cambiar ruta. Esto no es un mensaje
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando solicitudIO:%s puerto:%d", ip, puerto)
+	}
+
+	log.Printf("respuesta del servidor: %s", resp.Status)
+}
