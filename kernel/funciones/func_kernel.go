@@ -27,7 +27,7 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
+	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // ver NewServeMux usar en este check -> goroutines/hilos
 
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
@@ -48,7 +48,7 @@ func PlaniLargoFIFO (){
 }*/
  
  // recibe IO y lo agrega a  IOsRegistrados
-func handlerRecibirIO(w http.ResponseWriter, r *http.Request){
+func HandlerRecibirIO(w http.ResponseWriter, r *http.Request){
 	var nuevoIO structs.DispositivoIO
 	// me llego un json y lo decodifico para tener los datos del io
 	jsonParser := json.NewDecoder(r.Body)
