@@ -47,7 +47,7 @@ func PlaniLargoFIFO (){
 }*/
  
  // recibe IO y lo agrega a  IOsRegistrados
-func HandlerRecibirIO(w http.ResponseWriter, r *http.Request){
+func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request){
 	var nuevoIO structs.DispositivoIO
 	// me llego un json y lo decodifico para tener los datos del io
 	jsonParser := json.NewDecoder(r.Body)
@@ -72,17 +72,22 @@ func HandlerSyscallIO(w http.ResponseWriter, r *http.Request){
 	}
 	// procedo a ver si existe la io
 	_,hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	if hayMatch{
+	pcbSolicitante := structs.ProcesoEjecutando
+	if hayMatch {
 		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
+		pcbSolicitante.IOPendiente = dispositivo.Nombre
 		if dispositivo.PIDActual != 0{  // ocupado
-			pbc := structs.ProcesoEjecutando
-			pbc.Estado = structs.BLOCKED // lo mando a blocked
-			pbc.IOPendiente = dispositivo.Nombre
-			structs.ColaBlocked[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlocked[NuevaSolicitudIO.NombreIO], pbc) // agrego a cola de bloqueados por IO
+			structs.ColaBlocked[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlocked[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
-			// mandar a io el pid y el tiempo
+			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo
+			// cargo el struct y lo mando
+			SolicitudParaIO := structs.SolicitudIO{PID: pcbSolicitante.PID, Duracion: NuevaSolicitudIO.Duracion, NombreIO: NuevaSolicitudIO.NombreIO}
+			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		}
-	} else{
-		// mandar proceso a exit
+	} else {
+		pcbSolicitante.IOPendiente = ""
+		pcbSolicitante.Estado = structs.EXIT // no existe, se va a exit
+		// cola exit para guardar los que terminaron ¿?
 	}
 }
