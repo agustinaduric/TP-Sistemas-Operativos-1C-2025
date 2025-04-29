@@ -198,11 +198,11 @@ func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 
 func enviar_datos_a_cpu(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) structs.DevolucionCpu {
 	var PIDyPC structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
-		PID:     pcb_a_cargar.PID,
-		PC:     pcb_a_cargar.PC,
+		PID: pcb_a_cargar.PID,
+		PC:  pcb_a_cargar.PC,
 	}
 	MutexCpuDisponible.Lock()
-	var  Cpu_disponible structs.CPU = Buscar_CPU_libre()
+	var Cpu_disponible structs.CPU = Buscar_CPU_libre()
 	MutexCpuDisponible.Unlock()
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
@@ -223,14 +223,14 @@ func esperarEnter() {
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }
 
-func Buscar_CPU_libre() structs.CPU{
-   longitud := len(structs.CPUs_Conectados) 
-   for i :=0; i<longitud ; i++{
-     if structs.CPUs_Conectados[i].Disponible{
-		return structs.CPUs_Conectados[i]
-	 }
+func Buscar_CPU_libre() structs.CPU {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Disponible {
+			return structs.CPUs_Conectados[i]
+		}
 
-   }
-   log.Printf("No hay CPU's libres >:(")
-   return structs.CPU{}
-} 
+	}
+	log.Printf("No hay CPU's libres >:(")
+	return structs.CPU{}
+}

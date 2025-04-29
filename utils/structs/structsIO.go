@@ -5,10 +5,10 @@ import (
 )
 
 type DispositivoIO struct {
-	Nombre  string
-	IP      string
-	Puerto  int
-	PIDActual int // 0 si no hay procesos usando el io
+	Nombre       string
+	IP           string
+	Puerto       int
+	PIDActual    int // 0 si no hay procesos usando el io
 	ColaEsperaIO []*PCB
 }
 
