@@ -1,15 +1,18 @@
 package planificacion
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -26,36 +29,41 @@ const (
 var MutexPlanificadores sync.Mutex //asi se crea un mutex jej
 var MutexLog sync.Mutex
 var MutexCola sync.Mutex
+var procesoCargado = make(chan int)
+var procesoListo = make(chan int)
 
 // ----------- PLANIFICADOR CORTO PLAZO
 
-func planificador_corto_plazo() {
-	var pcb_execute *structs.PCB
+func planificador_corto_plazo(configCargadito config.KernelConfig) {
+	var pcb_execute structs.PCB
 	var algoritmo_planificacion_corto t_algoritmo
-	algoritmo_planificacion_corto = _chequear_algoritmo_corto()
+	algoritmo_planificacion_corto = _chequear_algoritmo_corto(configCargadito)
 
 	MutexPlanificadores.Lock()
-	slog.Info("Algoritmo de planificación", "algoritmo", configKernel.AlgoritmoPlanificacion)
+	slog.Info("Algoritmo de planificación", "algoritmo", configCargadito.SchedulerAlgorithm)
+
 	MutexPlanificadores.Unlock()
 
 	for {
 
-		proceso_listo.Wait()
-		var pidsito *int
+		<-procesoListo
+		//var pidsito *int
 
-		switch algoritmo_planificacion_corto; {
+		switch algoritmo_planificacion_corto {
 		case FIFO:
-			pcb_execute = pop_estado(ColaReady)
-			push_estado(exec, pcb_execute)
+			pcb_execute = pop_estado(&structs.ColaReady)
+			structs.ProcesoEjecutando = pcb_execute
+			//pcb_execute.Estado = structs.EXECT
+			//push_estado(, pcb_execute)
 
 			MutexLog.Lock()
-			// informar en un log
+			slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
 			MutexLog.Unlock()
 
 			enviar_contexto_ejecucion(pcb_execute)
 			recibir_contexto_ejecucion(pcb_execute)
 
-		case SFJ:
+		case SJF:
 		// PROXIMAMENTE
 
 		case SRT:
@@ -69,24 +77,30 @@ func planificador_corto_plazo() {
 
 // ----------- PLANIFICADOR LARGO PLAZO
 
-func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCESOS A READY Y OTRA PARA SACARLOS DE LA MEMORIA
+func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCESOS A READY Y OTRA PARA SACARLOS DE LA MEMORIA
 
-	go limpieza_cola_exit() // funcion a crear para que se encargue de finalizar los procesos
+	esperarEnter() // no se si va aca o dentro de la funcion iniciar_planificacion
 
-	var algoritmo_planificacion t_algoritmo = _chequear_algoritmo_largo()
+	MutexPlanificadores.Lock()
+	slog.Info("Iniciado planificador de largo plazo")
+	MutexPlanificadores.Unlock()
+
+	//go limpieza_cola_exit()  //funcion A CREAR para que se encargue de finalizar los procesos
+
+	var algoritmo_planificacion t_algoritmo = _chequear_algoritmo_largo(configCargadito)
 
 	for {
 		<-procesoCargado
 
-		switch algoritmo_planificacion; {
+		switch algoritmo_planificacion {
 		case FIFO:
-			var pcb_a_cargar *structs.PCB = structs.ColaNew[0]
-			enviar_tamanio_proceso(pcb_a_cargar.Tamanio) // le envio el tamaño del proceso a memoria para saber si tiene lugar
-			if recibir_confirmacion {                    // funcion tipo int que imita un bool (1=confirmo, 0=no confirmo)
-				enviar_proceso_a_memoria(pcb_a_cargar.path, pcb_a_cargar.pid) // si tiene lugar le mando el path y el pid para que lo guarde
-				pop_estado(structs.ColaNew)                                   // saco la cola new
-				push_estado(pcb_a_cargar)                                     // meto en ready
-				// falta avisar al semaforo de procesoListo que no se como hacerlo
+			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
+			var respuesta int = enviar_proceso_a_memoria(pcb_a_cargar, configCargadito) // envio el proceso a memoria para preguntar si entra
+			if respuesta == 200 {                                                       // ==200 si memoria confirmo, !=200 si hubo algun error
+				pcb_a_cargar = pop_estado(&structs.ColaNew)   // saco de la cola NEW
+				pcb_a_cargar.Estado = structs.READY           // pongo el estado en READY
+				push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
+				procesoListo <- 0                             // aviso al plani corto que tiene un proceso en ready
 			}
 
 		case PMCP:
@@ -100,10 +114,10 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 
 // ----------- FUNCIONES SECUNDARIAS
 
-func iniciar_planificacion() {
+func Iniciar_planificacion(configCargadito config.KernelConfig) {
 	// Creamos un hilo para el planificador de corto plazo y este va a mantener conexion con CPU
 
-	go planificador_corto_plazo() //asi le ponemos un hilo
+	go planificador_corto_plazo(configCargadito) //asi le ponemos un hilo
 
 	// -------------------------------------------------
 	MutexPlanificadores.Lock()
@@ -111,11 +125,7 @@ func iniciar_planificacion() {
 	MutexPlanificadores.Unlock()
 	// -------------------------------------------------
 	// Creamos un hilo para el planificador de largo plazo
-	go planificador_largo_plazo()
-	// -------------------------------------------------
-	MutexPlanificadores.Lock()
-	slog.Info("Iniciado planificador de largo plazo")
-	MutexPlanificadores.Unlock()
+	go planificador_largo_plazo(configCargadito)
 	// -------------------------------------------------
 }
 
@@ -135,54 +145,72 @@ func iniciar_planificacion() {
 
 // ----------- FUNCIONES AUXILIARES
 
-func _chequear_algoritmo_corto() t_algoritmo {
-	if strings.EqualFold(configCargadito.scheduler_algorithm, "FIFO") {
+func _chequear_algoritmo_corto(configCargadito config.KernelConfig) t_algoritmo {
+	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "FIFO") {
 		return FIFO
 	}
-	if strings.EqualFold(configCargadito.scheduler_algorithm, "SJF") {
+	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "SJF") {
 		return SJF
 	}
-	if strings.EqualFold(configCargadito.scheduler_algorithm, "SRT") {
+	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "SRT") {
 		return SRT
 	}
 
 	return ERROR
 }
 
-func _chequear_algoritmo_largo() t_algoritmo {
-	if strings.EqualFold(configCargadito.ready_ingress_algorithm, "FIFO") {
+func _chequear_algoritmo_largo(configCargadito config.KernelConfig) t_algoritmo {
+	if strings.EqualFold(configCargadito.ReadyIngressAlgorithm, "FIFO") {
 		return FIFO
 	}
-	if strings.EqualFold(configCargadito.ready_ingress_algorithm, "PMCP") {
+	if strings.EqualFold(configCargadito.ReadyIngressAlgorithm, "PMCP") {
 		return PMCP
 	}
 
 	return ERROR
 }
 
-func pop_estado(Cola *structs.ColaProcesos) *structs.PCB { ////////////go version
+func pop_estado(Cola *structs.ColaProcesos) structs.PCB {
 	MutexCola.Lock()
-	var pcb *structs.PCB
-	pcb = Cola[0]
-	Cola = slice_remove(Cola, 0)
-	MutexCola.Unlock()
+	defer MutexCola.Unlock()
+
+	if len(*Cola) == 0 {
+		return structs.PCB{} // o manejar el error como prefieras
+	}
+
+	pcb := (*Cola)[0]
+	*Cola = (*Cola)[1:] // directamente recortás el slice
 
 	return pcb
 }
 
-func slice_remove(slice []int, index int) []int {
-	return append(slice[:index], slice[index+1:]...)
+func push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
+	MutexCola.Lock()
+	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
+	MutexCola.Unlock()
 }
 
-func enviar_tamanio_proceso(tamanio int) {
-	body, err := json.Marshal(tamanio)
-	if err != nil {
-		log.Printf("error codificando tamanio del proceso: %s", err.Error())
+func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) int {
+	var Proceso structs.Proceso_a_enviar = structs.Proceso_a_enviar{
+		PID:     pcb_a_cargar.PID,
+		Tamanio: pcb_a_cargar.Tamanio,
+		PATH:    pcb_a_cargar.PATH,
 	}
-	url := fmt.Sprintf("http://%s:%d/mensaje", configCargadito.IpMemory, configCargadito.PortMemory) // TODO: cambiar ruta. Esto no es un mensaje
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/proceso", configCargadito.IpMemory, configCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando tamanio del proceso:%s puerto:%d", configCargadito.IpMemory, configCargadito.PortMemory)
+		log.Printf("error enviando proceso de PID:%s puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+	return resp.StatusCode
+}
+
+func esperarEnter() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...")
+	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }

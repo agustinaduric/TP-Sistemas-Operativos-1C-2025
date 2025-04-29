@@ -14,7 +14,7 @@ type Syscall struct {
 	PID  int
 }
 
-type ColaProcesos []*PCB
+type ColaProcesos []PCB
 
 var (
 	ColaNew         ColaProcesos
@@ -25,6 +25,6 @@ var (
 )
 
 var IOsRegistrados map[string]*DispositivoIO
-var ProcesoEjecutando *PCB // chequear
+var ProcesoEjecutando PCB // chequear
 
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
