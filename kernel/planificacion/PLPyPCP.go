@@ -31,6 +31,7 @@ var MutexLog sync.Mutex
 var MutexCola sync.Mutex
 var procesoCargado = make(chan int)
 var procesoListo = make(chan int)
+var MutexCpuDisponible sync.Mutex
 
 // ----------- PLANIFICADOR CORTO PLAZO
 
@@ -195,8 +196,41 @@ func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	return resp.StatusCode
 }
 
+func enviar_datos_a_cpu(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) structs.DevolucionCpu {
+	var PIDyPC structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
+		PID:     pcb_a_cargar.PID,
+		PC:     pcb_a_cargar.PC,
+	}
+	MutexCpuDisponible.Lock()
+	var  Cpu_disponible structs.CPU = Buscar_CPU_libre()
+	MutexCpuDisponible.Unlock()
+	body, err := json.Marshal(PIDyPC)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/proceso", Cpu_disponible.Config.IpCPu, Cpu_disponible.Config.PortCpu)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Config.PortCpu)
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
+	return resp.StatusCode
+}
+
 func esperarEnter() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...")
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }
+
+func Buscar_CPU_libre() structs.CPU{
+   longitud := len(structs.CPUs_Conectados) 
+   for i :=0; i<longitud ; i++{
+     if structs.CPUs_Conectados[i].Disponible{
+		return structs.CPUs_Conectados[i]
+	 }
+
+   }
+   log.Printf("No hay CPU's libres >:(")
+   return structs.CPU{}
+} 

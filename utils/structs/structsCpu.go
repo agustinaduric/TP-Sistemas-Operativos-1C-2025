@@ -26,6 +26,7 @@ type CPU struct {
 	PCActual  int              // PC actual dentro del proceso
 	TLB       []EntradaTLB     // 
 	Cache     []EntradaCache   // 
+	Disponible bool 
 }
 
 type Instrucion struct {
@@ -45,4 +46,9 @@ type EntradaCache struct {
 	Contenido  []byte
 	Modificado bool // si se escribio y hay que poner en Memoria
 	Referencia bool // para CLOCK
+}
+
+type DevolucionCpu struct {
+    PID int 
+	Motivo string
 }

@@ -53,3 +53,8 @@ type Proceso_a_enviar struct {
 	Tamanio int
 	PATH    string
 }
+
+type PIDyPC_Enviar_CPU struct {
+	PID int
+	PC  int
+}

@@ -28,3 +28,5 @@ var IOsRegistrados map[string]*DispositivoIO
 var ProcesoEjecutando PCB // chequear
 
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
+
+var CPUs_Conectados []CPU
