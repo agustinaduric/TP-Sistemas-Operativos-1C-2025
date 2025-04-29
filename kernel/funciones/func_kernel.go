@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -36,25 +37,26 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 		log.Fatalf("Error al levantar el servidor: %v", err)
 	}
 }
+
 /*
 func PlaniLargoFIFO (){
   //tiene que empezar frenado y esperar un ENTER
   while(1){
      //semaforo iniciar / finalizar procesos
 
-    
+
   }
 }*/
- 
- // recibe IO y lo agrega a  IOsRegistrados
-func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request){
+
+// recibe IO y lo agrega a  IOsRegistrados
+func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	var nuevoIO structs.DispositivoIO
 	// me llego un json y lo decodifico para tener los datos del io
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&nuevoIO)
 	// pregunto si hay error
 	if err != nil {
-		http.Error(w,"Error en decodificar mje: "+ err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error en decodificar mje: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	// registro el IO
@@ -62,22 +64,22 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request){
 }
 
 // para el proceso que quiere usar la IO segun CPU:
-func HandlerSyscallIO(w http.ResponseWriter, r *http.Request){
-	var NuevaSolicitudIO structs.SolicitudIO 
+func HandlerSyscallIO(w http.ResponseWriter, r *http.Request) {
+	var NuevaSolicitudIO structs.SolicitudIO
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&NuevaSolicitudIO)
 	if err != nil {
-		http.Error(w,"Error en decodificar mje: "+ err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error en decodificar mje: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	// procedo a ver si existe la io
-	_,hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante := structs.ProcesoEjecutando
 	if hayMatch {
 		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
 		pcbSolicitante.IOPendiente = dispositivo.Nombre
-		if dispositivo.PIDActual != 0{  // ocupado
+		if dispositivo.PIDActual != 0 { // ocupado
 			structs.ColaBlocked[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlocked[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
 			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo

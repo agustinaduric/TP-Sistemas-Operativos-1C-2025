@@ -1,6 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	fkernel "github.com/sisoputnfrba/tp-golang/kernel/funciones"
 	"github.com/sisoputnfrba/tp-golang/kernel/planificacion"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -8,9 +13,28 @@ import (
 
 func main() {
 
+	chequeoParametros()
+
 	configCargadito := fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
 
 	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, "Soy kernel,hola memoria")
 	fkernel.LevantarServidorKernel(configCargadito)
 	planificacion.Iniciar_planificacion(configCargadito)
+	PrimerProceso()
+}
+
+func chequeoParametros() {
+	if len(os.Args) < 3 {
+		fmt.Println("ERROR: No se ingresaro la cantidad de parametros necesarios")
+		os.Exit(1) //si hay error en los parametros termino la ejecucion
+	}
+}
+
+func PrimerProceso() {
+	var PATH string = os.Args[1]
+	var tamanioSTR string = os.Args[2]
+	var Tamanio int
+	Tamanio, _ = strconv.Atoi(tamanioSTR)
+	PCB.Crear(PATH, Tamanio)
+
 }

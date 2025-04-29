@@ -129,20 +129,6 @@ func Iniciar_planificacion(configCargadito config.KernelConfig) {
 	// -------------------------------------------------
 }
 
-/*func inicializar_semaforos(){
-
-    // ------- SEMAFOROS DE LOGS
-    var MutexPlanificadores sync.Mutex //asi se crea un mutex jej
-    var MutexLog sync.Mutex
-	var MutexCola sync.Mutex
-
-    // ------- SEMAFOROS DEL PLANIFICADOR DE CORTO PLAZO
-	/*var proceso_listo = make(chan int, 0)
-	var proceso_listo sync.WaitGroup
-    var procesoCargado = make(chan struct{})
-
-}*/
-
 // ----------- FUNCIONES AUXILIARES
 
 func _chequear_algoritmo_corto(configCargadito config.KernelConfig) t_algoritmo {
@@ -188,6 +174,25 @@ func push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
 	MutexCola.Lock()
 	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
 	MutexCola.Unlock()
+}
+
+func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) int {
+	var Proceso structs.Proceso_a_enviar = structs.Proceso_a_enviar{
+		PID:     pcb_a_cargar.PID,
+		Tamanio: pcb_a_cargar.Tamanio,
+		PATH:    pcb_a_cargar.PATH,
+	}
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/proceso", configCargadito.IpMemory, configCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando proceso de PID:%s puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
+	return resp.StatusCode
 }
 
 func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) int {

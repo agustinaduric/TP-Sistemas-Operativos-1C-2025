@@ -32,10 +32,10 @@ type PCB struct {
 	MetricasEstado   map[Estado]int           // cant entradas estado
 	TiemposEstado    map[Estado]time.Duration // tiempo en cada estado
 	IOPendiente      string                   // nombre de IO en la que esta bloqueado
-	Registros        RegistrosCPU
+	//Registros        RegistrosCPU
 }
 
-type RegistrosCPU struct {
+/*type RegistrosCPU struct {
 	AX  uint8  // Registro Numérico de propósito general
 	BX  uint8  // idem
 	CX  uint8  // idem
@@ -46,7 +46,7 @@ type RegistrosCPU struct {
 	EDX uint32 // idem
 	SI  uint32 // Dirección lógica de memoria de origen (string copy)
 	DI  uint32 // Dirección lógica de memoria de destino (string copy)
-}
+}*/
 
 type Proceso_a_enviar struct {
 	PID     int
