@@ -22,7 +22,7 @@ func IniciarConfiguracionMemoria(filePath string) {
 }
 
 func IniciarMapaMemoriaDeUsuario() {
-	global.MapMemoriaDeUsuario = make(map[int]int)
+	global.MapMemoriaDeUsuario = make([]int, global.MemoriaConfig.MemorySize/global.MemoriaConfig.PageSize)
 
 	for i := 0; i < CantidadMarcos(); i++ {
 		global.MapMemoriaDeUsuario[i] = -1

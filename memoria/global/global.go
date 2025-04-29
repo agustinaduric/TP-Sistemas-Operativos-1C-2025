@@ -7,7 +7,7 @@ import (
 
 var MemoriaConfig config.MemoriaConfig
 
-var MapMemoriaDeUsuario map[int]int
+var MapMemoriaDeUsuario []int
 
 var MemoriaUsuario []byte
 
