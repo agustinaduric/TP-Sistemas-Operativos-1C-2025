@@ -60,8 +60,8 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 			slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
 			MutexLog.Unlock()
 
-			enviar_contexto_ejecucion(pcb_execute)
-			recibir_contexto_ejecucion(pcb_execute)
+			//enviar_contexto_ejecucion(pcb_execute) FUNCIONES A CREAR PARA COMUNICACION CON CPU
+			//recibir_contexto_ejecucion(pcb_execute)
 
 		case SJF:
 		// PROXIMAMENTE
@@ -189,26 +189,7 @@ func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	url := fmt.Sprintf("http://%s:%d/proceso", configCargadito.IpMemory, configCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando proceso de PID:%s puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
-	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
-	return resp.StatusCode
-}
-
-func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) int {
-	var Proceso structs.Proceso_a_enviar = structs.Proceso_a_enviar{
-		PID:     pcb_a_cargar.PID,
-		Tamanio: pcb_a_cargar.Tamanio,
-		PATH:    pcb_a_cargar.PATH,
-	}
-	body, err := json.Marshal(Proceso)
-	if err != nil {
-		log.Printf("error codificando el proceso: %s", err.Error())
-	}
-	url := fmt.Sprintf("http://%s:%d/proceso", configCargadito.IpMemory, configCargadito.PortMemory)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		log.Printf("error enviando proceso de PID:%s puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
+		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	return resp.StatusCode
