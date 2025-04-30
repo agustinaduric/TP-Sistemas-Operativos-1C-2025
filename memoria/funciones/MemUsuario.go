@@ -31,3 +31,7 @@ func hayEspacio(tamanioProceso int) bool {
 	}
 	return false
 }
+
+func espacioDisponible() int {
+	return MarcosDisponibles() * global.MemoriaConfig.PageSize
+}
