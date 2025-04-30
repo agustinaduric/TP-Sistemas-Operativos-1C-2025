@@ -2,11 +2,9 @@ package planificacion
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
-	"net/http"
 	"os"
 	"strings"
 
@@ -48,19 +46,20 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 
 			var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+
+				global.MutexREADY.Lock()
 				pcb_execute = pop_estado(&structs.ColaReady)
+				global.MutexREADY.Unlock()
+
 				pcb_execute.Estado = structs.EXEC
 				structs.ProcesoEjecutando = pcb_execute
-				push_estado(&structs.ColaReady, pcb_execute)
+
 				global.MutexLog.Lock()
 				slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
 				global.MutexLog.Unlock()
 			} else {
 				log.Printf("hubo un error: no se mando bien a cpu o no hay cpu libres")
 			}
-
-			go recibir_devolucion_CPU() // crep que esto no va aca
-
 		case SJF:
 		// PROXIMAMENTE
 
@@ -94,11 +93,22 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 		case FIFO:
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 			protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito) // envio el proceso a memoria para preguntar si entra
-			if protocolos.Recibir_confirmacion() {                             // ==200 si memoria confirmo, !=200 si hubo algun error
-				pcb_a_cargar = pop_estado(&structs.ColaNew)   // saco de la cola NEW
-				pcb_a_cargar.Estado = structs.READY           // pongo el estado en READY
+			if protocolos.Recibir_confirmacion() {                             // si memoria da el OK proceso, sino me salgo y espero
+
+				global.MutexNEW.Lock()
+				pcb_a_cargar = pop_estado(&structs.ColaNew) // saco de la cola NEW
+				global.MutexNEW.Unlock()
+
+				pcb_a_cargar.Estado = structs.READY // pongo el estado en READY
+				global.MutexREADY.Lock()
 				push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
-				global.ProcesoListo <- 0                      // aviso al plani corto que tiene un proceso en ready
+				global.MutexREADY.Unlock()
+
+				global.MutexLog.Lock()
+				slog.Info("Estado cambiado", "PID", pcb_a_cargar.PID, "EstadoAnterior", "NEW", "EstadoActual", "READY")
+				global.MutexLog.Unlock()
+
+				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
 			}
 
 		case PMCP:
@@ -155,8 +165,6 @@ func _chequear_algoritmo_largo(configCargadito config.KernelConfig) t_algoritmo 
 }
 
 func pop_estado(Cola *structs.ColaProcesos) structs.PCB {
-	global.MutexCola.Lock()
-	defer global.MutexCola.Unlock()
 
 	if len(*Cola) == 0 {
 		return structs.PCB{} // o manejar el error como prefieras
@@ -169,41 +177,11 @@ func pop_estado(Cola *structs.ColaProcesos) structs.PCB {
 }
 
 func push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
-	global.MutexCola.Lock()
 	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
-	global.MutexCola.Unlock()
 }
 
 func esperarEnter() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...")
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
-}
-
-func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var Devolucion structs.DevolucionCpu
-	err := decoder.Decode(&Devolucion)
-	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar mensaje"))
-		return
-	}
-
-	log.Println("me llego una Devolucion del CPU")
-	log.Println("PID devuelto: %d", Devolucion.PID)
-	switch Devolucion.Motivo {
-	case structs.INICIAR_PROCESO:
-		log.Println("El motivo es: Crear Proceso")
-
-	case structs.ELIMINAR_PROCESO:
-
-		log.Println("El motivo es: Eliminar Proceso")
-
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ok"))
-	return
 }

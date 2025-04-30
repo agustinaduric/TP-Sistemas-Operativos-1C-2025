@@ -2,11 +2,11 @@ package structs
 
 type TipoDeSyscall string
 
-const (
+/*const (
 	INIT_PROC   TipoDeSyscall = "INIT_PROC"
 	IO_SYSCALL  TipoDeSyscall = "IO"
 	DUMP_MEMORY TipoDeSyscall = "DUMP_MEMORY"
-)
+) */
 
 type Syscall struct {
 	Tipo TipoDeSyscall
@@ -30,6 +30,3 @@ var ProcesoEjecutando PCB // chequear
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
 
 var CPUs_Conectados []CPU
-
-
-

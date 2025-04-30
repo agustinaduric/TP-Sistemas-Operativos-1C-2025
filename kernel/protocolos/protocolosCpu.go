@@ -26,7 +26,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/proceso", Cpu_disponible.Config.IpCPu, Cpu_disponible.Config.PortCpu)
+	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.Config.IpCPu, Cpu_disponible.Config.PortCpu)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Config.PortCpu)
@@ -45,4 +45,27 @@ func Buscar_CPU_libre() structs.CPU {
 	}
 	log.Printf("No hay CPU's libres >:(")
 	return structs.CPU{}
+}
+
+func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion structs.DevolucionCpu
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+
+	log.Printf("me llego una Devolucion del CPU")
+	log.Printf("PID devuelto: %d", Devolucion.PID)
+	switch Devolucion.Motivo {
+	case structs.INIT_PROC:
+		log.Println("El motivo es: Crear Proceso")
+
+	case structs.DUMP_MEMORY:
+
+		log.Println("El motivo es: Hacer un Dump Memory")
+	}
 }

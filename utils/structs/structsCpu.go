@@ -5,15 +5,14 @@ import (
 )
 
 const (
-	NOOP             string = "NOOP"
-	WRITE            string = "WRITE"
-	READ             string = "READ"
-	GOTO             string = "GOTO"
-	IO_INST          string = "IO"
-	INICIAR_PROCESO  string = "INICIAR_PROCESO"
-	ELIMINAR_PROCESO string = "ELIMINAR_PROCESO"
-	DUMP_MEMORY_INST string = "DUMP_MEMORY"
-	EXIT_INST        string = "EXIT"
+	NOOP        string = "NOOP"
+	WRITE       string = "WRITE"
+	READ        string = "READ"
+	GOTO        string = "GOTO"
+	IO          string = "IO"
+	INIT_PROC   string = "INICIAR_PROCESO"
+	DUMP_MEMORY string = "DUMP_MEMORY"
+	EXIT_INST   string = "EXIT"
 )
 
 //Tengo dudas de donde meter al offset, asi q no lo meti
