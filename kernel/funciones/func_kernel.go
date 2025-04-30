@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -47,6 +45,39 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 
 	return config
 }
+//
+func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion structs.DevolucionCpu
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+
+	log.Printf("me llego una Devolucion del CPU")
+	log.Printf("PID devuelto: %d", Devolucion.PID)
+	switch Devolucion.Motivo {
+	case structs.INIT_PROC:
+		log.Println("El motivo es: Crear Proceso")
+		//llamar al init_proceso
+	case structs.DUMP_MEMORY:
+
+		log.Println("El motivo es: Hacer un Dump Memory")
+		//llamar al dump memory
+	case structs.IO:
+
+		log.Println("El motivo es: Sycall IO ")
+		// llamar a IO
+		SolicitarSyscallIO(Devolucion.SolicitudIO) // para chequear (esta abajo)
+	case structs.EXIT_INST:
+
+		log.Println("El motivo es: EXIT")
+		//que mierda hace exit
+	}
+}
 
 // recibe IO y lo agrega a  IOsRegistrados
 func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
@@ -64,14 +95,7 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 }
 
 // para el proceso que quiere usar la IO segun CPU:
-func HandlerSyscallIO(w http.ResponseWriter, r *http.Request) {
-	var NuevaSolicitudIO structs.SolicitudIO
-	jsonParser := json.NewDecoder(r.Body)
-	err := jsonParser.Decode(&NuevaSolicitudIO)
-	if err != nil {
-		http.Error(w, "Error en decodificar mje: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	// procedo a ver si existe la io
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante := structs.ProcesoEjecutando
@@ -84,7 +108,7 @@ func HandlerSyscallIO(w http.ResponseWriter, r *http.Request) {
 		} else { // libre
 			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo
 			// cargo el struct y lo mando
-			SolicitudParaIO := structs.SolicitudIO{PID: pcbSolicitante.PID, Duracion: NuevaSolicitudIO.Duracion, NombreIO: NuevaSolicitudIO.NombreIO}
+			SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, Duracion: NuevaSolicitudIO.Duracion, NombreIO: NuevaSolicitudIO.NombreIO}
 			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		}
 	} else {
@@ -97,7 +121,7 @@ func HandlerSyscallIO(w http.ResponseWriter, r *http.Request) {
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // ver NewServeMux usar en este check -> goroutines/hilos
-	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
+	mux.HandleFunc("/devolucion", Recibir_devolucion_CPU)
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
 	log.Printf("Servidor de Kernel escuchando en %s", puerto)
