@@ -52,16 +52,24 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 
 		switch algoritmo_planificacion_corto {
 		case FIFO:
-			pcb_execute = pop_estado(&structs.ColaReady)
-			structs.ProcesoEjecutando = pcb_execute
+
 			//pcb_execute.Estado = structs.EXECT
 			//push_estado(, pcb_execute)
 
-			MutexLog.Lock()
-			slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
-			MutexLog.Unlock()
+			var respuesta int = enviar_datos_a_cpu(pcb_execute)
+			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+				pcb_execute = pop_estado(&structs.ColaReady)
+				pcb_execute.Estado = structs.EXEC
+				structs.ProcesoEjecutando = pcb_execute
+				push_estado(&structs.ColaReady, pcb_execute)
+				MutexLog.Lock()
+				slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
+				MutexLog.Unlock()
+			} else {
+				log.Printf("hubo un error: no se mando bien a cpu o no hay cpu libres")
+			}
 
-			//enviar_contexto_ejecucion(pcb_execute) FUNCIONES A CREAR PARA COMUNICACION CON CPU
+			go recibir_devolucion_CPU()
 			//recibir_contexto_ejecucion(pcb_execute)
 
 		case SJF:
@@ -196,7 +204,7 @@ func enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	return resp.StatusCode
 }
 
-func enviar_datos_a_cpu(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) structs.DevolucionCpu {
+func enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	var PIDyPC structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
 		PID: pcb_a_cargar.PID,
 		PC:  pcb_a_cargar.PC,
@@ -204,6 +212,9 @@ func enviar_datos_a_cpu(pcb_a_cargar structs.PCB, configCargadito config.KernelC
 	MutexCpuDisponible.Lock()
 	var Cpu_disponible structs.CPU = Buscar_CPU_libre()
 	MutexCpuDisponible.Unlock()
+	if Cpu_disponible.Id == 0 {
+		return 0
+	}
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
@@ -233,4 +244,23 @@ func Buscar_CPU_libre() structs.CPU {
 	}
 	log.Printf("No hay CPU's libres >:(")
 	return structs.CPU{}
+}
+
+func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) structs.DevolucionCpu {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion structs.DevolucionCpu
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return structs.DevolucionCpu{}
+	}
+
+	log.Println("me llego una Devolucion del CPU")
+	/* log.Printf("%+v\n", Devolucion) */
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+	return Devolucion
 }
