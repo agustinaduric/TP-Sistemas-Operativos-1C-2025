@@ -50,7 +50,7 @@ type EntradaCache struct {
 type DevolucionCpu struct {
 	PID         int
 	Motivo      string
-	Tiempo      int
+	SolicitudIO Solicitud
 	ArchivoInst string
 	Tamaño      int
 }

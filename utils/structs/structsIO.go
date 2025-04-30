@@ -12,7 +12,7 @@ type DispositivoIO struct {
 	ColaEsperaIO []*PCB
 }
 
-type SolicitudIO struct {
+type Solicitud struct {
 	PID      int
 	Duracion time.Duration
 	NombreIO string
