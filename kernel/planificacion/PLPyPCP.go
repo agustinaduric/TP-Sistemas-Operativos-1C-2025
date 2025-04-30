@@ -256,12 +256,12 @@ func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	log.Println("me llego una Devolucion del CPU")
 	log.Println("PID devuelto: %d", Devolucion.PID)
 	switch Devolucion.Motivo {
-	case structs.CREAR_PROCESO:
+	case structs.INICIAR_PROCESO:
 		log.Println("El motivo es: Crear Proceso")
 
 	case structs.ELIMINAR_PROCESO:
 
-		log.Println("El motivo es: Crear Proceso")
+		log.Println("El motivo es: Eliminar Proceso")
 
 	}
 
