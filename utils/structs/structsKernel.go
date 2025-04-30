@@ -30,3 +30,21 @@ var ProcesoEjecutando PCB // chequear
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
 
 var CPUs_Conectados []CPU
+
+
+
+const (
+	HANDSHAKE int = iota + 1
+	CREAR_PROCESO
+	ELIMINAR_PROCESO
+	OBTENER_INSTRUCCION
+	INSTRUCCION
+	CONTEXTO_EJECUCION
+	OPERACION_COMPLETADA
+	AJUSTAR_TAMANIO
+	OBTENER_NRO_MARCO
+	MARCO
+	LECTURA
+	VALOR_LEIDO
+	ESCRITURA
+)

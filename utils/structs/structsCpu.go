@@ -50,5 +50,5 @@ type EntradaCache struct {
 
 type DevolucionCpu struct {
     PID int 
-	Motivo string
+	Motivo int
 }

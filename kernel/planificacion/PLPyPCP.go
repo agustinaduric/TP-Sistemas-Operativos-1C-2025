@@ -242,7 +242,7 @@ func Buscar_CPU_libre() structs.CPU {
 	return structs.CPU{}
 }
 
-func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) structs.DevolucionCpu {
+func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var Devolucion structs.DevolucionCpu
 	err := decoder.Decode(&Devolucion)
@@ -250,13 +250,22 @@ func recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) structs.Devo
 		log.Printf("error al decodificar mensaje: %s\n", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("error al decodificar mensaje"))
-		return structs.DevolucionCpu{}
+		return
 	}
 
 	log.Println("me llego una Devolucion del CPU")
-	/* log.Printf("%+v\n", Devolucion) */
+	log.Println("PID devuelto: %d", Devolucion.PID)
+	switch Devolucion.Motivo {
+	case structs.CREAR_PROCESO:
+		log.Println("El motivo es: Crear Proceso")
+
+	case structs.ELIMINAR_PROCESO:
+
+		log.Println("El motivo es: Crear Proceso")
+
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
-	return Devolucion
+	return
 }
