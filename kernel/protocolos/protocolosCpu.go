@@ -63,9 +63,18 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	switch Devolucion.Motivo {
 	case structs.INIT_PROC:
 		log.Println("El motivo es: Crear Proceso")
-
+		//llamar al init_proceso
 	case structs.DUMP_MEMORY:
 
 		log.Println("El motivo es: Hacer un Dump Memory")
+		//llamar al dump memory
+	case structs.IO:
+
+		log.Println("El motivo es: Sycall IO ")
+		// llamar a IO
+	case structs.EXIT_INST:
+
+		log.Println("El motivo es: EXIT")
+		//que mierda hace exit
 	}
 }

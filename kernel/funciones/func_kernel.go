@@ -3,6 +3,7 @@ package fkernel
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -11,6 +12,25 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+func definirLogLevel(config config.KernelConfig) {
+	var level string = config.LogLevel
+	switch level {
+	case "DEBUG":
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	case "INFO":
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+	case "WARN":
+		slog.SetLogLoggerLevel(slog.LevelWarn)
+	case "ERROR":
+		slog.SetLogLoggerLevel(slog.LevelError)
+	default:
+		slog.SetLogLoggerLevel(slog.LevelInfo) // nivel por defecto
+	}
+
+	//hace que todos los logs se impriman
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile) // lo probamos y si queda muy gede lo comentamos y fue
+}
 
 func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 	var config config.KernelConfig
@@ -22,6 +42,8 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&config)
+
+	definirLogLevel(config)
 
 	return config
 }
