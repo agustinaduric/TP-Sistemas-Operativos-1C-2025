@@ -53,9 +53,6 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 		switch algoritmo_planificacion_corto {
 		case FIFO:
 
-			//pcb_execute.Estado = structs.EXECT
-			//push_estado(, pcb_execute)
-
 			var respuesta int = enviar_datos_a_cpu(pcb_execute)
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 				pcb_execute = pop_estado(&structs.ColaReady)
@@ -69,8 +66,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 				log.Printf("hubo un error: no se mando bien a cpu o no hay cpu libres")
 			}
 
-			go recibir_devolucion_CPU()
-			//recibir_contexto_ejecucion(pcb_execute)
+			go recibir_devolucion_CPU() // crep que esto no va aca
 
 		case SJF:
 		// PROXIMAMENTE
