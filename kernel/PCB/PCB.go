@@ -51,3 +51,16 @@ func Pop_estado(Cola *structs.ColaProcesos) structs.PCB {
 func Push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
 	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
 }
+
+func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
+    
+	for i := 0 ; i < len(*Cola) ; i++ {
+      if (*Cola)[i].PID == PID {
+		return (*Cola)[i]
+	  }
+
+    }
+
+   return structs.PCB{}
+	
+}

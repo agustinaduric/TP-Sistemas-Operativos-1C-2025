@@ -17,3 +17,9 @@ type MetricasMemoria struct {
 	LecturasMem     int
 	EscriturasMem   int
 }
+
+
+type Devolucion_DumpMemory struct {
+	PID         int
+	Respuesta   string
+}

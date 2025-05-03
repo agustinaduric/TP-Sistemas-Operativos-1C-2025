@@ -19,10 +19,12 @@ type ColaProcesos []PCB
 var (
 	ColaNew         ColaProcesos
 	ColaReady       ColaProcesos
-	ColaBlocked     map[string]ColaProcesos // a checkear, el strin es por el io
+	ColaBlockedIO     map[string]ColaProcesos // a checkear, el strin es por el io
+	ColaBlocked     ColaProcesos // a checkear, el strin es por el io
 	ColaSuspBlocked ColaProcesos
 	ColaSuspReady   ColaProcesos
 	ColaExecute     ColaProcesos
+	ColaExit     ColaProcesos
 )
 
 var IOsRegistrados map[string]*DispositivoIO

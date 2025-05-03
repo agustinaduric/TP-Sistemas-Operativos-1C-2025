@@ -73,7 +73,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
 		pcbSolicitante.IOPendiente = dispositivo.Nombre
 		if dispositivo.PIDActual != 0 { // ocupado
-			structs.ColaBlocked[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlocked[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
+			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
 			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo
 			// cargo el struct y lo mando
