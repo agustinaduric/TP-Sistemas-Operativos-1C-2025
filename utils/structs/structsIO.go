@@ -17,3 +17,9 @@ type Solicitud struct {
 	Duracion time.Duration
 	NombreIO string
 }
+
+type RegistroIO struct{
+	Nombre       string
+	IP           string
+	Puerto       int
+}

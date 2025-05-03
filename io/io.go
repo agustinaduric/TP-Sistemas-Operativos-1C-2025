@@ -1,15 +1,17 @@
 package main
 
 import (
-	"fmt"
-
+	"os"
 	fio "github.com/sisoputnfrba/tp-golang/io/funciones"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 )
 
 func main() {
-	configCargadito := fio.IniciarConfiguracionIO("io/config/io.config.json")
-	fmt.Println("Soy io desde un println")
+	comunicacion.VerificarParametros(2)
+	nombre := os.Args[1]
+	configPath := os.Args[2]
+	configCargadito := fio.IniciarConfiguracionIO(configPath)
+	fio.RegistrarEnKernel(nombre, configCargadito)
 
-	comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "SOy io, hola kernel")
+	// comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "SOy io, hola kernel")
 }

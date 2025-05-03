@@ -50,17 +50,24 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 
 // recibe IO y lo agrega a  IOsRegistrados
 func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
-	var nuevoIO structs.DispositivoIO
+	var registro structs.RegistroIO
 	// me llego un json y lo decodifico para tener los datos del io
 	jsonParser := json.NewDecoder(r.Body)
-	err := jsonParser.Decode(&nuevoIO)
+	err := jsonParser.Decode(&registro)
 	// pregunto si hay error
 	if err != nil {
 		http.Error(w, "Error en decodificar mje: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	nuevoIO := structs.DispositivoIO{
+		Nombre: registro.Nombre,
+		IP: registro.IP,
+		Puerto: registro.Puerto,
+		PIDActual: 0,
+		ColaEsperaIO: []*structs.PCB{},
+	}
 	// registro el IO
-	structs.IOsRegistrados[nuevoIO.Nombre] = &nuevoIO
+	structs.IOsRegistrados[registro.Nombre] = &nuevoIO
 }
 
 // para el proceso que quiere usar la IO segun CPU:
