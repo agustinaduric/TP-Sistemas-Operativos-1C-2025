@@ -10,6 +10,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
+	
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -47,9 +48,7 @@ func INIT_PROC(pseudocodigo string, tamanio int) {
 	global.MutexLog.Unlock()
 }
 
-func EXIT() {
-	panic("unimplemented")
-}
+
 
 func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
@@ -92,3 +91,5 @@ func DUMP_MEMORY(PID int) {
 	//return resp.StatusCode
 	return
 }
+
+

@@ -81,6 +81,6 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 
 	case structs.EXIT_PROC:
 		log.Println("El motivo es: EXIT")
-		syscalls.EXIT()
+		//se activa el semafoto ------------------------------------
 	}
 }

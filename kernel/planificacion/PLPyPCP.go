@@ -172,3 +172,9 @@ func esperarEnter() {
 	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...")
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }
+
+func EXIT() {
+	//semaforo creo
+    ProcesoExit := PCB.Pop_estado(&structs.ColaExit)
+	protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
+}
