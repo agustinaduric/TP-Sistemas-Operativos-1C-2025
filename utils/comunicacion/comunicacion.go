@@ -6,9 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
+	"os"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+func VerificarParametros(cantidad int) {
+	if len(os.Args) < cantidad {
+		fmt.Println("ERROR: No se ingresaro la cantidad de parametros necesarios")
+		os.Exit(1) //si hay error en los parametros termino la ejecucion
+	}
+}
 
 func RecibirMensaje(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
