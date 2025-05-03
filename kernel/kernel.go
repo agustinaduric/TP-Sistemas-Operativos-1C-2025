@@ -7,6 +7,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	fkernel "github.com/sisoputnfrba/tp-golang/kernel/funciones"
+	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/planificacion"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 )
@@ -15,11 +16,11 @@ func main() {
 
 	chequeoParametros()
 
-	configCargadito := fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
+	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
 
-	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, "Soy kernel,hola memoria")
-	fkernel.LevantarServidorKernel(configCargadito)
-	planificacion.Iniciar_planificacion(configCargadito)
+	comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
+	fkernel.LevantarServidorKernel(global.ConfigCargadito)
+	planificacion.Iniciar_planificacion(global.ConfigCargadito)
 	PrimerProceso()
 }
 

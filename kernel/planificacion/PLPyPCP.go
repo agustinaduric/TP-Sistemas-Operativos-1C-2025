@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -48,11 +49,13 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 
 				global.MutexREADY.Lock()
-				pcb_execute = pop_estado(&structs.ColaReady)
+				pcb_execute = PCB.Pop_estado(&structs.ColaReady)
 				global.MutexREADY.Unlock()
 
+				global.MutexEXEC.Lock()
+				PCB.Push_estado(&structs.ColaExecute, pcb_execute)
 				pcb_execute.Estado = structs.EXEC
-				structs.ProcesoEjecutando = pcb_execute
+				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
 				global.MutexLog.Lock()
 				slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
@@ -96,12 +99,12 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 			if protocolos.Recibir_confirmacion() {                             // si memoria da el OK proceso, sino me salgo y espero
 
 				global.MutexNEW.Lock()
-				pcb_a_cargar = pop_estado(&structs.ColaNew) // saco de la cola NEW
+				pcb_a_cargar = PCB.Pop_estado(&structs.ColaNew) // saco de la cola NEW
 				global.MutexNEW.Unlock()
 
 				pcb_a_cargar.Estado = structs.READY // pongo el estado en READY
 				global.MutexREADY.Lock()
-				push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
+				PCB.Push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
 				global.MutexREADY.Unlock()
 
 				global.MutexLog.Lock()
@@ -162,22 +165,6 @@ func _chequear_algoritmo_largo(configCargadito config.KernelConfig) t_algoritmo 
 	}
 
 	return ERROR
-}
-
-func pop_estado(Cola *structs.ColaProcesos) structs.PCB {
-
-	if len(*Cola) == 0 {
-		return structs.PCB{} // o manejar el error como prefieras
-	}
-
-	pcb := (*Cola)[0]
-	*Cola = (*Cola)[1:] // directamente recortás el slice
-
-	return pcb
-}
-
-func push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
-	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
 }
 
 func esperarEnter() {

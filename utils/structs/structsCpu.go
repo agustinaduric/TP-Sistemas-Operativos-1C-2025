@@ -12,7 +12,7 @@ const (
 	IO           string = "IO"
 	INIT_PROC    string = "INICIAR_PROCESO"
 	DUMP_MEMORY  string = "DUMP_MEMORY"
-	EXIT_INST    string = "EXIT"
+	EXIT_PROC    string = "EXIT"
 	REPLANIFICAR string = "REPLANIFICAR"
 )
 

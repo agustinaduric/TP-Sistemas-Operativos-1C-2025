@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
+	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -45,4 +46,41 @@ func Buscar_CPU_libre() structs.CPU {
 	}
 	log.Printf("No hay CPU's libres >:(")
 	return structs.CPU{}
+}
+
+func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion structs.DevolucionCpu
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+
+	log.Printf("me llego una Devolucion del CPU")
+	log.Printf("PID devuelto: %d", Devolucion.PID)
+	switch Devolucion.Motivo {
+
+	case structs.INIT_PROC:
+		log.Println("El motivo es: Crear Proceso")
+		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
+		//HAY QUE HACER QUE VUELVA EL PROCESO A EJECUTAR EN CPU
+
+	case structs.DUMP_MEMORY:
+		log.Println("El motivo es: Hacer un Dump Memory")
+		//llamar al dump memory
+
+	case structs.IO:
+
+		log.Println("El motivo es: Sycall IO ")
+		// llamar a IO
+		//.SolicitarSyscallIO(Devolucion.SolicitudIO) // para chequear (esta abajo)
+		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
+
+	case structs.EXIT_PROC:
+		log.Println("El motivo es: EXIT")
+		syscalls.EXIT()
+	}
 }

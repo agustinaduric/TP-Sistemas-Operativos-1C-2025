@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -44,39 +46,6 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 	definirLogLevel(config)
 
 	return config
-}
-//
-func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var Devolucion structs.DevolucionCpu
-	err := decoder.Decode(&Devolucion)
-	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar mensaje"))
-		return
-	}
-
-	log.Printf("me llego una Devolucion del CPU")
-	log.Printf("PID devuelto: %d", Devolucion.PID)
-	switch Devolucion.Motivo {
-	case structs.INIT_PROC:
-		log.Println("El motivo es: Crear Proceso")
-		//llamar al init_proceso
-	case structs.DUMP_MEMORY:
-
-		log.Println("El motivo es: Hacer un Dump Memory")
-		//llamar al dump memory
-	case structs.IO:
-
-		log.Println("El motivo es: Sycall IO ")
-		// llamar a IO
-		SolicitarSyscallIO(Devolucion.SolicitudIO) // para chequear (esta abajo)
-	case structs.EXIT_INST:
-
-		log.Println("El motivo es: EXIT")
-		//que mierda hace exit
-	}
 }
 
 // recibe IO y lo agrega a  IOsRegistrados
@@ -121,7 +90,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // ver NewServeMux usar en este check -> goroutines/hilos
-	mux.HandleFunc("/devolucion", Recibir_devolucion_CPU)
+	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
 	log.Printf("Servidor de Kernel escuchando en %s", puerto)

@@ -22,6 +22,7 @@ var (
 	ColaBlocked     map[string]ColaProcesos // a checkear, el strin es por el io
 	ColaSuspBlocked ColaProcesos
 	ColaSuspReady   ColaProcesos
+	ColaExecute     ColaProcesos
 )
 
 var IOsRegistrados map[string]*DispositivoIO
