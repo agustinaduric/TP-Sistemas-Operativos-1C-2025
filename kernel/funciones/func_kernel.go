@@ -66,33 +66,12 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	}
 	// registro el IO
 	structs.IOsRegistrados[registro.Nombre] = &nuevoIO
-}
-
-// para el proceso que quiere usar la IO segun CPU:
-func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
-	// procedo a ver si existe la io
-	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	pcbSolicitante := structs.ProcesoEjecutando
-	if hayMatch {
-		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
-		pcbSolicitante.IOPendiente = dispositivo.Nombre
-		if dispositivo.PIDActual != 0 { // ocupado
-			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
-		} else { // libre
-			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo
-			// cargo el struct y lo mando
-			SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, Duracion: NuevaSolicitudIO.Duracion, NombreIO: NuevaSolicitudIO.NombreIO}
-			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
-		}
-	} else {
-		pcbSolicitante.IOPendiente = ""
-		pcbSolicitante.Estado = structs.EXIT // no existe, se va a exit
-		// cola exit para guardar los que terminaron ¿?
-	}
+	log.Printf("se registro el io: %s", registro.Nombre) // borrar desp
 }
 
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
+	structs.IOsRegistrados =make(map[string]*structs.DispositivoIO)
+	structs.ColaBlockedIO =make(map[string]structs.ColaProcesos)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
 	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)

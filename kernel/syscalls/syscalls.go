@@ -7,14 +7,12 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
-	
+	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-// para el proceso que quiere usar la IO segun CPU:
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	// procedo a ver si existe la io
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
@@ -26,13 +24,14 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		if dispositivo.PIDActual != 0 { // ocupado
 			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
-			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo
-			// cargo el struct y lo mando&structs.ColaReady
+			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo // VER tema punteros, esto es una copia ¿? 
+			// cargo el struct y lo mando
+			SolicitudParaIO := structs.Solicitud{NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
+			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		}
 	} else {
 		pcbSolicitante.IOPendiente = ""
 		pcbSolicitante.Estado = structs.EXIT // no existe, se va a exit
-		// cola exit para guardar los que terminaron ¿?
 	}
 }
 
@@ -47,7 +46,6 @@ func INIT_PROC(pseudocodigo string, tamanio int) {
 	slog.Info("PID", ": ", nuevo_pcb.PID, "Se crea el proceso - Estado: NEW", "")
 	global.MutexLog.Unlock()
 }
-
 
 
 func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
@@ -91,5 +89,3 @@ func DUMP_MEMORY(PID int) {
 	//return resp.StatusCode
 	return
 }
-
-

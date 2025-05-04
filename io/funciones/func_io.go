@@ -34,6 +34,6 @@ func RegistrarEnKernel(nombre string, config config.IOConfig){
 	if err != nil {
 		log.Printf("error codificando ioARegistrar: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/registrar-io", config.IpKernel, config.PortKernel) // TODO: agregar ruta en main kernel
+	url := fmt.Sprintf("http://%s:%d/registrar-io", config.IpKernel, config.PortKernel)
 	http.Post(url, "application/json", bytes.NewBuffer(body))
 	}
