@@ -56,10 +56,24 @@ func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.Solicitud){
 	if err != nil {
 		log.Printf("error codificando solicitudIO: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/solicitud-io", ip, puerto) // ver ruta, creo que va en io. desp chequeo
+	url := fmt.Sprintf("http://%s:%d/solicitud-io", ip, puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando solicitudIO:%s puerto:%d", ip, puerto)
+	}
+
+	log.Printf("respuesta del servidor: %s", resp.Status)
+}
+
+func EnviarFinIO(ip string, puerto int, respuestaIO structs.RespuestaIO){
+	body, err := json.Marshal(respuestaIO)
+	if err != nil {
+		log.Printf("error codificando la respuestaIO: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/fin-io", ip, puerto)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando respuestaIO:%s puerto:%d", ip, puerto)
 	}
 
 	log.Printf("respuesta del servidor: %s", resp.Status)

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"net/http"
 	"os"
+
 	fio "github.com/sisoputnfrba/tp-golang/io/funciones"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 )
@@ -10,8 +12,9 @@ func main() {
 	comunicacion.VerificarParametros(2)
 	nombre := os.Args[1]
 	configPath := os.Args[2]
-	configCargadito := fio.IniciarConfiguracionIO(configPath)
-	fio.RegistrarEnKernel(nombre, configCargadito)
+	ConfigCargadito := fio.IniciarConfiguracionIO(configPath)
+	fio.RegistrarEnKernel(nombre, ConfigCargadito)
+	http.HandleFunc("/solicitar-io",fio.RealizarIO)
 
 	// comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "SOy io, hola kernel")
 }

@@ -16,17 +16,16 @@ import (
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	// procedo a ver si existe la io
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	pcbSolicitante := structs.ProcesoEjecutando
+	pcbSolicitante := structs.ProcesoEjecutando // Ver -> tomar proceso ¿?
 	if hayMatch {
-		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO] // esto es copia ->  // VER tema punteros ¿?
 		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
 		pcbSolicitante.IOPendiente = dispositivo.Nombre
 		if dispositivo.PIDActual != 0 { // ocupado
 			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
-			dispositivo.PIDActual = pcbSolicitante.PID // lo ocupo // VER tema punteros, esto es una copia ¿? 
-			// cargo el struct y lo mando
-			SolicitudParaIO := structs.Solicitud{NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
+			dispositivo.PIDActual = pcbSolicitante.PID
+			SolicitudParaIO := structs.Solicitud{ PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		}
 	} else {

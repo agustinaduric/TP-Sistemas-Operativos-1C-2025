@@ -13,6 +13,7 @@ type DispositivoIO struct {
 }
 
 type Solicitud struct {
+	PID int
 	NombreIO string
 	Duracion time.Duration
 }
@@ -21,4 +22,9 @@ type RegistroIO struct{
 	Nombre       string
 	IP           string
 	Puerto       int
+}
+
+type RespuestaIO struct{
+	NombreIO      string
+	PID           int
 }
