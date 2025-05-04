@@ -51,10 +51,8 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 // recibe IO y lo agrega a  IOsRegistrados
 func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	var registro structs.RegistroIO
-	// me llego un json y lo decodifico para tener los datos del io
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&registro)
-	// pregunto si hay error
 	if err != nil {
 		http.Error(w, "Error en decodificar mje: "+err.Error(), http.StatusBadRequest)
 		return
@@ -96,8 +94,9 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // ver NewServeMux usar en este check -> goroutines/hilos
+	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
 	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
+	mux.HandleFunc("/registrar-io", HandlerRegistrarIO)
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
 	log.Printf("Servidor de Kernel escuchando en %s", puerto)
