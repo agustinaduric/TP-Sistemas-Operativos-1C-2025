@@ -70,7 +70,7 @@ func EnviarFinIO(ip string, puerto int, respuestaIO structs.RespuestaIO){
 	if err != nil {
 		log.Printf("error codificando la respuestaIO: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/fin-io", ip, puerto)
+	url := fmt.Sprintf("http://%s:%d/finalizar-io", ip, puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando respuestaIO:%s puerto:%d", ip, puerto)

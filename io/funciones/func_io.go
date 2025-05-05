@@ -13,7 +13,7 @@ import(
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-// *** Gloables ***
+// *** Globales ***
 var ipKernel string
 var puertoKernel int
 

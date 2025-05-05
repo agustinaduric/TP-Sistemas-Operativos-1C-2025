@@ -48,7 +48,6 @@ func IniciarConfiguracionKernel(filePath string) config.KernelConfig {
 	return config
 }
 
-// recibe IO y lo agrega a  IOsRegistrados
 func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	var registro structs.RegistroIO
 	jsonParser := json.NewDecoder(r.Body)
@@ -69,6 +68,28 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	log.Printf("se registro el io: %s", registro.Nombre) // borrar desp
 }
 
+func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
+	var respuestaFin structs.RespuestaIO
+	jsonParser := json.NewDecoder(r.Body)
+	err := jsonParser.Decode(&respuestaFin)
+	if err != nil {
+		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	// todo: ver motivo de fin de io 
+	// mandar a ready el proceso que salio bien de io -> punteros o push_estado
+	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO] // ver
+	dispositivo.PIDActual= 0
+	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0{
+		//saco el primero:
+		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0] //
+		structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
+		dispositivo.PIDActual = siguiente.PID
+		SolicitudParaIO := structs.Solicitud{ PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}
+		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
+	}
+}
+
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	structs.IOsRegistrados =make(map[string]*structs.DispositivoIO)
 	structs.ColaBlockedIO =make(map[string]structs.ColaProcesos)
@@ -76,6 +97,7 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
 	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
 	mux.HandleFunc("/registrar-io", HandlerRegistrarIO)
+	mux.HandleFunc("/finalizar-io",HandlerFinalizarIO)
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
 	log.Printf("Servidor de Kernel escuchando en %s", puerto)

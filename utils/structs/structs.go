@@ -32,6 +32,7 @@ type PCB struct {
 	MetricasEstado   map[Estado]int           // cant entradas estado
 	TiemposEstado    map[Estado]time.Duration // tiempo en cada estado
 	IOPendiente      string                   // nombre de IO en la que esta bloqueado
+	IOPendienteDuracion time.Duration
 	//Registros        RegistrosCPU
 }
 
