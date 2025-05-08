@@ -53,14 +53,27 @@ func Push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
 }
 
 func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
-    
-	for i := 0 ; i < len(*Cola) ; i++ {
-      if (*Cola)[i].PID == PID {
-		return (*Cola)[i]
-	  }
 
-    }
+	for i := 0; i < len(*Cola); i++ {
+		if (*Cola)[i].PID == PID {
+			return (*Cola)[i]
+		}
 
-   return structs.PCB{}
-	
+	}
+
+	return structs.PCB{}
+
+}
+
+func Extraer_estado(Cola *structs.ColaProcesos, PID int) structs.PCB {
+	var extraido structs.PCB
+	for i := 0; i < len(*Cola); i++ {
+		if (*Cola)[i].PID == PID {
+			extraido = (*Cola)[i]
+			*Cola = append((*Cola)[:i], (*Cola)[i+1:]...)
+
+			return extraido
+		}
+	}
+	return structs.PCB{}
 }

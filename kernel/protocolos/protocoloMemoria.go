@@ -30,8 +30,26 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	log.Printf("respuesta del servidor: %s", resp.Status)
 }
 
-func Recibir_confirmacion() bool {
-	panic("unimplemented")
+func Recibir_confirmacion(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion string
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		<-global.SemFinalizacion
+		return
+	}
+	if Devolucion == "OK" {
+		global.ConfirmacionProcesoCargado = 1
+		<-global.SemFinalizacion
+		return
+
+	}
+	<-global.SemFinalizacion
+	return
+
 }
 
 func Enviar_P_Finalizado_memoria(PID int) {
@@ -46,4 +64,25 @@ func Enviar_P_Finalizado_memoria(PID int) {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+}
+
+func Recibir_confirmacionFinalizado(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion string
+	err := decoder.Decode(&Devolucion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		<-global.SemFinalizacion
+		return
+	}
+	if Devolucion == "OK" {
+		global.ConfirmacionProcesoFinalizado = 1
+		<-global.SemFinalizacion
+		return
+	}
+	<-global.SemFinalizacion
+	return
+
 }

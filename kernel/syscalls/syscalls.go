@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -19,13 +20,13 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	pcbSolicitante := structs.ProcesoEjecutando // Ver -> tomar proceso ¿?
 	if hayMatch {
 		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO] // esto es copia ->  // VER tema punteros ¿?
-		pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
+		pcbSolicitante.Estado = structs.BLOCKED                          // lo mando a blocked: por esperar o por estar usando la io
 		pcbSolicitante.IOPendiente = dispositivo.Nombre
 		if dispositivo.PIDActual != 0 { // ocupado
 			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
 		} else { // libre
 			dispositivo.PIDActual = pcbSolicitante.PID
-			SolicitudParaIO := structs.Solicitud{ PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
+			SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		}
 	} else {
@@ -46,7 +47,6 @@ func INIT_PROC(pseudocodigo string, tamanio int) {
 	global.MutexLog.Unlock()
 }
 
-
 func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
@@ -62,13 +62,14 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	log.Printf("me llego una Devolucion de Memoria")
 	switch Devolucion_DumpMemory.Respuesta {
 	case "CONFIRMACION":
-
+		global.MutexREADY.Lock()
 		PCB.Push_estado(&structs.ColaReady, Proceso)
-
+		global.MutexREADY.Unlock()
 	case "ERROR":
-
+		global.MutexEXIT.Lock()
 		PCB.Push_estado(&structs.ColaExit, Proceso)
-		//activar el exit
+		global.MutexREADY.Unlock()
+		<-global.ProcesoParaFinalizar
 
 	}
 }
@@ -87,4 +88,8 @@ func DUMP_MEMORY(PID int) {
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	//return resp.StatusCode
 	return
+}
+
+func EXIT() {
+	<-global.ProcesoParaFinalizar
 }

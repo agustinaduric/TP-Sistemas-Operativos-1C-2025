@@ -39,7 +39,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 
 	for {
 
-		<-global.ProcesoListo
+		global.ProcesoListo <- 0
 		//var pidsito *int
 
 		switch algoritmo_planificacion_corto {
@@ -85,18 +85,20 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 	slog.Info("Iniciado planificador de largo plazo")
 	global.MutexPlanificadores.Unlock()
 
-	//go limpieza_cola_exit()  //funcion A CREAR para que se encargue de finalizar los procesos
+	go limpieza_cola_exit() //funcion que se encarga de finalizar los procesos
 
 	var algoritmo_planificacion t_algoritmo = _chequear_algoritmo_largo(configCargadito)
 
 	for {
-		<-global.ProcesoCargado
+		global.ProcesoCargado <- 0
 
 		switch algoritmo_planificacion {
 		case FIFO:
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 			protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito) // envio el proceso a memoria para preguntar si entra
-			if protocolos.Recibir_confirmacion() {                             // si memoria da el OK proceso, sino me salgo y espero
+			global.SemInicializacion <- 0
+			if global.ConfirmacionProcesoCargado == 1 { // si memoria da el OK proceso, sino me salgo y espero
+				global.ConfirmacionProcesoCargado = 0
 
 				global.MutexNEW.Lock()
 				pcb_a_cargar = PCB.Pop_estado(&structs.ColaNew) // saco de la cola NEW
@@ -111,7 +113,7 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 				slog.Info("Estado cambiado", "PID", pcb_a_cargar.PID, "EstadoAnterior", "NEW", "EstadoActual", "READY")
 				global.MutexLog.Unlock()
 
-				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				<-global.ProcesoListo // aviso al plani corto que tiene un proceso en ready
 			}
 
 		case PMCP:
@@ -173,8 +175,21 @@ func esperarEnter() {
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }
 
-func EXIT() {
-	//semaforo creo
-    ProcesoExit := PCB.Pop_estado(&structs.ColaExit)
-	protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
+func limpieza_cola_exit() {
+	for {
+
+		global.ProcesoParaFinalizar <- 0 // ACTIVAR ESTE SEMAFORO CADA VEZ QUE SE METE UN PROCESO EN LA COLA EXIT
+
+		global.MutexEXIT.Lock()
+		ProcesoExit := PCB.Pop_estado(&structs.ColaExit)
+		global.MutexEXIT.Unlock()
+
+		protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
+		global.SemFinalizacion <- 0
+		if global.ConfirmacionProcesoFinalizado == 1 {
+			global.ConfirmacionProcesoFinalizado = 0
+			//LOGGEAR METRICAS Y LOG OBLIGATORIO DE FINALIZACION DE PROCESO
+			<-global.ProcesoCargado
+		}
+	}
 }

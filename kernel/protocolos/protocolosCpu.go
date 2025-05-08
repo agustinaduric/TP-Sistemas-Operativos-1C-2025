@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -70,17 +71,29 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 
 	case structs.DUMP_MEMORY:
 		log.Println("El motivo es: Hacer un Dump Memory")
-		//llamar al dump memory
 
+		syscalls.DUMP_MEMORY(Devolucion.PID)
 	case structs.IO:
 
 		log.Println("El motivo es: Sycall IO ")
-		// llamar a IO
-		//.SolicitarSyscallIO(Devolucion.SolicitudIO) // para chequear (esta abajo)
+
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
 
 	case structs.EXIT_PROC:
 		log.Println("El motivo es: EXIT")
-		//se activa el semafoto ------------------------------------
+		var pcb structs.PCB = PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
+
+		global.MutexEXEC.Lock()
+		PCB.Extraer_estado(&structs.ColaExecute, pcb.PID)
+		global.MutexEXEC.Unlock()
+
+		global.MutexEXEC.Lock()
+		PCB.Push_estado(&structs.ColaExit, pcb)
+		global.MutexEXEC.Unlock()
+
+		pcb.Estado = structs.EXIT
+
+		syscalls.EXIT()
 	}
+	return
 }
