@@ -68,3 +68,16 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 	}
 	comunicacion.EnviarFinIO(ipKernel,puertoKernel, respuesta)
 }
+
+func LevantarIO(configCargadito config.IOConfig) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // borrar: primer check
+	mux.HandleFunc("/solicitar-io", RealizarIO)
+	puerto := config.IntToStringConPuntos(configCargadito.PortIo)
+
+	log.Printf("IO escuchando solicitudes en %s", puerto)
+	err := http.ListenAndServe(puerto, mux)
+	if err != nil {
+		log.Fatalf("Error al levantar IO: %v", err)
+	}
+}
