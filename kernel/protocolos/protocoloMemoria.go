@@ -10,6 +10,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 )
 
 func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) {
@@ -85,4 +86,32 @@ func Recibir_confirmacionFinalizado(w http.ResponseWriter, r *http.Request) {
 	<-global.SemFinalizacion
 	return
 
+}
+
+
+func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
+	err := decoder.Decode(&Devolucion_DumpMemory)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+	var Proceso structs.PCB
+	Proceso = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
+	log.Printf("me llego una Devolucion de Memoria")
+	switch Devolucion_DumpMemory.Respuesta {
+	case "CONFIRMACION":
+		global.MutexREADY.Lock()
+		PCB.Push_estado(&structs.ColaReady, Proceso)
+		global.MutexREADY.Unlock()
+	case "ERROR":
+		global.MutexEXIT.Lock()
+		PCB.Push_estado(&structs.ColaExit, Proceso)
+		global.MutexREADY.Unlock()
+		<-global.ProcesoParaFinalizar
+
+	}
 }
