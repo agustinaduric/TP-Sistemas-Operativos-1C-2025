@@ -19,34 +19,35 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 		PC:  pcb_a_cargar.PC,
 	}
 	global.MutexCpuDisponible.Lock()
-	var Cpu_disponible structs.CPU = Buscar_CPU_libre()
+	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
 	global.MutexCpuDisponible.Unlock()
-	if Cpu_disponible.Id == 0 {
+	if Cpu_disponible.Identificador == "" {
 		return 0
 	}
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.Config.IpCPu, Cpu_disponible.Config.PortCpu)
+	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.IP, Cpu_disponible.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Config.PortCpu)
+		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	return resp.StatusCode
 }
 
-func Buscar_CPU_libre() structs.CPU {
+func Buscar_CPU_libre() structs.CPU_a_kernel {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Disponible {
+			structs.CPUs_Conectados[i].Disponible = false
 			return structs.CPUs_Conectados[i]
 		}
 
 	}
 	log.Printf("No hay CPU's libres >:(")
-	return structs.CPU{}
+	return structs.CPU_a_kernel{}
 }
 
 func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {

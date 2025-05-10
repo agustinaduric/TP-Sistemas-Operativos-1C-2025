@@ -1,18 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"os"
 
 	fCpu "github.com/sisoputnfrba/tp-golang/cpu/funciones"
+	"github.com/sisoputnfrba/tp-golang/cpu/global"
+	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 )
 
 func main() {
 
-	configCargadito := fCpu.IniciarConfiguracionCpu("cpu/config/cpu.config.json")
-	fmt.Println("Soy cpu")
+	comunicacion.VerificarParametros(2)
+	nombre := os.Args[1]
+	configPath := os.Args[2]
+	global.ConfigCargadito = fCpu.IniciarConfiguracionCpu(configPath)
+	protocolos.Conectarse_con_Kernel(nombre)
+	fCpu.LevantarServidorCPU()
 
-	comunicacion.EnviarMensaje(configCargadito.IpMemory, configCargadito.PortMemory, "Soy cpu, hola memoria")
-
-	comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "Soy cpu,hola kernel")
+	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy cpu, hola memoria")
+	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel, "Soy cpu,hola kernel")
 }

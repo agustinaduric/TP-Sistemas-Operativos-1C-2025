@@ -54,3 +54,10 @@ type DevolucionCpu struct {
 	ArchivoInst string
 	Tamaño      int
 }
+
+type CPU_a_kernel struct {
+	IP            string
+	Puerto        int
+	Identificador string
+	Disponible    bool
+}

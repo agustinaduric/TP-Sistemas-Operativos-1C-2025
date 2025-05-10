@@ -19,12 +19,12 @@ type ColaProcesos []PCB
 var (
 	ColaNew         ColaProcesos
 	ColaReady       ColaProcesos
-	ColaBlockedIO     map[string]ColaProcesos // a checkear, el strin es por el io
-	ColaBlocked     ColaProcesos // a checkear, el strin es por el io
+	ColaBlockedIO   map[string]ColaProcesos // a checkear, el strin es por el io
+	ColaBlocked     ColaProcesos            // a checkear, el strin es por el io
 	ColaSuspBlocked ColaProcesos
 	ColaSuspReady   ColaProcesos
 	ColaExecute     ColaProcesos
-	ColaExit     ColaProcesos
+	ColaExit        ColaProcesos
 )
 
 var IOsRegistrados map[string]*DispositivoIO
@@ -32,4 +32,4 @@ var ProcesoEjecutando PCB // chequear
 
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
 
-var CPUs_Conectados []CPU
+var CPUs_Conectados []CPU_a_kernel
