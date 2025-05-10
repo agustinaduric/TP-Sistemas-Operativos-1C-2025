@@ -65,45 +65,6 @@ func decode_and_execute() {
 
 }
 
-/*void checkInterrupt(void){
-    if(hay_interrupcion){
-
-        void *ptr_tipo_interrupcion = list_get_minimum(lista_interrupciones, elemento_minimo);
-        int tipo_interrupcion = *(int *)ptr_tipo_interrupcion;
-
-        char* interrupcion_string = _enum_interrupcion_string(tipo_interrupcion);
-
-        log_info(cpu_log_debug, "Se detecto una interrupcion de tipo < %s >", interrupcion_string);
-
-        devolver_contexto_ejecucion(tipo_interrupcion);
-        pthread_mutex_lock(&mutex_lista_interrupciones);
-            list_clean_and_destroy_elements(lista_interrupciones, free);
-        pthread_mutex_unlock(&mutex_lista_interrupciones);
-        pthread_mutex_lock(&mutex_hay_interrupcion);
-                hay_interrupcion = 0;
-        pthread_mutex_unlock(&mutex_hay_interrupcion);
-        se_devolvio_contexto = 1;
-    }else{
-        log_info(cpu_log_debug, "No hay interrupciones");
-    }
-}
-
-
-char* _enum_interrupcion_string(int tipo_interrupcion){
-
-    if (tipo_interrupcion == FIN_DE_QUANTUM){ return "FIN DE QUANTUM"; }
-    if (tipo_interrupcion == FIN_DE_PROCESO){ return "FIN DE PROCESO"; }
-    if (tipo_interrupcion == RECURSO_INVALIDO){ return "RECURSO INVALIDO"; }
-    if (tipo_interrupcion == PETICION_RECURSO){ return "PETICION RECURSO"; }
-
-    return "DESCONOCIDO";
-}
-
-void *elemento_minimo(void *elem1, void *elem2){
-    return (*(int *)elem1 < *(int *)elem2) ? elem1 : elem2;
-}
-*/
-
 func String_a_int(cadena string) int {
 	var numero int
 	numero, err := strconv.Atoi(cadena)
