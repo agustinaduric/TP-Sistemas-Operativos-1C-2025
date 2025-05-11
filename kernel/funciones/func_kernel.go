@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -76,10 +76,16 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	// todo: ver motivo de fin de io 
-	// mandar a ready el proceso que salio bien de io -> punteros o push_estado
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO] // ver
 	dispositivo.PIDActual= 0
+	if respuestaFin.Desconexion{
+		cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
+		proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola)
+		structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
+		proceso.Estado = structs.EXIT
+		PCB.Push_estado(&structs.ColaExit, proceso)
+		return
+	}
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0{
 		//saco el primero:
 		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0] //

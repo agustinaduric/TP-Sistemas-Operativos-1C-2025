@@ -65,6 +65,7 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 	respuesta := structs.RespuestaIO{
 		NombreIO: solicitud.NombreIO,
 		PID: solicitud.PID,
+		Desconexion: false, // ver cuando es true o false
 	}
 	comunicacion.EnviarFinIO(ipKernel,puertoKernel, respuesta)
 }
