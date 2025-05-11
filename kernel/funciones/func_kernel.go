@@ -76,7 +76,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO] // ver
+	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
 	dispositivo.PIDActual= 0
 	if respuestaFin.Desconexion{
 		cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
@@ -106,7 +106,7 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux.HandleFunc("/finalizar-io",HandlerFinalizarIO)
 	mux.HandleFunc("/confirmacion",protocolos.Recibir_confirmacionFinalizado)
 	mux.HandleFunc("/confirma-finalizado",protocolos.Recibir_confirmacion)
-	mux.HandleFunc("confirm-dumpmemory",protocolos.Recibir_confirmacion_DumpMemory)
+	mux.HandleFunc("/confirm-dumpmemory",protocolos.Recibir_confirmacion_DumpMemory)
 	
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 

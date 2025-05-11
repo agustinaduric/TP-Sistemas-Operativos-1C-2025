@@ -7,7 +7,6 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -15,24 +14,33 @@ import (
 )
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
-	// procedo a ver si existe la io
+	pcbSolicitante := PCB.Extraer_estado(&structs.ColaExecute, structs.ProcesoEjecutando.PID)
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	pcbSolicitante := structs.ProcesoEjecutando // Ver -> tomar proceso ¿?
-	if hayMatch {
-		dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO] // esto es copia ->  // VER tema punteros ¿?
-		pcbSolicitante.Estado = structs.BLOCKED                          // lo mando a blocked: por esperar o por estar usando la io
-		pcbSolicitante.IOPendiente = dispositivo.Nombre
-		if dispositivo.PIDActual != 0 { // ocupado
-			structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = append(structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO], pcbSolicitante) // agrego a cola de bloqueados por IO
-		} else { // libre
-			dispositivo.PIDActual = pcbSolicitante.PID
-			SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
-			comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
-		}
-	} else {
+	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
+	if !hayMatch {
+		pcbSolicitante.Estado = structs.EXIT
 		pcbSolicitante.IOPendiente = ""
-		pcbSolicitante.Estado = structs.EXIT // no existe, se va a exit
+		global.MutexEXIT.Lock()
+		PCB.Push_estado(&structs.ColaExit, pcbSolicitante)
+		global.MutexEXIT.Unlock()
+		structs.ProcesoEjecutando = structs.PCB{}
+		return
+	} 
+	pcbSolicitante.Estado = structs.BLOCKED               // lo mando a blocked: por esperar o por estar usando la io
+	pcbSolicitante.IOPendiente = dispositivo.Nombre
+	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
+	if dispositivo.PIDActual != 0 { // ocupado 
+		global.MutexBLOCKED.Lock()
+		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
+		PCB.Push_estado(&colaDeBloqueados, pcbSolicitante)
+		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
+		global.MutexBLOCKED.Unlock()
+	} else { // libre
+		dispositivo.PIDActual = pcbSolicitante.PID
+		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
+		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 	}
+	structs.ProcesoEjecutando = structs.PCB{}
 }
 
 func INIT_PROC(pseudocodigo string, tamanio int) {
