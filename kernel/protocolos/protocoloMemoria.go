@@ -14,6 +14,22 @@ import (
 )
 
 func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) {
+	// consulto si hay espacio:
+	espacioMemoria := fmt.Sprintf("http:/%s:%d/espacio-libre", configCargadito.IpMemory, configCargadito.PortMemory)
+	respEspacio,errEspacio := http.Get(espacioMemoria) // el get es para pedir info
+	if errEspacio != nil{
+		log.Printf("Error al consultar espacio libre en memoria: %s",errEspacio.Error())
+		return
+	}
+	defer respEspacio.Body.Close()
+	// me responde y verifico:
+	var espacioLibre structs.EspacioLibreRespuesta
+	json.NewDecoder(respEspacio.Body).Decode(&espacioLibre)
+	if espacioLibre.BytesLibres < pcb_a_cargar.Tamanio{
+		log.Printf("no hay espacio para cargar al proceso PID:%d", pcb_a_cargar.PID)
+		return
+	}
+	// se manda el proceso si hay espacio:
 	var Proceso structs.Proceso_a_enviar = structs.Proceso_a_enviar{
 		PID:     pcb_a_cargar.PID,
 		Tamanio: pcb_a_cargar.Tamanio,
@@ -23,7 +39,7 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/proceso", configCargadito.IpMemory, configCargadito.PortMemory)
+	url := fmt.Sprintf("http://%s:%d/recibir-proceso", configCargadito.IpMemory, configCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)
