@@ -27,13 +27,14 @@ type CPU struct {
 	Cache      []EntradaCache   //
 	Disponible bool
 }
-
+// hay uno así ya en la de structs.go.Este nunca lo llegamos a usar
+/*
 type Instrucion struct {
 	Tipo   string
 	Param1 string
 	Param2 string
 }
-
+*/
 type EntradaTLB struct {
 	Pagina    int
 	Frame     int

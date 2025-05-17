@@ -7,12 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func Solicitar_instruccion() {
+func SolicitarInstruccion() {
 	var Proceso structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
 		PID: global.Proceso_Ejecutando.PID,
 		PC:  global.Proceso_Ejecutando.PC,
@@ -21,14 +22,27 @@ func Solicitar_instruccion() {
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/solictarInstruccion", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	url := fmt.Sprintf("http://%s:%d/obtener-instruccion", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", global.Proceso_Ejecutando.PID, global.ConfigCargadito.PortMemory)
+		return 
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+	defer resp.Body.Close()
+
+	var instruccion structs.Instruccion
+	decoder := json.NewDecoder(resp.Body)
+	errRecepcion := decoder.Decode(&instruccion)
+	if errRecepcion != nil {
+		log.Printf("error al decodificar instruccion: %s\n", errRecepcion.Error())
+		os.Exit(1)
+	}
+	global.Instruccion = instruccion.Operacion + " " + strings.Join(instruccion.Argumentos, " ")
 }
 
+// **** la comento porque solicitarInstruccion ya recibe la respuesta de memoria: pide y espera(? ****
+/*
 func Recibir_instruccion(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&global.Instruccion)
@@ -40,3 +54,4 @@ func Recibir_instruccion(w http.ResponseWriter, r *http.Request) {
 	}
 	<-global.InstruccionRecibida
 }
+*/

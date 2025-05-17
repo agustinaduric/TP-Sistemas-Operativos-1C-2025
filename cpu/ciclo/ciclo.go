@@ -26,8 +26,8 @@ func Ciclo() {
 }
 
 func fetch() {
-	protocolos.Solicitar_instruccion()
-	global.InstruccionRecibida <- 0 // espero que la memoria me mande la instruccion
+	protocolos.SolicitarInstruccion()
+	// global.InstruccionRecibida <- 0 // espero que la memoria me mande la instruccion // creo que aca no es necesario
 }
 
 func decode_and_execute() {
