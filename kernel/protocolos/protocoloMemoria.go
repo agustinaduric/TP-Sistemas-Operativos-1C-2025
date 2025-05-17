@@ -39,7 +39,7 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/recibir-proceso", configCargadito.IpMemory, configCargadito.PortMemory)
+	url := fmt.Sprintf("http://%s:%d/cargar-proceso", configCargadito.IpMemory, configCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory)

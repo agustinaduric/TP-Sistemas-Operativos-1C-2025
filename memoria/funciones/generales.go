@@ -17,7 +17,7 @@ func LevantarServidorMemoria() {
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // borrar, 1er check
 	mux.HandleFunc("/obtener-instruccion", HandlerObtenerInstruccion)
 	mux.HandleFunc("/espacio-libre", HandlerEspacioLibre)
-	mux.HandleFunc("/recibir-proceso", HandlerRecibirProceso)
+	mux.HandleFunc("/cargar-proceso", HandlerCargarProceso)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
 
@@ -65,7 +65,7 @@ func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func HandlerRecibirProceso(w http.ResponseWriter, r *http.Request){
+func HandlerCargarProceso(w http.ResponseWriter, r *http.Request){
 	var proceso structs.Proceso_a_enviar
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&proceso)
