@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -57,10 +58,10 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	nuevoIO := structs.DispositivoIO{
-		Nombre: registro.Nombre,
-		IP: registro.IP,
-		Puerto: registro.Puerto,
-		PIDActual: 0,
+		Nombre:       registro.Nombre,
+		IP:           registro.IP,
+		Puerto:       registro.Puerto,
+		PIDActual:    0,
 		ColaEsperaIO: []*structs.PCB{},
 	}
 	// registro el IO
@@ -68,7 +69,7 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 	log.Printf("se registro el io: %s", registro.Nombre) // borrar desp
 }
 
-func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
+func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 	var respuestaFin structs.RespuestaIO
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&respuestaFin)
@@ -77,8 +78,8 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
-	dispositivo.PIDActual= 0
-	if respuestaFin.Desconexion{
+	dispositivo.PIDActual = 0
+	if respuestaFin.Desconexion {
 		cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
 		proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola)
 		structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
@@ -86,28 +87,28 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request){
 		PCB.Push_estado(&structs.ColaExit, proceso)
 		return
 	}
-	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0{
+	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
 		//saco el primero:
 		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0] //
 		structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
 		dispositivo.PIDActual = siguiente.PID
-		SolicitudParaIO := structs.Solicitud{ PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}
+		SolicitudParaIO := structs.Solicitud{PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}
 		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 	}
 }
 
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
-	structs.IOsRegistrados =make(map[string]*structs.DispositivoIO)
-	structs.ColaBlockedIO =make(map[string]structs.ColaProcesos)
+	structs.IOsRegistrados = make(map[string]*structs.DispositivoIO)
+	structs.ColaBlockedIO = make(map[string]structs.ColaProcesos)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje)
 	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
 	mux.HandleFunc("/registrar-io", HandlerRegistrarIO)
-	mux.HandleFunc("/finalizar-io",HandlerFinalizarIO)
-	mux.HandleFunc("/confirmacion",protocolos.Recibir_confirmacionFinalizado)
-	mux.HandleFunc("/confirma-finalizado",protocolos.Recibir_confirmacion)
-	mux.HandleFunc("/confirm-dumpmemory",protocolos.Recibir_confirmacion_DumpMemory)
-	
+	mux.HandleFunc("/finalizar-io", HandlerFinalizarIO)
+	mux.HandleFunc("/confirmacion", protocolos.Recibir_confirmacionFinalizado)
+	mux.HandleFunc("/confirma-finalizado", protocolos.Recibir_confirmacion)
+	mux.HandleFunc("/confirm-dumpmemory", protocolos.Recibir_confirmacion_DumpMemory)
+
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
 	log.Printf("Servidor de Kernel escuchando en %s", puerto)

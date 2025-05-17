@@ -27,6 +27,7 @@ type CPU struct {
 	Cache      []EntradaCache   //
 	Disponible bool
 }
+
 // hay uno así ya en la de structs.go.Este nunca lo llegamos a usar
 /*
 type Instrucion struct {
@@ -50,6 +51,7 @@ type EntradaCache struct {
 
 type DevolucionCpu struct {
 	PID         int
+	PC          int
 	Motivo      string
 	SolicitudIO Solicitud
 	ArchivoInst string

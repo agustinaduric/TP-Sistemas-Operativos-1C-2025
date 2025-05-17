@@ -31,6 +31,15 @@ func Conectarse_con_Kernel(identificador string) {
 	log.Printf("respuesta del servidor: %s", resp.Status)
 }
 
-func Enviar_syscall() {
-	panic("unimplemented")
+func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
+	body, err := json.Marshal(DevolucionSyscall)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/devolucion", global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
 }

@@ -3,9 +3,10 @@ package fmemoria
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"fmt"
+
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -28,10 +29,10 @@ func LevantarServidorMemoria() {
 	}
 }
 
-func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request){
+func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	var proceso struct {
 		PID int `json:"pid"`
-		PC int `json:"pc"`
+		PC  int `json:"pc"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&proceso)
@@ -41,7 +42,7 @@ func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request){
 		w.Write([]byte("Error al decodificar la solicitud de instruccion"))
 		return
 	}
-	instruccion,err := BuscarInstruccion(proceso.PID, proceso.PC)
+	instruccion, err := BuscarInstruccion(proceso.PID, proceso.PC)
 	if err != nil {
 		log.Printf("Error al buscar instruccion PID: %d, PC:%d, %s\n", proceso.PID, proceso.PC, err.Error())
 		http.Error(w, "No se pudo obbtener la instruccion", http.StatusNotFound)
@@ -54,9 +55,9 @@ func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request){
+func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 	espacio := espacioDisponible()
-	respuestaEspacio := structs.EspacioLibreRespuesta{ BytesLibres: espacio,}
+	respuestaEspacio := structs.EspacioLibreRespuesta{BytesLibres: espacio}
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(respuestaEspacio)
 	if err != nil {
@@ -65,7 +66,7 @@ func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func HandlerCargarProceso(w http.ResponseWriter, r *http.Request){
+func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 	var proceso structs.Proceso_a_enviar
 	jsonParser := json.NewDecoder(r.Body)
 	err := jsonParser.Decode(&proceso)
@@ -78,23 +79,23 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Error en cargar las instrucciones: "+errCargar.Error(), http.StatusInternalServerError)
 		return
 	}
-	global.Procesos = append(global.Procesos, structs.ProcesoMemoria{PID: proceso.PID,Tamanio: proceso.Tamanio, EnSwap: false, Path: proceso.PATH, Instrucciones: instrucciones})
+	global.Procesos = append(global.Procesos, structs.ProcesoMemoria{PID: proceso.PID, Tamanio: proceso.Tamanio, EnSwap: false, Path: proceso.PATH, Instrucciones: instrucciones})
 	// le confirmo a kernel que se cargo:
 	urlKernel := fmt.Sprintf("http:/%s:%d/confirmacion", global.MemoriaConfig.IpMemory, global.MemoriaConfig.PortMemory)
-	// *****NOTA***** 
+	// *****NOTA*****
 	/*Acá hay un problema, necesito la ip y el puerto del kernel para confirmar que cargué
 	el proceso en memoria y hacerle un post, pero pero pero el .json de memoria no tiene
 	la ip ni el puerto de kernel.
 	Para que no tire error, deje los de memoria. Hay que sacarlos y poner kernel(?
 	*/
-	body,errCodificacion := json.Marshal("OK")
-	if errCodificacion != nil{
-		log.Printf("Error al codificar la confirmacion: %s",errCodificacion.Error())
+	body, errCodificacion := json.Marshal("OK")
+	if errCodificacion != nil {
+		log.Printf("Error al codificar la confirmacion: %s", errCodificacion.Error())
 		return
 	}
-	_,errEnvio := http.Post(urlKernel, "application/json", bytes.NewBuffer(body))
-	if errEnvio != nil{
-		log.Printf("Error al enviar la confirmacion: %s",errEnvio.Error())
+	_, errEnvio := http.Post(urlKernel, "application/json", bytes.NewBuffer(body))
+	if errEnvio != nil {
+		log.Printf("Error al enviar la confirmacion: %s", errEnvio.Error())
 		return
 	}
 }
