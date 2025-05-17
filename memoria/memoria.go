@@ -6,7 +6,6 @@ import (
 
 func main() {
 	fmemoria.IniciarConfiguracionMemoria("memoria/config/memoria.config.json")
-	fmemoria.LevantarServidorMemoria()
 	fmemoria.IniciarMemoriaUsuario()
-
+	fmemoria.LevantarServidorMemoria()
 }

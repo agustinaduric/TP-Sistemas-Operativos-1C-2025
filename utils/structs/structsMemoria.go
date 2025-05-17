@@ -23,3 +23,7 @@ type Devolucion_DumpMemory struct {
 	PID         int
 	Respuesta   string
 }
+
+type EspacioLibreRespuesta struct{
+	BytesLibres int 
+}
