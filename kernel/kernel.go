@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	fkernel "github.com/sisoputnfrba/tp-golang/kernel/funciones"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/planificacion"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func main() {
@@ -19,6 +19,8 @@ func main() {
 	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
 
 	comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
+	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}
+	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory,global.ConfigCargadito.PortMemory, handshake)
 	fkernel.LevantarServidorKernel(global.ConfigCargadito)
 	planificacion.Iniciar_planificacion(global.ConfigCargadito)
 	PrimerProceso()

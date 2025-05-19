@@ -12,3 +12,7 @@ var MapMemoriaDeUsuario []int
 var MemoriaUsuario []byte
 
 var Procesos []structs.ProcesoMemoria
+
+var IPkernel string
+
+var PuertoKernel int

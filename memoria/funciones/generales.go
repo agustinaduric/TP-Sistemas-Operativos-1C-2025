@@ -16,6 +16,7 @@ import (
 func LevantarServidorMemoria() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // borrar, 1er check
+	mux.HandleFunc("/recibir-handshake", HandlerRecibirHandshake)
 	mux.HandleFunc("/obtener-instruccion", HandlerObtenerInstruccion)
 	mux.HandleFunc("/espacio-libre", HandlerEspacioLibre)
 	mux.HandleFunc("/cargar-proceso", HandlerCargarProceso)
@@ -27,6 +28,20 @@ func LevantarServidorMemoria() {
 	if err != nil {
 		log.Fatalf("Error al levantar el servidor: %v", err)
 	}
+}
+
+func HandlerRecibirHandshake(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var handshake structs.Handshake
+	err := decoder.Decode(&handshake)
+	if err != nil {
+		log.Printf("Error al decodificar el handshake: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Error al decodificar mensaje"))
+		return
+	}
+	global.IPkernel = handshake.IP
+	global.PuertoKernel = handshake.Puerto
 }
 
 func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
@@ -81,13 +96,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 	}
 	global.Procesos = append(global.Procesos, structs.ProcesoMemoria{PID: proceso.PID, Tamanio: proceso.Tamanio, EnSwap: false, Path: proceso.PATH, Instrucciones: instrucciones})
 	// le confirmo a kernel que se cargo:
-	urlKernel := fmt.Sprintf("http:/%s:%d/confirmacion", global.MemoriaConfig.IpMemory, global.MemoriaConfig.PortMemory)
-	// *****NOTA*****
-	/*Acá hay un problema, necesito la ip y el puerto del kernel para confirmar que cargué
-	el proceso en memoria y hacerle un post, pero pero pero el .json de memoria no tiene
-	la ip ni el puerto de kernel.
-	Para que no tire error, deje los de memoria. Hay que sacarlos y poner kernel(?
-	*/
+	urlKernel := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
 	body, errCodificacion := json.Marshal("OK")
 	if errCodificacion != nil {
 		log.Printf("Error al codificar la confirmacion: %s", errCodificacion.Error())

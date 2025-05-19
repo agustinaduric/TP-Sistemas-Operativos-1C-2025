@@ -78,3 +78,12 @@ func EnviarFinIO(ip string, puerto int, respuestaIO structs.RespuestaIO){
 
 	log.Printf("respuesta del servidor: %s", resp.Status)
 }
+
+func EnviarHandshake(ip string, puerto int, PuertoIP structs.Handshake) {
+	body, err := json.Marshal(PuertoIP)
+	if err != nil {
+		log.Printf("error codificando mensaje: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/recibir-handshake", ip, puerto)
+	http.Post(url, "application/json", bytes.NewBuffer(body))
+}

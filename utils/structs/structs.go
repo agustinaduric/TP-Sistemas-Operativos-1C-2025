@@ -59,3 +59,8 @@ type PIDyPC_Enviar_CPU struct {
 	PID int
 	PC  int
 }
+
+type Handshake struct {
+	Puerto int
+	IP string
+}
