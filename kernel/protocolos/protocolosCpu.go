@@ -111,6 +111,9 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		pcb.Estado = structs.EXIT
 
 		syscalls.EXIT()
+
+	case structs.REPLANIFICAR:
+
 	}
 	return
 }

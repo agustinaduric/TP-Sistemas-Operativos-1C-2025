@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	fkernel "github.com/sisoputnfrba/tp-golang/kernel/funciones"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
@@ -17,13 +18,14 @@ func main() {
 	chequeoParametros()
 
 	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
-
+	go fkernel.LevantarServidorKernel(global.ConfigCargadito)
 	comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
 	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}
-	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory,global.ConfigCargadito.PortMemory, handshake)
-	fkernel.LevantarServidorKernel(global.ConfigCargadito)
+	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, handshake)
+
 	planificacion.Iniciar_planificacion(global.ConfigCargadito)
 	PrimerProceso()
+	global.WgKernel.Wait()
 }
 
 func chequeoParametros() {

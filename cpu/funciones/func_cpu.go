@@ -26,8 +26,11 @@ func IniciarConfiguracionCpu(filePath string) config.CPUConfig {
 }
 
 func LevantarServidorCPU() {
+	global.WgCPU.Add(1)
+	defer global.WgCPU.Done()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/datoCPU", Recibir_Proceso_Kernel)
+	mux.HandleFunc("/interrupcion", Recibir_Proceso_Kernel)
 
 	puerto := config.IntToStringConPuntos(global.ConfigCargadito.PortCpu)
 

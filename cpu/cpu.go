@@ -15,9 +15,9 @@ func main() {
 	nombre := os.Args[1]
 	configPath := os.Args[2]
 	global.ConfigCargadito = fCpu.IniciarConfiguracionCpu(configPath)
+	go fCpu.LevantarServidorCPU()
 	protocolos.Conectarse_con_Kernel(nombre)
-	fCpu.LevantarServidorCPU()
-
+	global.WgCPU.Wait()
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy cpu, hola memoria")
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel, "Soy cpu,hola kernel")
 }

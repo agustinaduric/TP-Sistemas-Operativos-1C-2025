@@ -11,6 +11,8 @@ import (
 var ConfirmacionProcesoCargado int
 var ConfirmacionProcesoFinalizado int
 
+var WgKernel sync.WaitGroup
+
 var MutexPlanificadores sync.Mutex //asi se crea un mutex jej
 var MutexLog sync.Mutex
 var ProcesoCargado = make(chan int)

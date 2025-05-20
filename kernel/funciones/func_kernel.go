@@ -99,6 +99,8 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 }
 
 func LevantarServidorKernel(configCargadito config.KernelConfig) {
+	global.WgKernel.Add(1)
+	defer global.WgKernel.Done()
 	structs.IOsRegistrados = make(map[string]*structs.DispositivoIO)
 	structs.ColaBlockedIO = make(map[string]structs.ColaProcesos)
 	mux := http.NewServeMux()

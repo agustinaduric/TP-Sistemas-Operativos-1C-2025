@@ -106,7 +106,7 @@ func CheckInterrupt() {
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,
 			PC:     global.Proceso_Ejecutando.PC,
-			Motivo: "DESALOJO"}
+			Motivo: "REPLANIFICAR"}
 		protocolos.Enviar_syscall(devolucion)
 		return
 		// aca el tp dice que deberia esperar la cpu xd

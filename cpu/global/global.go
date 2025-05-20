@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 var ConfigCargadito config.CPUConfig
+
+var WgCPU sync.WaitGroup
 
 var Instruccion string              //lo que recibimos de memoria
 var Instruccion_ejecutando []string // procesado y dividido en operacion y parametros
