@@ -7,6 +7,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -21,18 +22,18 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		pcbSolicitante.Estado = structs.EXIT
 		pcbSolicitante.IOPendiente = ""
 		global.MutexEXIT.Lock()
-		PCB.Push_estado(&structs.ColaExit, pcbSolicitante)
+		global.Push_estado(&structs.ColaExit, pcbSolicitante)
 		global.MutexEXIT.Unlock()
 		structs.ProcesoEjecutando = structs.PCB{}
 		return
-	} 
-	pcbSolicitante.Estado = structs.BLOCKED               // lo mando a blocked: por esperar o por estar usando la io
+	}
+	pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
 	pcbSolicitante.IOPendiente = dispositivo.Nombre
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
-	if dispositivo.PIDActual != 0 { // ocupado 
+	if dispositivo.PIDActual != 0 { // ocupado
 		global.MutexBLOCKED.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
-		PCB.Push_estado(&colaDeBloqueados, pcbSolicitante)
+		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
 		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
 		global.MutexBLOCKED.Unlock()
 	} else { // libre
@@ -47,7 +48,7 @@ func INIT_PROC(pseudocodigo string, tamanio int) {
 	var nuevo_pcb structs.PCB = PCB.Crear(pseudocodigo, tamanio)
 	nuevo_pcb.Estado = structs.NEW
 	global.MutexNEW.Lock()
-	PCB.Push_estado(&structs.ColaNew, nuevo_pcb)
+	global.Push_estado(&structs.ColaNew, nuevo_pcb)
 	global.MutexNEW.Unlock()
 
 	global.MutexLog.Lock()
@@ -71,11 +72,11 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	switch Devolucion_DumpMemory.Respuesta {
 	case "CONFIRMACION":
 		global.MutexREADY.Lock()
-		PCB.Push_estado(&structs.ColaReady, Proceso)
+		global.Push_estado(&structs.ColaReady, Proceso)
 		global.MutexREADY.Unlock()
 	case "ERROR":
 		global.MutexEXIT.Lock()
-		PCB.Push_estado(&structs.ColaExit, Proceso)
+		global.Push_estado(&structs.ColaExit, Proceso)
 		global.MutexREADY.Unlock()
 		<-global.ProcesoParaFinalizar
 

@@ -7,25 +7,25 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
-	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 )
 
 func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) {
 	// consulto si hay espacio:
 	espacioMemoria := fmt.Sprintf("http:/%s:%d/espacio-libre", configCargadito.IpMemory, configCargadito.PortMemory)
-	respEspacio,errEspacio := http.Get(espacioMemoria) // el get es para pedir info
-	if errEspacio != nil{
-		log.Printf("Error al consultar espacio libre en memoria: %s",errEspacio.Error())
+	respEspacio, errEspacio := http.Get(espacioMemoria) // el get es para pedir info
+	if errEspacio != nil {
+		log.Printf("Error al consultar espacio libre en memoria: %s", errEspacio.Error())
 		return
 	}
 	defer respEspacio.Body.Close()
 	// me responde y verifico:
 	var espacioLibre structs.EspacioLibreRespuesta
 	json.NewDecoder(respEspacio.Body).Decode(&espacioLibre)
-	if espacioLibre.BytesLibres < pcb_a_cargar.Tamanio{
+	if espacioLibre.BytesLibres < pcb_a_cargar.Tamanio {
 		log.Printf("no hay espacio para cargar al proceso PID:%d", pcb_a_cargar.PID)
 		return
 	}
@@ -104,7 +104,6 @@ func Recibir_confirmacionFinalizado(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
@@ -121,11 +120,11 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	switch Devolucion_DumpMemory.Respuesta {
 	case "CONFIRMACION":
 		global.MutexREADY.Lock()
-		PCB.Push_estado(&structs.ColaReady, Proceso)
+		global.Push_estado(&structs.ColaReady, Proceso)
 		global.MutexREADY.Unlock()
 	case "ERROR":
 		global.MutexEXIT.Lock()
-		PCB.Push_estado(&structs.ColaExit, Proceso)
+		global.Push_estado(&structs.ColaExit, Proceso)
 		global.MutexREADY.Unlock()
 		<-global.ProcesoParaFinalizar
 

@@ -36,22 +36,6 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	return proceso
 }
 
-func Pop_estado(Cola *structs.ColaProcesos) structs.PCB {
-
-	if len(*Cola) == 0 {
-		return structs.PCB{} // o manejar el error como prefieras
-	}
-
-	pcb := (*Cola)[0]
-	*Cola = (*Cola)[1:] // directamente recortás el slice
-
-	return pcb
-}
-
-func Push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
-	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
-}
-
 func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
 
 	for i := 0; i < len(*Cola); i++ {

@@ -10,7 +10,7 @@ const (
 	READ         string = "READ"
 	GOTO         string = "GOTO"
 	IO           string = "IO"
-	INIT_PROC    string = "INICIAR_PROCESO"
+	INIT_PROC    string = "INIT_PROC"
 	DUMP_MEMORY  string = "DUMP_MEMORY"
 	EXIT_PROC    string = "EXIT"
 	REPLANIFICAR string = "REPLANIFICAR"

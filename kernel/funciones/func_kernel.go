@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
+	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -84,7 +85,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola)
 		structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
 		proceso.Estado = structs.EXIT
-		PCB.Push_estado(&structs.ColaExit, proceso)
+		global.Push_estado(&structs.ColaExit, proceso)
 		return
 	}
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
@@ -108,6 +109,7 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux.HandleFunc("/confirmacion", protocolos.Recibir_confirmacionFinalizado)
 	mux.HandleFunc("/confirma-finalizado", protocolos.Recibir_confirmacion)
 	mux.HandleFunc("/confirm-dumpmemory", protocolos.Recibir_confirmacion_DumpMemory)
+	mux.HandleFunc("/conectarcpu", protocolos.Conectarse_con_CPU)
 
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 

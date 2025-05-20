@@ -2,8 +2,10 @@ package global
 
 import (
 	"sync"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 var ConfirmacionProcesoCargado int
@@ -29,3 +31,113 @@ var MutexBLOCKED sync.Mutex
 var MutexSUSP_BLOCKED sync.Mutex
 var MutexSUSP_READY sync.Mutex
 var MutexEXIT sync.Mutex
+
+//-----------------------------------------------FUNCIONES AUXILIARES-------------------------------------------------------
+
+func Pop_estado(Cola *structs.ColaProcesos) structs.PCB {
+
+	if len(*Cola) == 0 {
+		return structs.PCB{} // o manejar el error como prefieras
+	}
+
+	pcb := (*Cola)[0]
+	*Cola = (*Cola)[1:] // directamente recortás el slice
+
+	return pcb
+}
+
+func Push_estado(Cola *structs.ColaProcesos, pcb structs.PCB) {
+	*Cola = append(*Cola, pcb) // Usamos el puntero a Cola para modificar el slice
+}
+
+func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB) {
+	switch estadoNuevo {
+	case "NEW":
+		proceso.MetricasEstado[structs.NEW] = proceso.MetricasEstado[structs.NEW] + 1
+		proceso.Estado = structs.NEW
+		proceso.TiempoInicioEstado = time.Now()
+		MutexNEW.Lock()
+		Push_estado(&structs.ColaNew, *proceso)
+		MutexNEW.Unlock()
+	case "READY":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.READY
+		proceso.MetricasEstado[structs.READY] = proceso.MetricasEstado[structs.READY] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexREADY.Lock()
+		Push_estado(&structs.ColaReady, *proceso)
+		MutexREADY.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	case "EXEC":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.EXEC
+		proceso.MetricasEstado[structs.EXEC] = proceso.MetricasEstado[structs.EXEC] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexEXEC.Lock()
+		Push_estado(&structs.ColaExecute, *proceso)
+		MutexEXEC.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	case "BLOCKED":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.BLOCKED
+		proceso.MetricasEstado[structs.BLOCKED] = proceso.MetricasEstado[structs.BLOCKED] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexBLOCKED.Lock()
+		Push_estado(&structs.ColaBlocked, *proceso)
+		MutexBLOCKED.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	case "SUSP_BLOCKED":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.SUSP_BLOCKED
+		proceso.MetricasEstado[structs.SUSP_BLOCKED] = proceso.MetricasEstado[structs.SUSP_BLOCKED] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexSUSP_BLOCKED.Lock()
+		Push_estado(&structs.ColaSuspBlocked, *proceso)
+		MutexSUSP_BLOCKED.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	case "SUSP_READY":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.SUSP_READY
+		proceso.MetricasEstado[structs.SUSP_READY] = proceso.MetricasEstado[structs.SUSP_READY] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexSUSP_READY.Lock()
+		Push_estado(&structs.ColaSuspReady, *proceso)
+		MutexSUSP_READY.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	case "EXIT":
+		DetenerMetrica(estadoViejo, proceso)
+		proceso.Estado = structs.EXIT
+		proceso.MetricasEstado[structs.EXIT] = proceso.MetricasEstado[structs.EXIT] + 1
+		proceso.TiempoInicioEstado = time.Now()
+		MutexEXIT.Lock()
+		Push_estado(&structs.ColaExit, *proceso)
+		MutexEXIT.Unlock()
+		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+	}
+}
+
+func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
+	switch estadoViejo {
+	case "NEW":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.NEW] += duracion
+	case "READY":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.READY] += duracion
+	case "EXEC":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.EXEC] += duracion
+	case "BLOCKED":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.BLOCKED] += duracion
+	case "SUSP_BLOCKED":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.SUSP_BLOCKED] += duracion
+	case "SUSP_READY":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.SUSP_READY] += duracion
+	case "EXIT":
+		duracion := time.Since(proceso.TiempoInicioEstado)
+		proceso.TiemposEstado[structs.EXIT] += duracion
+	}
+}

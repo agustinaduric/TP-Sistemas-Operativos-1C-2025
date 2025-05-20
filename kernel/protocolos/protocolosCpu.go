@@ -13,6 +13,22 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
+func Conectarse_con_CPU(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var CPUnuevo structs.CPU_a_kernel
+	err := decoder.Decode(&CPUnuevo)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+
+	log.Printf("se conecto una CPU")
+	log.Printf("identificador:: %s", CPUnuevo.Identificador)
+	structs.CPUs_Conectados = append(structs.CPUs_Conectados, CPUnuevo)
+}
+
 func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	var PIDyPC structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
 		PID: pcb_a_cargar.PID,
@@ -89,7 +105,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		global.MutexEXEC.Unlock()
 
 		global.MutexEXEC.Lock()
-		PCB.Push_estado(&structs.ColaExit, pcb)
+		global.Push_estado(&structs.ColaExit, pcb)
 		global.MutexEXEC.Unlock()
 
 		pcb.Estado = structs.EXIT

@@ -23,7 +23,7 @@ func Conectarse_con_Kernel(identificador string) {
 	if err != nil {
 		log.Printf("error codificando el proceso: %s", err.Error())
 	}
-	url := fmt.Sprintf("http://%s:%d/ConectarCPU", global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel)
+	url := fmt.Sprintf("http://%s:%d/conectarcpu", global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
@@ -42,4 +42,20 @@ func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+}
+
+func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var interrupcion string
+	err := decoder.Decode(&interrupcion)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+	if interrupcion == "interrupcion" {
+		log.Printf("ocurrio una interrupcion")
+		global.Hayinterrupcion = true
+	}
 }

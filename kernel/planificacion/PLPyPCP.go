@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -49,11 +48,11 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 
 				global.MutexREADY.Lock()
-				pcb_execute = PCB.Pop_estado(&structs.ColaReady)
+				pcb_execute = global.Pop_estado(&structs.ColaReady)
 				global.MutexREADY.Unlock()
 
 				global.MutexEXEC.Lock()
-				PCB.Push_estado(&structs.ColaExecute, pcb_execute)
+				global.Push_estado(&structs.ColaExecute, pcb_execute)
 				pcb_execute.Estado = structs.EXEC
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
@@ -101,12 +100,12 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 				global.ConfirmacionProcesoCargado = 0
 
 				global.MutexNEW.Lock()
-				pcb_a_cargar = PCB.Pop_estado(&structs.ColaNew) // saco de la cola NEW
+				pcb_a_cargar = global.Pop_estado(&structs.ColaNew) // saco de la cola NEW
 				global.MutexNEW.Unlock()
 
 				pcb_a_cargar.Estado = structs.READY // pongo el estado en READY
 				global.MutexREADY.Lock()
-				PCB.Push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
+				global.Push_estado(&structs.ColaReady, pcb_a_cargar) // meto en la cola READY
 				global.MutexREADY.Unlock()
 
 				global.MutexLog.Lock()
@@ -181,7 +180,7 @@ func limpieza_cola_exit() {
 		global.ProcesoParaFinalizar <- 0 // ACTIVAR ESTE SEMAFORO CADA VEZ QUE SE METE UN PROCESO EN LA COLA EXIT
 
 		global.MutexEXIT.Lock()
-		ProcesoExit := PCB.Pop_estado(&structs.ColaExit)
+		ProcesoExit := global.Pop_estado(&structs.ColaExit)
 		global.MutexEXIT.Unlock()
 
 		protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
