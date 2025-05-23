@@ -101,7 +101,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		var pcb structs.PCB = PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
 
 		global.MutexEXEC.Lock()
-		PCB.Extraer_estado(&structs.ColaExecute, pcb.PID)
+		global.Extraer_estado(&structs.ColaExecute, pcb.PID)
 		global.MutexEXEC.Unlock()
 
 		global.MutexEXEC.Lock()

@@ -15,7 +15,7 @@ import (
 )
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
-	pcbSolicitante := PCB.Extraer_estado(&structs.ColaExecute, structs.ProcesoEjecutando.PID)
+	pcbSolicitante := global.Extraer_estado(&structs.ColaExecute, structs.ProcesoEjecutando.PID)
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
@@ -46,41 +46,12 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 
 func INIT_PROC(pseudocodigo string, tamanio int) {
 	var nuevo_pcb structs.PCB = PCB.Crear(pseudocodigo, tamanio)
-	nuevo_pcb.Estado = structs.NEW
-	global.MutexNEW.Lock()
-	global.Push_estado(&structs.ColaNew, nuevo_pcb)
-	global.MutexNEW.Unlock()
+
+	global.IniciarMetrica("", "NEW", &nuevo_pcb)
 
 	global.MutexLog.Lock()
 	slog.Info("PID", ": ", nuevo_pcb.PID, "Se crea el proceso - Estado: NEW", "")
 	global.MutexLog.Unlock()
-}
-
-func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
-	err := decoder.Decode(&Devolucion_DumpMemory)
-	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar mensaje"))
-		return
-	}
-	var Proceso structs.PCB
-	Proceso = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
-	log.Printf("me llego una Devolucion de Memoria")
-	switch Devolucion_DumpMemory.Respuesta {
-	case "CONFIRMACION":
-		global.MutexREADY.Lock()
-		global.Push_estado(&structs.ColaReady, Proceso)
-		global.MutexREADY.Unlock()
-	case "ERROR":
-		global.MutexEXIT.Lock()
-		global.Push_estado(&structs.ColaExit, Proceso)
-		global.MutexREADY.Unlock()
-		<-global.ProcesoParaFinalizar
-
-	}
 }
 
 func DUMP_MEMORY(PID int) {

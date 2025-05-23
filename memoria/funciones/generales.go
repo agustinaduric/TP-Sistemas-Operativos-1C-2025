@@ -70,6 +70,30 @@ func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func HandshakeCpu(w http.ResponseWriter, r *http.Request) {
+	var Cpu structs.CPU_a_memoria
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&Cpu)
+	if err != nil {
+		log.Printf("Error al decodificar el handshake: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Error al decodificar mensaje"))
+		return
+	}
+
+	var Datos structs.Datos_memoria = structs.Datos_memoria{
+		Tamaño_pagina:    global.MemoriaConfig.PageSize,
+		Cant_entradas:    global.MemoriaConfig.EntriesPerPage,
+		Numeros_de_nivel: global.MemoriaConfig.NumberOfLevels,
+	}
+
+	errCodif := json.NewEncoder(w).Encode(Datos) // le respondo a cpu
+	if errCodif != nil {
+		log.Printf("Error al codificar la instruccion para CPU %s\n", errCodif.Error())
+		return
+	}
+}
+
 func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 	espacio := espacioDisponible()
 	respuestaEspacio := structs.EspacioLibreRespuesta{BytesLibres: espacio}

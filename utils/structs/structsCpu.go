@@ -64,3 +64,9 @@ type CPU_a_kernel struct {
 	Identificador string
 	Disponible    bool
 }
+
+type CPU_a_memoria struct {
+	IP            string
+	Puerto        int
+	Identificador string
+}

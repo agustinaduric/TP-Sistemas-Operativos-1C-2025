@@ -26,7 +26,7 @@ func SolicitarInstruccion() {
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", global.Proceso_Ejecutando.PID, global.ConfigCargadito.PortMemory)
-		return 
+		return
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	defer resp.Body.Close()
@@ -39,6 +39,33 @@ func SolicitarInstruccion() {
 		os.Exit(1)
 	}
 	global.Instruccion = instruccion.Operacion + " " + strings.Join(instruccion.Argumentos, " ")
+}
+
+func Conectarse_con_Memoria(identificador string) {
+	var Proceso structs.CPU_a_memoria = structs.CPU_a_memoria{
+		IP:            global.ConfigCargadito.IpCPu,
+		Puerto:        global.ConfigCargadito.PortCpu,
+		Identificador: identificador,
+	}
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/conectarcpumemoria", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortMemory)
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
+	defer resp.Body.Close()
+
+	decoder := json.NewDecoder(resp.Body)
+	errRecepcion := decoder.Decode(&global.Datos_Memoria)
+	if errRecepcion != nil {
+		log.Printf("error al decodificar instruccion: %s\n", errRecepcion.Error())
+		os.Exit(1)
+	}
+
 }
 
 // **** la comento porque solicitarInstruccion ya recibe la respuesta de memoria: pide y espera(? ****

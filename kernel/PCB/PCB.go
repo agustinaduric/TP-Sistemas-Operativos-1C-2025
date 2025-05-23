@@ -3,6 +3,7 @@ package PCB
 import (
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -22,6 +23,8 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	proceso.PATH = PATH
 	proceso.Tamanio = Tamanio
 	proceso.PC = 0
+	proceso.TiemposEstado = make(map[structs.Estado]time.Duration)
+	proceso.MetricasEstado = make(map[structs.Estado]int)
 
 	if strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SJF") || strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SRT") {
 		// HACER CUANDO HAGA SJF Y SRT
@@ -47,17 +50,4 @@ func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
 
 	return structs.PCB{}
 
-}
-
-func Extraer_estado(Cola *structs.ColaProcesos, PID int) structs.PCB {
-	var extraido structs.PCB
-	for i := 0; i < len(*Cola); i++ {
-		if (*Cola)[i].PID == PID {
-			extraido = (*Cola)[i]
-			*Cola = append((*Cola)[:i], (*Cola)[i+1:]...)
-
-			return extraido
-		}
-	}
-	return structs.PCB{}
 }

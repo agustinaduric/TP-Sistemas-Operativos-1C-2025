@@ -18,12 +18,17 @@ type MetricasMemoria struct {
 	EscriturasMem   int
 }
 
-
 type Devolucion_DumpMemory struct {
-	PID         int
-	Respuesta   string
+	PID       int
+	Respuesta string
 }
 
-type EspacioLibreRespuesta struct{
-	BytesLibres int 
+type EspacioLibreRespuesta struct {
+	BytesLibres int
+}
+
+type Datos_memoria struct {
+	Tamaño_pagina    int
+	Cant_entradas    int
+	Numeros_de_nivel int
 }

@@ -22,6 +22,8 @@ var Proceso_Ejecutando structs.PIDyPC_Enviar_CPU
 var InstruccionRecibida = make(chan int)
 
 var Hubo_syscall bool
+
+var Datos_Memoria structs.Datos_memoria
 var Hayinterrupcion bool = false
 
 var Page_size int        // se recibe en el handshake con memoria
