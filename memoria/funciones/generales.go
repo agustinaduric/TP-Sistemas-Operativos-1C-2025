@@ -20,6 +20,7 @@ func LevantarServidorMemoria() {
 	mux.HandleFunc("/obtener-instruccion", HandlerObtenerInstruccion)
 	mux.HandleFunc("/espacio-libre", HandlerEspacioLibre)
 	mux.HandleFunc("/cargar-proceso", HandlerCargarProceso)
+	mux.HandleFunc("/conectarcpumemoria", HandshakeCpu)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
 

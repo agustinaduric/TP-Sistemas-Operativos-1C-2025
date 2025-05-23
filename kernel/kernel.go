@@ -41,8 +41,5 @@ func PrimerProceso() {
 	var Tamanio int
 	Tamanio, _ = strconv.Atoi(tamanioSTR)
 	proceso := PCB.Crear(PATH, Tamanio)
-	global.MutexNEW.Lock()
-	global.Push_estado(&structs.ColaNew, proceso)
-	global.MutexNEW.Unlock()
-
+	global.IniciarMetrica("", "NEW", &proceso)
 }

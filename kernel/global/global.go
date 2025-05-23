@@ -8,7 +8,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-var ConfirmacionProcesoCargado int
+// var ConfirmacionProcesoCargado int
 var ConfirmacionProcesoFinalizado int
 
 var WgKernel sync.WaitGroup
@@ -22,7 +22,6 @@ var MutexCpuDisponible sync.Mutex
 var ConfigCargadito config.KernelConfig
 
 var SemFinalizacion = make(chan int)
-var SemInicializacion = make(chan int)
 
 //-----------------------------------------------MUTEX COLAS-------------------------------------------------------
 
@@ -74,6 +73,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexNEW.Lock()
 		Push_estado(&structs.ColaNew, *proceso)
 		MutexNEW.Unlock()
+		<-ProcesoCargado
 	case "READY":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.READY
