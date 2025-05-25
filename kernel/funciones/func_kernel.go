@@ -78,16 +78,21 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
-	dispositivo.PIDActual = 0
+	cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
+	proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola) // esto es una copia(?
+	structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
 	if respuestaFin.Desconexion {
-		cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
-		proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola)
-		structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
-		proceso.Estado = structs.EXIT
-		global.Push_estado(&structs.ColaExit, proceso)
+		global.DetenerMetrica("BLOCKED", &proceso)
+		global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
 		return
 	}
+	global.DetenerMetrica("BLOCKED", &proceso)
+	global.IniciarMetrica("BLOCKED", "READY", &proceso)
+	global.MutexREADY.Lock()
+	global.Push_estado(&structs.ColaReady, proceso)
+	global.MutexREADY.Unlock()
+	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
+	dispositivo.PIDActual = 0
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
 		//saco el primero:
 		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0] //

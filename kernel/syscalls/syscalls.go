@@ -15,19 +15,19 @@ import (
 )
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
-	pcbSolicitante := global.Extraer_estado(&structs.ColaExecute, structs.ProcesoEjecutando.PID)
+	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute) // esto es una copia(?
+	global.DetenerMetrica("EXEC", &pcbSolicitante)
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
-		pcbSolicitante.Estado = structs.EXIT
-		pcbSolicitante.IOPendiente = ""
-		global.MutexEXIT.Lock()
+		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
+		/*global.MutexEXIT.Lock()
 		global.Push_estado(&structs.ColaExit, pcbSolicitante)
-		global.MutexEXIT.Unlock()
+		global.MutexEXIT.Unlock() */
 		structs.ProcesoEjecutando = structs.PCB{}
 		return
 	}
-	pcbSolicitante.Estado = structs.BLOCKED // lo mando a blocked: por esperar o por estar usando la io
+	global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante.IOPendiente = dispositivo.Nombre
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
 	if dispositivo.PIDActual != 0 { // ocupado
