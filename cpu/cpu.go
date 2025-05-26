@@ -12,12 +12,12 @@ import (
 func main() {
 
 	comunicacion.VerificarParametros(2)
-	nombre := os.Args[1]
+	global.Nombre = os.Args[1]
 	configPath := os.Args[2]
 	global.ConfigCargadito = fCpu.IniciarConfiguracionCpu(configPath)
 	go fCpu.LevantarServidorCPU()
-	protocolos.Conectarse_con_Kernel(nombre)
-	protocolos.Conectarse_con_Memoria(nombre)
+	protocolos.Conectarse_con_Kernel(global.Nombre)
+	protocolos.Conectarse_con_Memoria(global.Nombre)
 	global.WgCPU.Wait()
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy cpu, hola memoria")
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel, "Soy cpu,hola kernel")

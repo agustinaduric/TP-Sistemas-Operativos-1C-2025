@@ -53,6 +53,21 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	return resp.StatusCode
 }
 
+func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
+	var Reconectarse string = "Reconectarse"
+	body, err := json.Marshal(Reconectarse)
+	if err != nil {
+		log.Printf("error codificando el proceso: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/Reconectar", Cpu.IP, Cpu.Puerto)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("error enviando proceso al puerto:%d", Cpu.Puerto)
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
+	return
+}
+
 func Buscar_CPU_libre() structs.CPU_a_kernel {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
@@ -64,6 +79,30 @@ func Buscar_CPU_libre() structs.CPU_a_kernel {
 	}
 	log.Printf("No hay CPU's libres >:(")
 	return structs.CPU_a_kernel{}
+}
+
+func Buscar_CPU(identificador string) structs.CPU_a_kernel {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Identificador == identificador {
+			return structs.CPUs_Conectados[i]
+		}
+
+	}
+	log.Printf("No hay CPU's libres >:(")
+	return structs.CPU_a_kernel{}
+}
+
+func Indisponibilidad_CPU(identificador string) {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Identificador == identificador {
+			structs.CPUs_Conectados[i].Disponible = true
+			return
+		}
+
+	}
+	return
 }
 
 func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
@@ -79,38 +118,32 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("me llego una Devolucion del CPU")
 	log.Printf("PID devuelto: %d", Devolucion.PID)
+	proceso := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
+	proceso.PC = Devolucion.PC
+	Cpu := Buscar_CPU(Devolucion.Identificador)
 	switch Devolucion.Motivo {
 
 	case structs.INIT_PROC:
 		log.Println("El motivo es: Crear Proceso")
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
 		//HAY QUE HACER QUE VUELVA EL PROCESO A EJECUTAR EN CPU
+		Reconectarse_CPU(Cpu)
 
 	case structs.DUMP_MEMORY:
+		Indisponibilidad_CPU(Cpu.Identificador)
 		log.Println("El motivo es: Hacer un Dump Memory")
-
+		global.IniciarMetrica("EXEC", "BLOCKED", &proceso)
 		syscalls.DUMP_MEMORY(Devolucion.PID)
+
 	case structs.IO:
-
+		Indisponibilidad_CPU(Cpu.Identificador)
 		log.Println("El motivo es: Sycall IO ")
-
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
 
 	case structs.EXIT_PROC:
+		Indisponibilidad_CPU(Cpu.Identificador)
 		log.Println("El motivo es: EXIT")
-		var pcb structs.PCB = PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
-
-		global.MutexEXEC.Lock()
-		global.Extraer_estado(&structs.ColaExecute, pcb.PID)
-		global.MutexEXEC.Unlock()
-
-		global.MutexEXEC.Lock()
-		global.Push_estado(&structs.ColaExit, pcb)
-		global.MutexEXEC.Unlock()
-
-		pcb.Estado = structs.EXIT
-
-		syscalls.EXIT()
+		global.IniciarMetrica("EXEC", "EXIT", &proceso)
 
 	case structs.REPLANIFICAR:
 

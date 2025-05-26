@@ -16,7 +16,6 @@ import (
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute) // esto es una copia(?
-	global.DetenerMetrica("EXEC", &pcbSolicitante)
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
 		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
@@ -68,8 +67,4 @@ func DUMP_MEMORY(PID int) {
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	//return resp.StatusCode
 	return
-}
-
-func EXIT() {
-	<-global.ProcesoParaFinalizar
 }

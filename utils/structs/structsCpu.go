@@ -50,12 +50,13 @@ type EntradaCache struct {
 }
 
 type DevolucionCpu struct {
-	PID         int
-	PC          int
-	Motivo      string
-	SolicitudIO Solicitud
-	ArchivoInst string
-	Tamaño      int
+	PID           int
+	PC            int
+	Motivo        string
+	SolicitudIO   Solicitud
+	ArchivoInst   string
+	Tamaño        int
+	Identificador string
 }
 
 type CPU_a_kernel struct {

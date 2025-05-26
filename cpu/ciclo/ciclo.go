@@ -19,7 +19,6 @@ func Ciclo() {
 		if global.Hubo_syscall {
 			break
 		}
-		global.Proceso_Ejecutando.PC++
 		CheckInterrupt() // se fija si hay interrupciones.
 		//if(se_devolvio_contexto){ break}
 
@@ -61,20 +60,22 @@ func decode_and_execute() {
 			PC:     global.Proceso_Ejecutando.PC,
 			Motivo: "IO",
 		}
+		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
-		global.Proceso_Ejecutando.PC++
 	case "INIT_PROC":
 		//
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
-			PID:         global.Proceso_Ejecutando.PID,
-			PC:          global.Proceso_Ejecutando.PC,
-			Motivo:      "INIT_PROC",
-			ArchivoInst: global.Instruccion_ejecutando[1],
-			Tamaño:      global.String_a_int(global.Instruccion_ejecutando[2]),
+			PID:           global.Proceso_Ejecutando.PID,
+			PC:            global.Proceso_Ejecutando.PC,
+			Motivo:        "INIT_PROC",
+			ArchivoInst:   global.Instruccion_ejecutando[1],
+			Tamaño:        global.String_a_int(global.Instruccion_ejecutando[2]),
+			Identificador: global.Nombre,
 		}
 		protocolos.Enviar_syscall(devolucion)
 		global.Proceso_Ejecutando.PC++
+		<-global.Proceso_reconectado
 		//global.Hubo_syscall = true no va porque tiene que volver el proceso
 	case "DUMP_MEMORY":
 		//
@@ -83,9 +84,9 @@ func decode_and_execute() {
 			PC:     global.Proceso_Ejecutando.PC,
 			Motivo: "DUMP_MEMORY",
 		}
+		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
-		global.Proceso_Ejecutando.PC++
 	case "EXIT":
 		//
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
@@ -93,9 +94,9 @@ func decode_and_execute() {
 			PC:     global.Proceso_Ejecutando.PC,
 			Motivo: "EXIT",
 		}
+		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
-		global.Proceso_Ejecutando.PC++
 	}
 
 }

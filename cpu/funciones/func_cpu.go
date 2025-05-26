@@ -8,6 +8,7 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/cpu/ciclo"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
+	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 )
 
@@ -31,6 +32,7 @@ func LevantarServidorCPU() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/datoCPU", Recibir_Proceso_Kernel)
 	mux.HandleFunc("/interrupcion", Recibir_Proceso_Kernel)
+	mux.HandleFunc("/Reconectar", protocolos.Reconectar_Proceso)
 
 	puerto := config.IntToStringConPuntos(global.ConfigCargadito.PortCpu)
 

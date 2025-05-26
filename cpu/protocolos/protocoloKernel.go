@@ -59,3 +59,18 @@ func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {
 		global.Hayinterrupcion = true
 	}
 }
+
+func Reconectar_Proceso(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var Reconectar string
+	err := decoder.Decode(&Reconectar)
+	if err != nil {
+		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error al decodificar mensaje"))
+		return
+	}
+	if Reconectar == "Reconectar" {
+		global.Proceso_reconectado <- 0
+	}
+}

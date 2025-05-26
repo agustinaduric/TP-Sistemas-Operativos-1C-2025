@@ -82,15 +82,11 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 	proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola) // esto es una copia(?
 	structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
 	if respuestaFin.Desconexion {
-		global.DetenerMetrica("BLOCKED", &proceso)
 		global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
 		return
 	}
-	global.DetenerMetrica("BLOCKED", &proceso)
 	global.IniciarMetrica("BLOCKED", "READY", &proceso)
-	global.MutexREADY.Lock()
-	global.Push_estado(&structs.ColaReady, proceso)
-	global.MutexREADY.Unlock()
+
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
 	dispositivo.PIDActual = 0
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {

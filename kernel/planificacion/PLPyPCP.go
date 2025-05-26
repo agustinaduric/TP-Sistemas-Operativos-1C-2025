@@ -38,7 +38,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 
 	for {
 
-		global.ProcesoListo <- 0
+		<-global.ProcesoListo
 
 		switch algoritmo_planificacion_corto {
 		case FIFO:
@@ -82,7 +82,7 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 	var algoritmo_planificacion t_algoritmo = _chequear_algoritmo_largo(configCargadito)
 
 	for {
-		global.ProcesoCargado <- 0
+		<-global.ProcesoCargado
 
 		switch algoritmo_planificacion {
 		case FIFO:
@@ -96,7 +96,7 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 				slog.Info("Estado cambiado", "PID", pcb_a_cargar.PID, "EstadoAnterior", "NEW", "EstadoActual", "READY")
 				global.MutexLog.Unlock()
 
-				<-global.ProcesoListo // aviso al plani corto que tiene un proceso en ready
+				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
 			}
 
 		case PMCP:
@@ -161,16 +161,16 @@ func esperarEnter() {
 func limpieza_cola_exit() {
 	for {
 
-		global.ProcesoParaFinalizar <- 0 // ACTIVAR ESTE SEMAFORO CADA VEZ QUE SE METE UN PROCESO EN LA COLA EXIT
+		<-global.ProcesoParaFinalizar // ACTIVAR ESTE SEMAFORO CADA VEZ QUE SE METE UN PROCESO EN LA COLA EXIT
 
 		ProcesoExit := structs.ColaExit[0]
 
 		protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
-		global.SemFinalizacion <- 0
+		<-global.SemFinalizacion
 		if global.ConfirmacionProcesoFinalizado == 1 {
 			global.ConfirmacionProcesoFinalizado = 0
 			global.IniciarMetrica("EXIT", "FINALIZADO", &ProcesoExit)
-			<-global.ProcesoCargado
+			global.ProcesoCargado <- 0
 		}
 	}
 }

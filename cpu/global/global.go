@@ -11,7 +11,7 @@ import (
 )
 
 var ConfigCargadito config.CPUConfig
-
+var Nombre string
 var WgCPU sync.WaitGroup
 
 var Instruccion string              //lo que recibimos de memoria
@@ -19,7 +19,8 @@ var Instruccion_ejecutando []string // procesado y dividido en operacion y param
 
 var Proceso_Ejecutando structs.PIDyPC_Enviar_CPU
 
-var InstruccionRecibida = make(chan int)
+// var InstruccionRecibida = make(chan int)
+var Proceso_reconectado = make(chan int)
 
 var Hubo_syscall bool
 

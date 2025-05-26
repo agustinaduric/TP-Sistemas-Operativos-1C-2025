@@ -93,15 +93,15 @@ func Recibir_confirmacionFinalizado(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error al decodificar mensaje: %s\n", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("error al decodificar mensaje"))
-		<-global.SemFinalizacion
+		global.SemFinalizacion <- 0
 		return
 	}
 	if Devolucion == "OK" {
 		global.ConfirmacionProcesoFinalizado = 1
-		<-global.SemFinalizacion
+		global.SemFinalizacion <- 0
 		return
 	}
-	<-global.SemFinalizacion
+	global.SemFinalizacion <- 0
 	return
 
 }
@@ -121,14 +121,10 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	log.Printf("me llego una Devolucion de Memoria")
 	switch Devolucion_DumpMemory.Respuesta {
 	case "CONFIRMACION":
-		global.MutexREADY.Lock()
-		global.Push_estado(&structs.ColaReady, Proceso)
-		global.MutexREADY.Unlock()
+		global.IniciarMetrica("BLOCKED", "READY", &Proceso)
+
 	case "ERROR":
-		global.MutexEXIT.Lock()
-		global.Push_estado(&structs.ColaExit, Proceso)
-		global.MutexREADY.Unlock()
-		<-global.ProcesoParaFinalizar
+		global.IniciarMetrica("BLOCKED", "EXIT", &Proceso)
 
 	}
 }

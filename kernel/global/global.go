@@ -73,7 +73,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexNEW.Lock()
 		Push_estado(&structs.ColaNew, *proceso)
 		MutexNEW.Unlock()
-		<-ProcesoCargado
+		ProcesoCargado <- 0
 	case "READY":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.READY
@@ -82,6 +82,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexREADY.Lock()
 		Push_estado(&structs.ColaReady, *proceso)
 		MutexREADY.Unlock()
+		ProcesoListo <- 0
 		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
 	case "EXEC":
 		DetenerMetrica(estadoViejo, proceso)
@@ -127,6 +128,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexEXIT.Lock()
 		Push_estado(&structs.ColaExit, *proceso)
 		MutexEXIT.Unlock()
+		ProcesoParaFinalizar <- 0
 		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
 	case "FINALIZADO":
 		DetenerMetrica(estadoViejo, proceso)
