@@ -18,6 +18,7 @@ func main() {
 	chequeoParametros()
 
 	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("kernel/config/kernel.config.json")
+	global.KernelLogger = fkernel.ConfigurarLog()
 	go fkernel.LevantarServidorKernel(global.ConfigCargadito)
 	comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
 	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}

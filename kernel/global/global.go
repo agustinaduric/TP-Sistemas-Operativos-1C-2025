@@ -1,12 +1,16 @@
 package global
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+var KernelLogger *logger.LoggerStruct
 
 // var ConfirmacionProcesoCargado int
 var ConfirmacionProcesoFinalizado int
@@ -73,6 +77,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexNEW.Lock()
 		Push_estado(&structs.ColaNew, *proceso)
 		MutexNEW.Unlock()
+		KernelLogger.Info(fmt.Sprintf("## (%d) Se crea el proceso - Estado: NEW", proceso.PID))
 		ProcesoCargado <- 0
 	case "READY":
 		DetenerMetrica(estadoViejo, proceso)
@@ -83,7 +88,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		Push_estado(&structs.ColaReady, *proceso)
 		MutexREADY.Unlock()
 		ProcesoListo <- 0
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado READY", proceso.PID, estadoViejo))
 	case "EXEC":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.EXEC
@@ -92,7 +97,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexEXEC.Lock()
 		Push_estado(&structs.ColaExecute, *proceso)
 		MutexEXEC.Unlock()
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado EXEC", proceso.PID, estadoViejo))
 	case "BLOCKED":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.BLOCKED
@@ -101,7 +106,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexBLOCKED.Lock()
 		Push_estado(&structs.ColaBlocked, *proceso)
 		MutexBLOCKED.Unlock()
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado BLOCKED", proceso.PID, estadoViejo))
 	case "SUSP_BLOCKED":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.SUSP_BLOCKED
@@ -110,7 +115,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexSUSP_BLOCKED.Lock()
 		Push_estado(&structs.ColaSuspBlocked, *proceso)
 		MutexSUSP_BLOCKED.Unlock()
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado SUSP_BLOCKED", proceso.PID, estadoViejo))
 	case "SUSP_READY":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.SUSP_READY
@@ -119,7 +124,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexSUSP_READY.Lock()
 		Push_estado(&structs.ColaSuspReady, *proceso)
 		MutexSUSP_READY.Unlock()
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado SUSP_READY", proceso.PID, estadoViejo))
 	case "EXIT":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.EXIT
@@ -129,7 +134,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		Push_estado(&structs.ColaExit, *proceso)
 		MutexEXIT.Unlock()
 		ProcesoParaFinalizar <- 0
-		// PONER LOG OBLIGATORIOS DE CAMBIO DE ESTADO
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado EXIT", proceso.PID, estadoViejo))
 	case "FINALIZADO":
 		DetenerMetrica(estadoViejo, proceso)
 		//LOGGEAR METRICAS Y LOG OBLIGATORIO DE FINALIZACION DE PROCESO
