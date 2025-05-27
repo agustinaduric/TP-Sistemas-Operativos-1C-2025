@@ -1,6 +1,7 @@
 package PCB
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 
 	proceso.EstimadoRafaga = -1
 	proceso.UltimaRafagaReal = -1
+	global.KernelLogger.Debug(fmt.Sprintf("Se crea el PCB del proceso con PID: %d", proceso.PID))
 
 	//el resto de campos se inicializan en su "cero" por default (0, "", nil)
 

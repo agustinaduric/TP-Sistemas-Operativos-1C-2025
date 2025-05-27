@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
@@ -47,10 +46,6 @@ func INIT_PROC(pseudocodigo string, tamanio int) {
 	var nuevo_pcb structs.PCB = PCB.Crear(pseudocodigo, tamanio)
 
 	global.IniciarMetrica("", "NEW", &nuevo_pcb)
-
-	global.MutexLog.Lock()
-	slog.Info("PID", ": ", nuevo_pcb.PID, "Se crea el proceso - Estado: NEW", "")
-	global.MutexLog.Unlock()
 }
 
 func DUMP_MEMORY(PID int) {

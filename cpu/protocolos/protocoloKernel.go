@@ -55,7 +55,7 @@ func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if interrupcion == "interrupcion" {
-		log.Printf("ocurrio una interrupcion")
+		global.CpuLogger.Info("## Llega interrupción al puerto Interrupt")
 		global.Hayinterrupcion = true
 	}
 }

@@ -137,7 +137,15 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado EXIT", proceso.PID, estadoViejo))
 	case "FINALIZADO":
 		DetenerMetrica(estadoViejo, proceso)
-		//LOGGEAR METRICAS Y LOG OBLIGATORIO DE FINALIZACION DE PROCESO
+		KernelLogger.Info(fmt.Sprintf("## (%d) - Finaliza el proceso", proceso.PID))
+		KernelLogger.Info(fmt.Sprintf("## (%d) - Métricas de estado: NEW (%d) (%d), READY (%d) (%d), BLOCKED (%d) (%d), SUSP. BLOCKED (%d) (%d), SUSP. READY (%d) (%d), EXIT (%d) (%d)",
+			proceso.PID,
+			proceso.MetricasEstado[structs.NEW], proceso.TiemposEstado[structs.NEW],
+			proceso.MetricasEstado[structs.READY], proceso.TiemposEstado[structs.READY],
+			proceso.MetricasEstado[structs.BLOCKED], proceso.TiemposEstado[structs.BLOCKED],
+			proceso.MetricasEstado[structs.SUSP_BLOCKED], proceso.TiemposEstado[structs.SUSP_BLOCKED],
+			proceso.MetricasEstado[structs.SUSP_READY], proceso.TiemposEstado[structs.SUSP_READY],
+			proceso.MetricasEstado[structs.EXIT], proceso.TiemposEstado[structs.EXIT]))
 	}
 }
 

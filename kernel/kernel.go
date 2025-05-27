@@ -17,15 +17,16 @@ func main() {
 
 	chequeoParametros()
 
-	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("/home/utnso/tp-2025-1c-Sherk-2/kernel/config/kernel.config.json")
+	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("./kernel/config/kernel.config.json")
 	global.KernelLogger = fkernel.ConfigurarLog()
 	go fkernel.LevantarServidorKernel(global.ConfigCargadito)
-	comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
+	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
 	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}
 	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, handshake)
 
 	planificacion.Iniciar_planificacion(global.ConfigCargadito)
 	PrimerProceso()
+	global.KernelLogger.Debug(fmt.Sprintf("se creo el primer proceso"))
 	global.WgKernel.Wait()
 }
 

@@ -110,9 +110,9 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)
 
-	log.Printf("Servidor de Kernel escuchando en %s", puerto)
+	global.KernelLogger.Debug(fmt.Sprintf("Servidor de Kernel escuchando en %s", puerto))
 	err := http.ListenAndServe(puerto, mux)
 	if err != nil {
-		log.Fatalf("Error al levantar el servidor: %v", err)
+		global.KernelLogger.Error(fmt.Sprintf("Error al levantar el servidor: %v", err))
 	}
 }

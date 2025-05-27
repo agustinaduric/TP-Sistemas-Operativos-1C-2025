@@ -2,6 +2,7 @@ package fCpu
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
 
 func IniciarConfiguracionCpu(filePath string) config.CPUConfig {
@@ -54,4 +56,18 @@ func Recibir_Proceso_Kernel(w http.ResponseWriter, r *http.Request) {
 	}
 	ciclo.Ciclo()
 	return
+}
+
+func ConfigurarLog() *logger.LoggerStruct {
+	logLevel, error1 := logger.ParseLevel(global.ConfigCargadito.LogLevel)
+	if error1 != nil {
+		fmt.Println("ERROR: El nivel de log ingresado no es valido")
+		os.Exit(1)
+	}
+	logger, error2 := logger.NewLogger(global.Nombre, logLevel)
+	if error2 != nil {
+		fmt.Println("ERROR: No se pudo crear el logger")
+		os.Exit(1)
+	}
+	return logger
 }

@@ -15,6 +15,7 @@ func main() {
 	global.Nombre = os.Args[1]
 	configPath := os.Args[2]
 	global.ConfigCargadito = fCpu.IniciarConfiguracionCpu(configPath)
+	global.CpuLogger = fCpu.ConfigurarLog()
 	go fCpu.LevantarServidorCPU()
 	protocolos.Conectarse_con_Kernel(global.Nombre)
 	protocolos.Conectarse_con_Memoria(global.Nombre)

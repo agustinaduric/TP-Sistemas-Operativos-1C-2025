@@ -1,6 +1,7 @@
 package ciclo
 
 import (
+	"fmt"
 	"strings"
 
 	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
@@ -12,6 +13,7 @@ import (
 func Ciclo() {
 	//se_devolvio_contexto = 0
 	global.Hubo_syscall = false
+	global.CpuLogger.Debug("Inicio de ciclo")
 
 	for {
 		fetch() // busca la siguiente instrucción.
@@ -26,6 +28,7 @@ func Ciclo() {
 }
 
 func fetch() {
+	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - FETCH - Program Counter: %d", global.Proceso_Ejecutando.PID, global.Proceso_Ejecutando.PC))
 	protocolos.SolicitarInstruccion()
 	// global.InstruccionRecibida <- 0 // espero que la memoria me mande la instruccion // creo que aca no es necesario
 }
@@ -39,22 +42,25 @@ func decode_and_execute() {
 
 	switch global.Instruccion_ejecutando[0] {
 	case "WRITE":
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: WRITE - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
 		var direccion int = global.String_a_int(global.Instruccion_ejecutando[1])
 		WRITE(direccion, global.Instruccion_ejecutando[2])
 		global.Proceso_Ejecutando.PC++
 	case "READ":
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: READ - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
 		var direccion int = global.String_a_int(global.Instruccion_ejecutando[1])
 		var tamanio int = global.String_a_int(global.Instruccion_ejecutando[2])
 		READ(direccion, tamanio)
 		global.Proceso_Ejecutando.PC++
 	case "NOOP":
-		// no hace nada
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: NOOP", global.Proceso_Ejecutando.PID))
 		global.Proceso_Ejecutando.PC++
 	case "GOTO":
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: GOTO - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1]))
 		var numero int = global.String_a_int(global.Instruccion_ejecutando[1])
 		global.Proceso_Ejecutando.PC = numero
 	case "IO":
-		//
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: IO - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,
 			PC:     global.Proceso_Ejecutando.PC,
@@ -64,7 +70,7 @@ func decode_and_execute() {
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 	case "INIT_PROC":
-		//
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: INIT_PROC - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,
@@ -78,7 +84,7 @@ func decode_and_execute() {
 		<-global.Proceso_reconectado
 		//global.Hubo_syscall = true no va porque tiene que volver el proceso
 	case "DUMP_MEMORY":
-		//
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: DUMP_MEMORY", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,
 			PC:     global.Proceso_Ejecutando.PC,
@@ -88,7 +94,7 @@ func decode_and_execute() {
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 	case "EXIT":
-		//
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: EXIT", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,
 			PC:     global.Proceso_Ejecutando.PC,
@@ -102,7 +108,6 @@ func decode_and_execute() {
 }
 
 func CheckInterrupt() {
-
 	if global.Hayinterrupcion {
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,

@@ -18,14 +18,14 @@ func Conectarse_con_CPU(w http.ResponseWriter, r *http.Request) {
 	var CPUnuevo structs.CPU_a_kernel
 	err := decoder.Decode(&CPUnuevo)
 	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		global.KernelLogger.Error(fmt.Sprintf("error al decodificar mensaje: %s\n", err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("error al decodificar mensaje"))
 		return
 	}
 
-	log.Printf("se conecto una CPU")
-	log.Printf("identificador:: %s", CPUnuevo.Identificador)
+	global.KernelLogger.Debug(fmt.Sprintf("se conecto una CPU"))
+	global.KernelLogger.Debug(fmt.Sprintf("identificador:: %s", CPUnuevo.Identificador))
 	structs.CPUs_Conectados = append(structs.CPUs_Conectados, CPUnuevo)
 }
 
@@ -42,12 +42,12 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	}
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
-		log.Printf("error codificando el proceso: %s", err.Error())
+		global.KernelLogger.Error("error codificando el proceso")
 	}
 	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.IP, Cpu_disponible.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto)
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	return resp.StatusCode
@@ -57,14 +57,14 @@ func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
 	var Reconectarse string = "Reconectarse"
 	body, err := json.Marshal(Reconectarse)
 	if err != nil {
-		log.Printf("error codificando el proceso: %s", err.Error())
+		global.KernelLogger.Error("error codificando el proceso")
 	}
 	url := fmt.Sprintf("http://%s:%d/Reconectar", Cpu.IP, Cpu.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando proceso al puerto:%d", Cpu.Puerto)
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso al puerto:%d", Cpu.Puerto))
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
 	return
 }
 
@@ -77,7 +77,8 @@ func Buscar_CPU_libre() structs.CPU_a_kernel {
 		}
 
 	}
-	log.Printf("No hay CPU's libres >:(")
+
+	global.KernelLogger.Debug("No hay CPU's libres >:(")
 	return structs.CPU_a_kernel{}
 }
 
@@ -89,7 +90,7 @@ func Buscar_CPU(identificador string) structs.CPU_a_kernel {
 		}
 
 	}
-	log.Printf("No hay CPU's libres >:(")
+	global.KernelLogger.Debug("No se encontro cpu con ese id >:(")
 	return structs.CPU_a_kernel{}
 }
 
@@ -110,39 +111,40 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	var Devolucion structs.DevolucionCpu
 	err := decoder.Decode(&Devolucion)
 	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
+		global.KernelLogger.Error("error al decodificar mensaje")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("error al decodificar mensaje"))
 		return
 	}
 
-	log.Printf("me llego una Devolucion del CPU")
+	global.KernelLogger.Debug("me llego una Devolucion del CPU")
 	log.Printf("PID devuelto: %d", Devolucion.PID)
+	global.KernelLogger.Debug(fmt.Sprintf("PID devuelto: %d", Devolucion.PID))
+
 	proceso := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
 	proceso.PC = Devolucion.PC
 	Cpu := Buscar_CPU(Devolucion.Identificador)
 	switch Devolucion.Motivo {
 
 	case structs.INIT_PROC:
-		log.Println("El motivo es: Crear Proceso")
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
-		//HAY QUE HACER QUE VUELVA EL PROCESO A EJECUTAR EN CPU
 		Reconectarse_CPU(Cpu)
 
 	case structs.DUMP_MEMORY:
 		Indisponibilidad_CPU(Cpu.Identificador)
-		log.Println("El motivo es: Hacer un Dump Memory")
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: DUMP_MEMORY", proceso.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &proceso)
 		syscalls.DUMP_MEMORY(Devolucion.PID)
 
 	case structs.IO:
 		Indisponibilidad_CPU(Cpu.Identificador)
-		log.Println("El motivo es: Sycall IO ")
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: IO", proceso.PID))
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
 
 	case structs.EXIT_PROC:
 		Indisponibilidad_CPU(Cpu.Identificador)
-		log.Println("El motivo es: EXIT")
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: EXIT", proceso.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &proceso)
 
 	case structs.REPLANIFICAR:

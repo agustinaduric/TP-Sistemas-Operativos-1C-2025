@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"strings"
 
@@ -31,10 +30,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 	var algoritmo_planificacion_corto t_algoritmo
 	algoritmo_planificacion_corto = _chequear_algoritmo_corto(configCargadito)
 
-	global.MutexPlanificadores.Lock()
-	slog.Info("Algoritmo de planificación", "algoritmo", configCargadito.SchedulerAlgorithm)
-
-	global.MutexPlanificadores.Unlock()
+	global.KernelLogger.Debug(fmt.Sprintf("Algoritmo de planificación: %s", configCargadito.SchedulerAlgorithm))
 
 	for {
 
@@ -49,11 +45,9 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 				global.IniciarMetrica("READY", "EXEC", &pcb_execute)
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
-				global.MutexLog.Lock()
-				slog.Info("Estado cambiado", "PID", pcb_execute.PID, "EstadoAnterior", "READY", "EstadoActual", "EXEC")
-				global.MutexLog.Unlock()
 			} else {
 				log.Printf("hubo un error: no se mando bien a cpu o no hay cpu libres")
+				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
 		case SJF:
 		// PROXIMAMENTE
@@ -73,9 +67,7 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 
 	esperarEnter() // no se si va aca o dentro de la funcion iniciar_planificacion
 
-	global.MutexPlanificadores.Lock()
-	slog.Info("Iniciado planificador de largo plazo")
-	global.MutexPlanificadores.Unlock()
+	global.KernelLogger.Debug("Planificador de largo plazo iniciado")
 
 	go limpieza_cola_exit() //funcion que se encarga de finalizar los procesos
 
@@ -83,20 +75,18 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 
 	for {
 		<-global.ProcesoCargado
+		global.KernelLogger.Debug("Llego un proceso al planificador largo")
 
 		switch algoritmo_planificacion {
 		case FIFO:
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 			// envio el proceso a memoria para preguntar si entra
 			if (protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito)) != 0 { // si memoria da el OK proceso, sino me salgo y espero
-
+				global.KernelLogger.Debug("El proceso fue acepatado en memoria")
 				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
 
-				global.MutexLog.Lock()
-				slog.Info("Estado cambiado", "PID", pcb_a_cargar.PID, "EstadoAnterior", "NEW", "EstadoActual", "READY")
-				global.MutexLog.Unlock()
-
 				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
 			}
 
 		case PMCP:
@@ -116,9 +106,7 @@ func Iniciar_planificacion(configCargadito config.KernelConfig) {
 	go planificador_corto_plazo(configCargadito) //asi le ponemos un hilo
 
 	// -------------------------------------------------
-	global.MutexPlanificadores.Lock()
-	slog.Info("Iniciado planificador de corto plazo")
-	global.MutexPlanificadores.Unlock()
+	global.KernelLogger.Debug("Planificador de corto plazo iniciado")
 	// -------------------------------------------------
 	// Creamos un hilo para el planificador de largo plazo
 	go planificador_largo_plazo(configCargadito)
@@ -162,15 +150,18 @@ func limpieza_cola_exit() {
 	for {
 
 		<-global.ProcesoParaFinalizar // ACTIVAR ESTE SEMAFORO CADA VEZ QUE SE METE UN PROCESO EN LA COLA EXIT
+		global.KernelLogger.Debug("Llega un proceso a la limpieza de cola exit")
 
 		ProcesoExit := structs.ColaExit[0]
 
 		protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
 		<-global.SemFinalizacion
+		global.KernelLogger.Debug("memoria finalizo el proceso")
 		if global.ConfirmacionProcesoFinalizado == 1 {
 			global.ConfirmacionProcesoFinalizado = 0
 			global.IniciarMetrica("EXIT", "FINALIZADO", &ProcesoExit)
 			global.ProcesoCargado <- 0
+			global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani largo")
 		}
 	}
 }

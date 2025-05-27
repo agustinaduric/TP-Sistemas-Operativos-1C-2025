@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -24,6 +25,8 @@ var Proceso_reconectado = make(chan int)
 
 var Hubo_syscall bool
 
+var CpuLogger *logger.LoggerStruct
+
 var Datos_Memoria structs.Datos_memoria
 var Hayinterrupcion bool = false
 
@@ -35,7 +38,7 @@ func String_a_int(cadena string) int {
 	var numero int
 	numero, err := strconv.Atoi(cadena)
 	if err != nil {
-		fmt.Println("Error de conversión:", err)
+		CpuLogger.Error(fmt.Sprintf("Error de conversión de string a int"))
 		os.Exit(1)
 	}
 	return numero
