@@ -2,8 +2,11 @@ package global
 
 import (
 	"github.com/sisoputnfrba/tp-golang/utils/config"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+var MemoriaLogger *logger.LoggerStruct
 
 var MemoriaConfig config.MemoriaConfig
 

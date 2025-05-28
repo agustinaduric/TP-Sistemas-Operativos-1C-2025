@@ -4,18 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
-	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func LevantarServidorMemoria() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // borrar, 1er check
 	mux.HandleFunc("/recibir-handshake", HandlerRecibirHandshake)
 	mux.HandleFunc("/obtener-instruccion", HandlerObtenerInstruccion)
 	mux.HandleFunc("/espacio-libre", HandlerEspacioLibre)
@@ -23,113 +21,163 @@ func LevantarServidorMemoria() {
 	mux.HandleFunc("/conectarcpumemoria", HandshakeCpu)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Servidor de Memoria iniciándose en %s", puerto),
+	)
 
-	log.Printf("Servidor de Memoria escuchando en %s", puerto)
-	err := http.ListenAndServe(puerto, mux)
-	if err != nil {
-		log.Fatalf("Error al levantar el servidor: %v", err)
+	if err := http.ListenAndServe(puerto, mux); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error al levantar el servidor: %s", err.Error()),
+		)
+		os.Exit(1)
 	}
 }
 
 func HandlerRecibirHandshake(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
+	global.MemoriaLogger.Debug("HandlerRecibirHandshake: entrada")
+
 	var handshake structs.Handshake
-	err := decoder.Decode(&handshake)
-	if err != nil {
-		log.Printf("Error al decodificar el handshake: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar mensaje"))
+	if err := json.NewDecoder(r.Body).Decode(&handshake); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error decodificando handshake: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar mensaje", http.StatusBadRequest)
 		return
 	}
 	global.IPkernel = handshake.IP
 	global.PuertoKernel = handshake.Puerto
+
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Handshake recibido: IP=%s, Puerto=%d", handshake.IP, handshake.Puerto),
+	)
 }
 
 func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
-	var proceso struct {
+	global.MemoriaLogger.Debug("HandlerObtenerInstruccion: entrada")
+
+	var req struct {
 		PID int `json:"pid"`
 		PC  int `json:"pc"`
 	}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&proceso)
-	if err != nil {
-		log.Printf("Error al decodificar la solicitud de instruccion PID: %d, PC:%d, %s\n", proceso.PID, proceso.PC, err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar la solicitud de instruccion"))
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error decodificando solicitud PID=%d, PC=%d: %s",
+				req.PID, req.PC, err.Error(),
+			),
+		)
+		http.Error(w, "Error al decodificar la solicitud de instrucción", http.StatusBadRequest)
 		return
 	}
-	instruccion, err := BuscarInstruccion(proceso.PID, proceso.PC)
+
+	instr, err := BuscarInstruccion(req.PID, req.PC)
 	if err != nil {
-		log.Printf("Error al buscar instruccion PID: %d, PC:%d, %s\n", proceso.PID, proceso.PC, err.Error())
-		http.Error(w, "No se pudo obbtener la instruccion", http.StatusNotFound)
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error buscando instrucción PID=%d, PC=%d: %s",
+				req.PID, req.PC, err.Error(),
+			),
+		)
+		http.Error(w, "No se pudo obtener la instrucción", http.StatusNotFound)
 		return
 	}
-	errCodif := json.NewEncoder(w).Encode(instruccion) // le respondo a cpu
-	if errCodif != nil {
-		log.Printf("Error al codificar la instruccion para CPU %s\n", errCodif.Error())
-		return
+
+	if err := json.NewEncoder(w).Encode(instr); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error codificando instrucción para CPU: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("Instrucción enviada: PID=%d, PC=%d", req.PID, req.PC),
+		)
 	}
 }
 
 func HandshakeCpu(w http.ResponseWriter, r *http.Request) {
-	var Cpu structs.CPU_a_memoria
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&Cpu)
-	if err != nil {
-		log.Printf("Error al decodificar el handshake: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error al decodificar mensaje"))
+	global.MemoriaLogger.Debug("HandshakeCpu: entrada")
+
+	var cpu structs.CPU_a_memoria
+	if err := json.NewDecoder(r.Body).Decode(&cpu); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error decodificando handshake CPU: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar mensaje", http.StatusBadRequest)
 		return
 	}
 
-	var Datos structs.Datos_memoria = structs.Datos_memoria{
+	datos := structs.Datos_memoria{
 		Tamaño_pagina:    global.MemoriaConfig.PageSize,
 		Cant_entradas:    global.MemoriaConfig.EntriesPerPage,
 		Numeros_de_nivel: global.MemoriaConfig.NumberOfLevels,
 	}
-
-	errCodif := json.NewEncoder(w).Encode(Datos) // le respondo a cpu
-	if errCodif != nil {
-		log.Printf("Error al codificar la instruccion para CPU %s\n", errCodif.Error())
-		return
+	if err := json.NewEncoder(w).Encode(datos); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error codificando datos para CPU: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("Handshake CPU completado: %+v", datos),
+		)
 	}
 }
 
 func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
+	global.MemoriaLogger.Debug("HandlerEspacioLibre: entrada")
+
 	espacio := espacioDisponible()
-	respuestaEspacio := structs.EspacioLibreRespuesta{BytesLibres: espacio}
+	resp := structs.EspacioLibreRespuesta{BytesLibres: espacio}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(respuestaEspacio)
-	if err != nil {
-		log.Printf("Error al codificar la respuesta de espacio memoria %s\n", err.Error())
-		return
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error codificando respuesta espacio libre: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("Espacio libre reportado: %d bytes", espacio),
+		)
 	}
 }
 
 func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
-	var proceso structs.Proceso_a_enviar
-	jsonParser := json.NewDecoder(r.Body)
-	err := jsonParser.Decode(&proceso)
+	global.MemoriaLogger.Debug("HandlerCargarProceso: entrada")
+
+	var proc structs.Proceso_a_enviar
+	if err := json.NewDecoder(r.Body).Decode(&proc); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error decodificando proceso: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar el proceso recibido", http.StatusBadRequest)
+		return
+	}
+
+	instrucciones, err := CargarInstrucciones(proc.PATH)
 	if err != nil {
-		http.Error(w, "Error en decodificar el proceso recibido: "+err.Error(), http.StatusBadRequest)
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error cargando instrucciones para PID=%d: %s", proc.PID, err.Error()),
+		)
+		http.Error(w, "Error al cargar las instrucciones", http.StatusInternalServerError)
 		return
 	}
-	instrucciones, errCargar := CargarInstrucciones(proceso.PATH)
-	if errCargar != nil {
-		http.Error(w, "Error en cargar las instrucciones: "+errCargar.Error(), http.StatusInternalServerError)
-		return
-	}
-	global.Procesos = append(global.Procesos, structs.ProcesoMemoria{PID: proceso.PID, Tamanio: proceso.Tamanio, EnSwap: false, Path: proceso.PATH, Instrucciones: instrucciones})
-	// le confirmo a kernel que se cargo:
-	urlKernel := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
-	body, errCodificacion := json.Marshal("OK")
-	if errCodificacion != nil {
-		log.Printf("Error al codificar la confirmacion: %s", errCodificacion.Error())
-		return
-	}
-	_, errEnvio := http.Post(urlKernel, "application/json", bytes.NewBuffer(body))
-	if errEnvio != nil {
-		log.Printf("Error al enviar la confirmacion: %s", errEnvio.Error())
-		return
+
+	global.Procesos = append(global.Procesos, structs.ProcesoMemoria{
+		PID:           proc.PID,
+		Tamanio:       proc.Tamanio,
+		EnSwap:        false,
+		Path:          proc.PATH,
+		Instrucciones: instrucciones,
+	})
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Proceso cargado: PID=%d, Tamanio=%d, Instrucciones=%d",
+			proc.PID, proc.Tamanio, len(instrucciones),
+		),
+	)
+
+	url := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
+	body, _ := json.Marshal("OK")
+	if _, err := http.Post(url, "application/json", bytes.NewBuffer(body)); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error enviando confirmación a Kernel: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug("Confirmación enviada a Kernel")
 	}
 }

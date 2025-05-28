@@ -11,29 +11,72 @@ import (
 )
 
 func BuscarProceso(pid int) (structs.ProcesoMemoria, bool) {
-	for i := 0; i < len(global.Procesos); i++ {
-		if global.Procesos[i].PID == pid {
-			return global.Procesos[i], true
+	// 1. Debug inicial con PID
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Buscando Proceso: PID=%d", pid),
+	)
+
+	for i, proc := range global.Procesos {
+		if proc.PID == pid {
+			global.MemoriaLogger.Debug(
+				fmt.Sprintf("Proceso encontrado: PID=%d, Índice=%d", pid, i),
+			)
+			return proc, true
 		}
 	}
+
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Proceso con PID=%d no encontrado", pid),
+	)
 	return structs.ProcesoMemoria{}, false
 }
 
 func BuscarInstruccion(pid int, pc int) (structs.Instruccion, error) {
+	global.MemoriaLogger.Debug(fmt.Sprintf("Buscando Instrucción: PID=%d, PC=%d", pid, pc))
+
 	proceso, existe := BuscarProceso(pid)
 	if !existe {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error al buscar instrucción en memoria: proceso con PID %d no existe", pid),
+		)
 		return structs.Instruccion{}, fmt.Errorf("BuscarInstruccion: el pid %d no existe", pid)
 	}
+
 	if pc < 0 || pc >= len(proceso.Instrucciones) {
-		return structs.Instruccion{}, fmt.Errorf("BuscarInstruccion: pc %d fuera de rango [0,%d) para pid %d",
-			pc, len(proceso.Instrucciones), pid)
+
+		global.MemoriaLogger.Error(
+			fmt.Sprintf(
+				"Error al buscar instrucción en memoria: PC %d fuera de rango [0,%d) para PID %d",
+				pc, len(proceso.Instrucciones), pid,
+			),
+		)
+		return structs.Instruccion{}, fmt.Errorf(
+			"BuscarInstruccion: pc %d fuera de rango [0,%d) para pid %d",
+			pc, len(proceso.Instrucciones), pid,
+		)
 	}
-	return proceso.Instrucciones[pc], nil
+
+	instr := proceso.Instrucciones[pc]
+	global.MemoriaLogger.Info(
+		fmt.Sprintf(
+			"## PID: %d - Obtener instrucción: %d - Operación: %s - Argumentos: %v",
+			pid, pc, instr.Operacion, instr.Argumentos,
+		),
+	)
+
+	return instr, nil
 }
 
 func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Cargando instrucciones desde ruta: %s", ruta),
+	)
+
 	archivo, err := os.Open(ruta)
 	if err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error al abrir archivo de instrucciones '%s': %s", ruta, err.Error()),
+		)
 		return nil, err
 	}
 	defer archivo.Close()
@@ -52,7 +95,15 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 		})
 	}
 	if err := escáner.Err(); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error leyendo líneas de '%s': %s", ruta, err.Error()),
+		)
 		return nil, err
 	}
+
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Total de instrucciones cargadas desde '%s': %d", ruta, len(instrucciones)),
+	)
+
 	return instrucciones, nil
 }
