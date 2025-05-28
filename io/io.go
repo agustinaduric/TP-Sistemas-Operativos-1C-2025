@@ -12,6 +12,6 @@ func main() {
 	configPath := os.Args[2]
 	ConfigCargadito := fio.IniciarConfiguracionIO(configPath)
 	fio.RegistrarEnKernel(nombre, ConfigCargadito)
-	fio.LevantarIO(ConfigCargadito)
+	go fio.LevantarIO(ConfigCargadito)
 	// comunicacion.EnviarMensaje(configCargadito.IpKernel, configCargadito.PortKernel, "SOy io, hola kernel")
 }

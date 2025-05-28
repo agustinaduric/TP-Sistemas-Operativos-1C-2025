@@ -11,11 +11,8 @@ import(
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
+	"github.com/sisoputnfrba/tp-golang/io/global"
 )
-
-// *** Globales ***
-var ipKernel string
-var puertoKernel int
 
 func IniciarConfiguracionIO(filePath string) config.IOConfig {
 	var config config.IOConfig
@@ -28,8 +25,8 @@ func IniciarConfiguracionIO(filePath string) config.IOConfig {
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&config)
 
-	ipKernel = config.IpKernel
-	puertoKernel = config.PortKernel
+	globalIO.IpKernel = config.IpKernel
+	globalIO.PuertoKernel = config.PortKernel
 	return config
 }
 
@@ -41,10 +38,11 @@ func RegistrarEnKernel(nombre string, config config.IOConfig){
 	}
 	body, err := json.Marshal(ioARegistrar)
 	if err != nil {
-		log.Printf("error codificando ioARegistrar: %s", err.Error())
+		globalIO.IOLogger.Error(fmt.Sprintf("error codificando ioARegistrar: %s", err.Error()))
 	}
 	url := fmt.Sprintf("http://%s:%d/registrar-io", config.IpKernel, config.PortKernel)
 	http.Post(url, "application/json", bytes.NewBuffer(body))
+	globalIO.IOLogger.Debug(fmt.Sprintf("IO envio al kernel el dispositivo: %s", nombre))
 	}
 
 func RealizarIO(w http.ResponseWriter, r *http.Request){
@@ -52,33 +50,33 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&solicitud)
 	if err != nil {
-		log.Printf("Error al decodificar la solicitud: %s\n", err.Error())
+		globalIO.IOLogger.Error(fmt.Sprintf("Error al decodificar la solicitud: %s\n", err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error al decodificar la solicitud"))
 		return
 	}
 	// log obligatorio 1/2
-	log.Printf("## PID: %d - Inicio de IO - Tiempo %d", solicitud.PID, solicitud.Duracion)
+	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Inicio de IO - Tiempo %d", solicitud.PID, solicitud.Duracion))
 	time.Sleep(time.Duration(solicitud.Duracion)*time.Second)
-	//log obligatorio 2/2
-	log.Printf("## PID: %d - Fin de IO", solicitud.PID)
+	// log obligatorio 2/2
+	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Fin de IO", solicitud.PID))
 	respuesta := structs.RespuestaIO{
 		NombreIO: solicitud.NombreIO,
 		PID: solicitud.PID,
-		Desconexion: false, // ver cuando es true o false
+		Desconexion: false,
 	}
-	comunicacion.EnviarFinIO(ipKernel,puertoKernel, respuesta)
+	comunicacion.EnviarFinIO(globalIO.IpKernel, globalIO.PuertoKernel, respuesta)
+	globalIO.IOLogger.Debug(fmt.Sprintf("Se envio a kernel fin IO, Dispositivo: %s PID: %d", solicitud.NombreIO, solicitud.PID ))
 }
 
 func LevantarIO(configCargadito config.IOConfig) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/mensaje", comunicacion.RecibirMensaje) // borrar: primer check
 	mux.HandleFunc("/solicitar-io", RealizarIO)
 	puerto := config.IntToStringConPuntos(configCargadito.PortIo)
 
-	log.Printf("IO escuchando solicitudes en %s", puerto)
+	globalIO.IOLogger.Debug(fmt.Sprintf("IO escuchando solicitudes en %s", puerto))
 	err := http.ListenAndServe(puerto, mux)
 	if err != nil {
-		log.Fatalf("Error al levantar IO: %v", err)
+		globalIO.IOLogger.Error(fmt.Sprintf("Error al levantar IO: %v", err))
 	}
 }
