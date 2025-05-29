@@ -15,27 +15,21 @@ import (
 
 func main() {
 
-	chequeoParametros()
-
-	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel("./kernel/config/kernel.config.json")
+	comunicacion.VerificarParametros(3)
+	configPath := os.Args[3]
+	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel(configPath)
 	global.KernelLogger = fkernel.ConfigurarLog()
 	go fkernel.LevantarServidorKernel(global.ConfigCargadito)
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
 	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}
 	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, handshake)
 
-	planificacion.Iniciar_planificacion(global.ConfigCargadito)
+	go planificacion.Iniciar_planificacion(global.ConfigCargadito)
 	PrimerProceso()
 	global.KernelLogger.Debug(fmt.Sprintf("se creo el primer proceso"))
 	global.WgKernel.Wait()
 }
 
-func chequeoParametros() {
-	if len(os.Args) < 3 {
-		fmt.Println("ERROR: No se ingresaro la cantidad de parametros necesarios")
-		os.Exit(1) //si hay error en los parametros termino la ejecucion
-	}
-}
 
 func PrimerProceso() {
 	var PATH string = os.Args[1]

@@ -1,3 +1,5 @@
 # Log files
 *.log
-
+# Pruebas
+*proceso1
+*1

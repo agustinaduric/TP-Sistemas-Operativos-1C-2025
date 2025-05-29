@@ -13,13 +13,14 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) int {
+func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) string {
+	global.KernelLogger.Debug(fmt.Sprintf("Entre a la funcion Enviar_proceso_a_memoria"))
 	// consulto si hay espacio:
-	espacioMemoria := fmt.Sprintf("http:/%s:%d/espacio-libre", configCargadito.IpMemory, configCargadito.PortMemory)
+	espacioMemoria := fmt.Sprintf("http://%s:%d/espacio-libre", configCargadito.IpMemory, configCargadito.PortMemory)
 	respEspacio, errEspacio := http.Get(espacioMemoria) // el get es para pedir info
 	if errEspacio != nil {
 		global.KernelLogger.Debug(fmt.Sprintf("Error al consultar espacio libre en memoria: %s", errEspacio.Error()))
-		return 0
+		return ""
 	}
 	defer respEspacio.Body.Close()
 	// me responde y verifico:
@@ -27,7 +28,7 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	json.NewDecoder(respEspacio.Body).Decode(&espacioLibre)
 	if espacioLibre.BytesLibres < pcb_a_cargar.Tamanio {
 		global.KernelLogger.Debug(fmt.Sprintf("no hay espacio para cargar al proceso PID:%d", pcb_a_cargar.PID))
-		return 0
+		return ""
 	}
 	// se manda el proceso si hay espacio:
 	var Proceso structs.Proceso_a_enviar = structs.Proceso_a_enviar{
@@ -44,8 +45,10 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory))
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
-	return resp.StatusCode
+	defer resp.Body.Close()
+	var respuesta string
+	json.NewDecoder(resp.Body).Decode(&respuesta)
+	return respuesta
 }
 
 func Enviar_P_Finalizado_memoria(PID int) {

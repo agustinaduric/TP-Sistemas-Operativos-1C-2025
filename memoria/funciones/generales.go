@@ -1,7 +1,7 @@
 package fmemoria
 
 import (
-	"bytes"
+	//"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,7 +10,22 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
+
+func ConfigurarLog() *logger.LoggerStruct {
+	logLevel, error1 := logger.ParseLevel(global.MemoriaConfig.LogLevel)
+	if error1 != nil {
+		fmt.Println("ERROR: El nivel de log ingresado no es valido")
+		os.Exit(1)
+	}
+	logger, error2 := logger.NewLogger("memoria.log", logLevel)
+	if error2 != nil {
+		fmt.Println("ERROR: No se pudo crear el logger")
+		os.Exit(1)
+	}
+	return logger
+}
 
 func LevantarServidorMemoria() {
 	mux := http.NewServeMux()
@@ -171,7 +186,22 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		),
 	)
 
-	url := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error codificando respuesta de proceso cargado: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("Confirmacion enviada"),
+		)
+	}
+
+
+	
+	/*url := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
 	body, _ := json.Marshal("OK")
 	if _, err := http.Post(url, "application/json", bytes.NewBuffer(body)); err != nil {
 		global.MemoriaLogger.Error(
@@ -179,5 +209,5 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		)
 	} else {
 		global.MemoriaLogger.Debug("Confirmación enviada a Kernel")
-	}
+	}*/
 }

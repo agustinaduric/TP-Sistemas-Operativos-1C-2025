@@ -38,6 +38,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
 	global.MutexCpuDisponible.Unlock()
 	if Cpu_disponible.Identificador == "" {
+		
 		return 0
 	}
 	body, err := json.Marshal(PIDyPC)

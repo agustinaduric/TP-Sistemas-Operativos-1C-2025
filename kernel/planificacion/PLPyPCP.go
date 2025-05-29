@@ -3,7 +3,6 @@ package planificacion
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -46,7 +45,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
 			} else {
-				log.Printf("hubo un error: no se mando bien a cpu o no hay cpu libres")
+				
 				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
 		case SJF:
@@ -71,17 +70,19 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 
 	go limpieza_cola_exit() //funcion que se encarga de finalizar los procesos
 
-	var algoritmo_planificacion t_algoritmo = _chequear_algoritmo_largo(configCargadito)
+	algoritmo_planificacion := configCargadito.ReadyIngressAlgorithm
+	global.KernelLogger.Debug(fmt.Sprintf("el algoritmo de largo plazo es: %s",algoritmo_planificacion))
 
 	for {
 		<-global.ProcesoCargado
 		global.KernelLogger.Debug("Llego un proceso al planificador largo")
-
 		switch algoritmo_planificacion {
-		case FIFO:
+		case "FIFO":
+			global.KernelLogger.Debug("El plani largo planifica con FIFO")
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 			// envio el proceso a memoria para preguntar si entra
-			if (protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito)) != 0 { // si memoria da el OK proceso, sino me salgo y espero
+			
+			if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito) ; respuesta== "OK" { // si memoria da el OK proceso, sino me salgo y espero
 				global.KernelLogger.Debug("El proceso fue acepatado en memoria")
 				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
 
@@ -89,7 +90,7 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 				global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
 			}
 
-		case PMCP:
+		case "PMCP":
 		// PROXIMAMENTE
 
 		default:

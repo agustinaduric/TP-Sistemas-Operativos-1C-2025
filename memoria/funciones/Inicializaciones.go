@@ -10,15 +10,15 @@ import (
 )
 
 func IniciarConfiguracionMemoria(filePath string) {
-	global.MemoriaLogger.Debug(
+	/*global.MemoriaLogger.Debug(
 		fmt.Sprintf("Iniciando configuración de memoria desde: %s", filePath),
-	)
+	)*/
 
 	configFile, err := os.Open(filePath)
 	if err != nil {
-		global.MemoriaLogger.Error(
+		/*global.MemoriaLogger.Error(
 			fmt.Sprintf("Error al abrir config de memoria '%s': %s", filePath, err.Error()),
-		)
+		)*/
 		os.Exit(1)
 	}
 
@@ -28,20 +28,20 @@ func IniciarConfiguracionMemoria(filePath string) {
 	decoder := json.NewDecoder(configFile)
 	if err := decoder.Decode(&config); err != nil {
 
-		global.MemoriaLogger.Error(
+		/*global.MemoriaLogger.Error(
 			fmt.Sprintf("Error al parsear config de memoria '%s': %s", filePath, err.Error()),
 		)
-
+*/
 		os.Exit(1)
 	}
 
 	global.MemoriaConfig = config
 
-	global.MemoriaLogger.Debug(
+	/*global.MemoriaLogger.Debug(
 		fmt.Sprintf("Configuración de memoria cargada: MemorySize=%d, PageSize=%d",
 			config.MemorySize, config.PageSize,
 		),
-	)
+	)*/
 }
 
 func IniciarMapaMemoriaDeUsuario() {
@@ -67,6 +67,6 @@ func IniciarMemoriaUsuario() {
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Buffer de memoria de usuario reservado: %d bytes", totalBytes),
 	)
-
+	
 	IniciarMapaMemoriaDeUsuario()
 }

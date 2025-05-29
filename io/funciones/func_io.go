@@ -12,7 +12,22 @@ import(
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 	"github.com/sisoputnfrba/tp-golang/io/global"
+	"github.com/sisoputnfrba/tp-golang/utils/logger"
 )
+
+func ConfigurarLog() *logger.LoggerStruct {
+	logLevel, error1 := logger.ParseLevel(globalIO.IOConfig.LogLevel)
+	if error1 != nil {
+		fmt.Println("ERROR: El nivel de log ingresado no es valido")
+		os.Exit(1)
+	}
+	logger, error2 := logger.NewLogger("io.log", logLevel)
+	if error2 != nil {
+		fmt.Println("ERROR: No se pudo crear el logger")
+		os.Exit(1)
+	}
+	return logger
+}
 
 func IniciarConfiguracionIO(filePath string) config.IOConfig {
 	var config config.IOConfig
@@ -25,6 +40,7 @@ func IniciarConfiguracionIO(filePath string) config.IOConfig {
 	jsonParser := json.NewDecoder(configFile)
 	jsonParser.Decode(&config)
 
+	globalIO.IOConfig = config
 	globalIO.IpKernel = config.IpKernel
 	globalIO.PuertoKernel = config.PortKernel
 	return config

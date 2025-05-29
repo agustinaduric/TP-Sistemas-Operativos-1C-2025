@@ -55,7 +55,7 @@ func MarcosNecesitados(tamanioProceso int) int {
 	return necesarios
 }
 
-// hayEspacio indica si hay suficientes marcos libres para un proceso.
+// trankilo, ya lo vamos a usar, compilador idiota
 func hayEspacio(tamanioProceso int) bool {
 	necesarios := MarcosNecesitados(tamanioProceso)
 	disponibles := MarcosDisponibles()
