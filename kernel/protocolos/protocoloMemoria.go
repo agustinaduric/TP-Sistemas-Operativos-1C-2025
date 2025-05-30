@@ -9,14 +9,13 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
-	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.KernelConfig) string {
+func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB) string {
 	global.KernelLogger.Debug(fmt.Sprintf("Entre a la funcion Enviar_proceso_a_memoria"))
 	// consulto si hay espacio:
-	espacioMemoria := fmt.Sprintf("http://%s:%d/espacio-libre", configCargadito.IpMemory, configCargadito.PortMemory)
+	espacioMemoria := fmt.Sprintf("http://%s:%d/espacio-libre", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
 	respEspacio, errEspacio := http.Get(espacioMemoria) // el get es para pedir info
 	if errEspacio != nil {
 		global.KernelLogger.Debug(fmt.Sprintf("Error al consultar espacio libre en memoria: %s", errEspacio.Error()))
@@ -40,10 +39,10 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB, configCargadito config.K
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
 	}
-	url := fmt.Sprintf("http://%s:%d/cargar-proceso", configCargadito.IpMemory, configCargadito.PortMemory)
+	url := fmt.Sprintf("http://%s:%d/cargar-proceso", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, configCargadito.PortMemory))
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, global.ConfigCargadito.PortMemory))
 	}
 	defer resp.Body.Close()
 	var respuesta string
@@ -107,4 +106,35 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 		global.IniciarMetrica("BLOCKED", "EXIT", &Proceso)
 
 	}
+}
+
+func MandarProcesoASuspension(PID int) {
+	var Proceso int = PID
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
+	}
+	url := fmt.Sprintf("http://%s:%d/suspension-proceso", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))
+	}
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
+}
+
+func MandarProcesoADesuspension(PID int) string {
+	var Proceso int = PID
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
+	}
+	url := fmt.Sprintf("http://%s:%d/desuspension-proceso", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))
+	}
+	defer resp.Body.Close()
+	var respuesta string
+	json.NewDecoder(resp.Body).Decode(&respuesta)
+	return respuesta
 }

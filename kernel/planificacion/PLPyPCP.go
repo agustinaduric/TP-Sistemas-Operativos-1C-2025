@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"sort"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
@@ -24,19 +25,18 @@ const (
 
 // ----------- PLANIFICADOR CORTO PLAZO
 
-func planificador_corto_plazo(configCargadito config.KernelConfig) {
+func planificador_corto_plazo() {
 	var pcb_execute structs.PCB
-	var algoritmo_planificacion_corto t_algoritmo
-	algoritmo_planificacion_corto = _chequear_algoritmo_corto(configCargadito)
+	algoritmo_planificacion_corto := global.ConfigCargadito.SchedulerAlgorithm
 
-	global.KernelLogger.Debug(fmt.Sprintf("Algoritmo de planificación: %s", configCargadito.SchedulerAlgorithm))
+	global.KernelLogger.Debug(fmt.Sprintf("Algoritmo de planificación: %s", algoritmo_planificacion_corto))
 
 	for {
 
 		<-global.ProcesoListo
 
 		switch algoritmo_planificacion_corto {
-		case FIFO:
+		case "FIFO":
 			pcb_execute = structs.ColaReady[0]
 			var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
@@ -45,13 +45,13 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
 			} else {
-				
+
 				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
-		case SJF:
+		case "SJF":
 		// PROXIMAMENTE
 
-		case SRT:
+		case "SRT":
 		// PROXIMAMENTE
 
 		default:
@@ -62,7 +62,7 @@ func planificador_corto_plazo(configCargadito config.KernelConfig) {
 
 // ----------- PLANIFICADOR LARGO PLAZO
 
-func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCESOS A READY Y OTRA PARA SACARLOS DE LA MEMORIA
+func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCESOS A READY Y OTRA PARA SACARLOS DE LA MEMORIA
 
 	esperarEnter() // no se si va aca o dentro de la funcion iniciar_planificacion
 
@@ -70,20 +70,19 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 
 	go limpieza_cola_exit() //funcion que se encarga de finalizar los procesos
 
-	algoritmo_planificacion := configCargadito.ReadyIngressAlgorithm
-	global.KernelLogger.Debug(fmt.Sprintf("el algoritmo de largo plazo es: %s",algoritmo_planificacion))
+	algoritmo_planificacion := global.ConfigCargadito.ReadyIngressAlgorithm
+	global.KernelLogger.Debug(fmt.Sprintf("el algoritmo de largo plazo es: %s", algoritmo_planificacion))
 
 	for {
 		<-global.ProcesoCargado
 		global.KernelLogger.Debug("Llego un proceso al planificador largo")
 		switch algoritmo_planificacion {
 		case "FIFO":
-			global.KernelLogger.Debug("El plani largo planifica con FIFO")
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
+
 			// envio el proceso a memoria para preguntar si entra
-			
-			if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar, configCargadito) ; respuesta== "OK" { // si memoria da el OK proceso, sino me salgo y espero
-				global.KernelLogger.Debug("El proceso fue acepatado en memoria")
+			if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
+				global.KernelLogger.Debug("El proceso fue aceptado en memoria")
 				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
 
 				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
@@ -91,7 +90,55 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 			}
 
 		case "PMCP":
-		// PROXIMAMENTE
+			OrdenarColaPorTamanio(structs.ColaNew)
+			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
+			if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
+				global.KernelLogger.Debug("El proceso fue aceptado en memoria")
+				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
+
+				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
+			}
+
+		default:
+
+		}
+	}
+}
+
+// ----------- PLANIFICADOR MEDIANO PLAZO
+
+func planificador_mediano_plazo() {
+
+	algoritmo_planificacion := global.ConfigCargadito.ReadyIngressAlgorithm
+	global.KernelLogger.Debug(fmt.Sprintf("el algoritmo de mediano plazo es: %s", algoritmo_planificacion))
+
+	for {
+		<-global.ProcesoEnSuspReady
+		global.KernelLogger.Debug("Llego un proceso al planificador mediano")
+		switch algoritmo_planificacion {
+		case "FIFO":
+			var pcb_a_cargar structs.PCB = structs.ColaSuspReady[0]
+
+			// envio el proceso a memoria para preguntar si entra
+			if respuesta := protocolos.MandarProcesoADesuspension(pcb_a_cargar.PID); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
+				global.KernelLogger.Debug("El proceso que estaba suspendido fue aceptado en memoria")
+				global.IniciarMetrica("SUSP_READY", "READY", &pcb_a_cargar)
+
+				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				global.KernelLogger.Debug("Se envia aviso desde plani mediano a plani corto")
+			}
+
+		case "PMCP":
+			OrdenarColaPorTamanio(structs.ColaSuspReady)
+			var pcb_a_cargar structs.PCB = structs.ColaSuspReady[0]
+			if respuesta := protocolos.MandarProcesoADesuspension(pcb_a_cargar.PID); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
+				global.KernelLogger.Debug("El proceso que estaba suspendido fue aceptado en memoria")
+				global.IniciarMetrica("SUSP_READY", "READY", &pcb_a_cargar)
+
+				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				global.KernelLogger.Debug("Se envia aviso desde plani mediano a plani corto")
+			}
 
 		default:
 
@@ -104,42 +151,22 @@ func planificador_largo_plazo(configCargadito config.KernelConfig) { // DIVIDIDO
 func Iniciar_planificacion(configCargadito config.KernelConfig) {
 	// Creamos un hilo para el planificador de corto plazo y este va a mantener conexion con CPU
 
-	go planificador_corto_plazo(configCargadito) //asi le ponemos un hilo
-
+	go planificador_corto_plazo() //asi le ponemos un hilo
 	// -------------------------------------------------
 	global.KernelLogger.Debug("Planificador de corto plazo iniciado")
 	// -------------------------------------------------
+
 	// Creamos un hilo para el planificador de largo plazo
-	go planificador_largo_plazo(configCargadito)
+	go planificador_largo_plazo()
 	// -------------------------------------------------
+
+	// Creamos un hilo para el planificador de mediano plazo
+	go planificador_mediano_plazo()
+	// -------------------------------------------------
+	global.KernelLogger.Debug("Planificador de mediano plazo iniciado")
 }
 
 // ----------- FUNCIONES AUXILIARES
-
-func _chequear_algoritmo_corto(configCargadito config.KernelConfig) t_algoritmo {
-	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "FIFO") {
-		return FIFO
-	}
-	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "SJF") {
-		return SJF
-	}
-	if strings.EqualFold(configCargadito.SchedulerAlgorithm, "SRT") {
-		return SRT
-	}
-
-	return ERROR
-}
-
-func _chequear_algoritmo_largo(configCargadito config.KernelConfig) t_algoritmo {
-	if strings.EqualFold(configCargadito.ReadyIngressAlgorithm, "FIFO") {
-		return FIFO
-	}
-	if strings.EqualFold(configCargadito.ReadyIngressAlgorithm, "PMCP") {
-		return PMCP
-	}
-
-	return ERROR
-}
 
 func esperarEnter() {
 	reader := bufio.NewReader(os.Stdin)
@@ -161,8 +188,37 @@ func limpieza_cola_exit() {
 		if global.ConfirmacionProcesoFinalizado == 1 {
 			global.ConfirmacionProcesoFinalizado = 0
 			global.IniciarMetrica("EXIT", "FINALIZADO", &ProcesoExit)
-			global.ProcesoCargado <- 0
-			global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani largo")
+			if len(structs.ColaSuspReady) == 0 {
+				global.ProcesoCargado <- 0
+				global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani largo, la cola de SUSP_READY estaba vacia")
+				return
+			}
+			global.ProcesoEnSuspReady <- 0
+			global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani mediano")
+
 		}
 	}
+}
+
+func IniciarContadorDeSuspension(proceso *structs.PCB) {
+	global.KernelLogger.Debug("Entro a la funcion IniciarContadorDeSuspension")
+	time.Sleep(time.Duration(global.ConfigCargadito.SuspensionTime) * time.Millisecond)
+	global.KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
+	if proceso.Estado != structs.BLOCKED {
+		return
+	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
+
+	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
+	global.IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
+	protocolos.MandarProcesoASuspension(proceso.PID)
+
+}
+
+func OrdenarColaPorTamanio(cola structs.ColaProcesos) {
+	sort.Slice(cola, func(i, j int) bool {
+		if cola[i].Tamanio != cola[j].Tamanio {
+			return cola[i].Tamanio < cola[j].Tamanio
+		}
+		return cola[i].IngresoEstado.Before(cola[j].IngresoEstado)
+	})
 }

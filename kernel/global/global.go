@@ -21,6 +21,7 @@ var MutexPlanificadores sync.Mutex //asi se crea un mutex jej
 var MutexLog sync.Mutex
 var ProcesoCargado = make(chan int)
 var ProcesoListo = make(chan int)
+var ProcesoEnSuspReady = make(chan int)
 var ProcesoParaFinalizar = make(chan int)
 var MutexCpuDisponible sync.Mutex
 var ConfigCargadito config.KernelConfig
@@ -124,6 +125,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexSUSP_READY.Lock()
 		Push_estado(&structs.ColaSuspReady, *proceso)
 		MutexSUSP_READY.Unlock()
+		ProcesoEnSuspReady <- 0
 		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado SUSP_READY", proceso.PID, estadoViejo))
 	case "EXIT":
 		DetenerMetrica(estadoViejo, proceso)
