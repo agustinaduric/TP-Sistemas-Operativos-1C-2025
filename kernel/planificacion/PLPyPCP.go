@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/protocolos"
@@ -198,20 +197,6 @@ func limpieza_cola_exit() {
 
 		}
 	}
-}
-
-func IniciarContadorDeSuspension(proceso *structs.PCB) {
-	global.KernelLogger.Debug("Entro a la funcion IniciarContadorDeSuspension")
-	time.Sleep(time.Duration(global.ConfigCargadito.SuspensionTime) * time.Millisecond)
-	global.KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
-	if proceso.Estado != structs.BLOCKED {
-		return
-	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
-
-	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
-	global.IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
-	protocolos.MandarProcesoASuspension(proceso.PID)
-
 }
 
 func OrdenarColaPorTamanio(cola structs.ColaProcesos) {

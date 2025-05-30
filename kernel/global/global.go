@@ -1,7 +1,10 @@
 package global
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -70,6 +73,16 @@ func Extraer_estado(Cola *structs.ColaProcesos, PID int) structs.PCB {
 }
 
 func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB) {
+	if proceso.Estado == structs.SUSP_BLOCKED && estadoViejo == "BLOCKED" {
+		if estadoNuevo == "READY" {
+			IniciarMetrica("SUSP_BLOCKED", "SUSP_READY", proceso)
+			return
+		}
+		if estadoNuevo == "EXIT" {
+			IniciarMetrica("SUSP_BLOCKED", "EXIT", proceso)
+			return
+		}
+	}
 	switch estadoNuevo {
 	case "NEW":
 		proceso.MetricasEstado[structs.NEW] = proceso.MetricasEstado[structs.NEW] + 1
@@ -104,6 +117,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.Estado = structs.BLOCKED
 		proceso.MetricasEstado[structs.BLOCKED] = proceso.MetricasEstado[structs.BLOCKED] + 1
 		proceso.TiempoInicioEstado = time.Now()
+		go IniciarContadorDeSuspension(proceso)
 		MutexBLOCKED.Lock()
 		Push_estado(&structs.ColaBlocked, *proceso)
 		MutexBLOCKED.Unlock()
@@ -182,4 +196,45 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		duracion := time.Since(proceso.TiempoInicioEstado)
 		proceso.TiemposEstado[structs.EXIT] += duracion
 	}
+}
+
+//-----------------------------------------------FUNCIONES QUE NO SE DONDE PONER PORQUE TODO SE CICLA----------------------------------------------------------------
+
+func IniciarContadorDeSuspension(proceso *structs.PCB) {
+	KernelLogger.Debug("Entro a la funcion IniciarContadorDeSuspension")
+	time.Sleep(time.Duration(ConfigCargadito.SuspensionTime) * time.Millisecond)
+	KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
+	if proceso.Estado != structs.BLOCKED {
+		return
+	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
+
+	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
+	IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
+	if respuesta := MandarProcesoASuspension(proceso.PID); respuesta == "OK" {
+		//al suspender un proceso hay mas lugar en la memoria y capaz puede entrar otro proceso
+		if len(structs.ColaSuspReady) == 0 {
+			ProcesoCargado <- 0
+			KernelLogger.Debug("Se envia aviso desde el contador para suspender a plani largo, la cola de SUSP_READY estaba vacia")
+			return
+		}
+		ProcesoEnSuspReady <- 0
+		KernelLogger.Debug("Se envia aviso desde el contador para suspender a plani mediano")
+	}
+}
+
+func MandarProcesoASuspension(PID int) string {
+	var Proceso int = PID
+	body, err := json.Marshal(Proceso)
+	if err != nil {
+		KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
+	}
+	url := fmt.Sprintf("http://%s:%d/suspension-proceso", ConfigCargadito.IpMemory, ConfigCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, ConfigCargadito.PortMemory))
+	}
+	defer resp.Body.Close()
+	var respuesta string
+	json.NewDecoder(resp.Body).Decode(&respuesta)
+	return respuesta
 }

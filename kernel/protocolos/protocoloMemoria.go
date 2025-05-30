@@ -108,20 +108,6 @@ func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func MandarProcesoASuspension(PID int) {
-	var Proceso int = PID
-	body, err := json.Marshal(Proceso)
-	if err != nil {
-		global.KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
-	}
-	url := fmt.Sprintf("http://%s:%d/suspension-proceso", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))
-	}
-	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
-}
-
 func MandarProcesoADesuspension(PID int) string {
 	var Proceso int = PID
 	body, err := json.Marshal(Proceso)
