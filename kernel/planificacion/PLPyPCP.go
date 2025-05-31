@@ -48,6 +48,20 @@ func planificador_corto_plazo() {
 				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
 		case "SJF":
+			OrdenarColaPorSJF(structs.ColaReady)
+			pcb_execute = structs.ColaReady[0]
+			pcb_execute.EstimadoRafagaAnt = pcb_execute.EstimadoRafaga
+			var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
+			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+
+				global.IniciarMetrica("READY", "EXEC", &pcb_execute)
+				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
+
+			} else {
+
+				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
+			}
+
 		// PROXIMAMENTE
 
 		case "SRT":
@@ -203,6 +217,15 @@ func OrdenarColaPorTamanio(cola structs.ColaProcesos) {
 	sort.Slice(cola, func(i, j int) bool {
 		if cola[i].Tamanio != cola[j].Tamanio {
 			return cola[i].Tamanio < cola[j].Tamanio
+		}
+		return cola[i].IngresoEstado.Before(cola[j].IngresoEstado)
+	})
+}
+
+func OrdenarColaPorSJF(cola structs.ColaProcesos) {
+	sort.Slice(cola, func(i, j int) bool {
+		if cola[i].EstimadoRafaga != cola[j].EstimadoRafaga {
+			return cola[i].EstimadoRafaga < cola[j].EstimadoRafaga
 		}
 		return cola[i].IngresoEstado.Before(cola[j].IngresoEstado)
 	})

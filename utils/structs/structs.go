@@ -27,6 +27,7 @@ type PCB struct {
 	PC                  int
 	Tamanio             int
 	EstimadoRafaga      float64
+	EstimadoRafagaAnt   float64
 	UltimaRafagaReal    float64
 	IngresoEstado       time.Time
 	MetricasEstado      map[Estado]int           // cant entradas estado
@@ -34,6 +35,7 @@ type PCB struct {
 	TiempoInicioEstado  time.Time                // para calcular cuanto tiempo estuvo en cada estado
 	IOPendiente         string                   // nombre de IO en la que esta bloqueado
 	IOPendienteDuracion time.Duration
+	Auxiliar            float64
 	//Registros        RegistrosCPU
 }
 
