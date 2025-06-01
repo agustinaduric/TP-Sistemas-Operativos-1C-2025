@@ -14,6 +14,11 @@ type Syscall struct {
 	PID  int
 }
 
+type CPU_nodisponible struct {
+	CPU     CPU_a_kernel
+	Proceso PCB
+}
+
 type ColaProcesos []PCB
 
 var (
@@ -33,3 +38,4 @@ var ProcesoEjecutando PCB // chequear
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?
 
 var CPUs_Conectados []CPU_a_kernel
+var CPUs_Nodisponibles []CPU_nodisponible

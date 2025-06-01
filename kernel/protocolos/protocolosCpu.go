@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
@@ -38,7 +39,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
 	global.MutexCpuDisponible.Unlock()
 	if Cpu_disponible.Identificador == "" {
-		
+
 		return 0
 	}
 	body, err := json.Marshal(PIDyPC)
@@ -51,6 +52,13 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+
+	var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
+		CPU:     Cpu_disponible,
+		Proceso: pcb_a_cargar,
+	}
+	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
+
 	return resp.StatusCode
 }
 
@@ -81,6 +89,25 @@ func Buscar_CPU_libre() structs.CPU_a_kernel {
 
 	global.KernelLogger.Debug("No hay CPU's libres >:(")
 	return structs.CPU_a_kernel{}
+}
+
+func Buscar_CPU_Para_Desalojar(Estimado float64) structs.CPU_a_kernel {
+	longitud := len(structs.CPUs_Nodisponibles)
+	var devuelvo structs.CPU_a_kernel = structs.CPU_a_kernel{}
+	for i := 0; i < longitud; i++ {
+		aux := time.Since(structs.CPUs_Nodisponibles[i].Proceso.TiempoInicioEstado)
+		tiempo_restante := structs.CPUs_Nodisponibles[i].Proceso.EstimadoRafaga - (float64(aux) - float64(structs.CPUs_Nodisponibles[i].Proceso.Auxiliar))
+
+		if tiempo_restante > Estimado {
+
+			devuelvo = structs.CPUs_Nodisponibles[i].CPU
+			Estimado = tiempo_restante
+		}
+
+	}
+
+	global.KernelLogger.Debug("Ninguna cpu con menor estimado")
+	return devuelvo
 }
 
 func Buscar_CPU(identificador string) structs.CPU_a_kernel {
