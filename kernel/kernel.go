@@ -20,7 +20,6 @@ func main() {
 	global.ConfigCargadito = fkernel.IniciarConfiguracionKernel(configPath)
 	global.KernelLogger = fkernel.ConfigurarLog()
 	go fkernel.LevantarServidorKernel(global.ConfigCargadito)
-	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy kernel,hola memoria")
 	handshake := structs.Handshake{IP: global.ConfigCargadito.IpKernel, Puerto: global.ConfigCargadito.PortKernel}
 	comunicacion.EnviarHandshake(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, handshake)
 
@@ -29,7 +28,6 @@ func main() {
 	global.KernelLogger.Debug(fmt.Sprintf("se creo el primer proceso"))
 	global.WgKernel.Wait()
 }
-
 
 func PrimerProceso() {
 	var PATH string = os.Args[1]

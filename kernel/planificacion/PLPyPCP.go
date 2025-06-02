@@ -12,16 +12,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-type t_algoritmo int
-
-const (
-	FIFO t_algoritmo = iota // iota vale
-	SJF
-	SRT
-	PMCP
-	ERROR
-)
-
 // ----------- PLANIFICADOR CORTO PLAZO
 
 func planificador_corto_plazo() {
@@ -62,10 +52,42 @@ func planificador_corto_plazo() {
 				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
 
-		// PROXIMAMENTE
-
 		case "SRT":
-		// PROXIMAMENTE
+
+			OrdenarColaPorSJF(structs.ColaReady)
+			pcb_execute = structs.ColaReady[0]
+			pcb_execute.EstimadoRafagaAnt = pcb_execute.EstimadoRafaga
+			global.MutexCpuDisponible.Lock()
+			var Cpu_disponible structs.CPU_a_kernel = protocolos.Buscar_CPU_libre()
+			global.MutexCpuDisponible.Unlock()
+			if Cpu_disponible.Identificador == "" {
+				global.KernelLogger.Debug(fmt.Sprintf("no hay cpus libres, probando desalojar alguno"))
+			}
+			global.MutexCpuNoDisponibles.Lock()
+			Cpu_disponible = protocolos.Buscar_CPU_Para_Desalojar(pcb_execute.EstimadoRafaga)
+			global.MutexCpuNoDisponibles.Unlock()
+			if Cpu_disponible.Identificador != "" {
+
+				protocolos.Mandar_interrupcion(Cpu_disponible)
+
+				global.MutexSemaforosCPU.Lock()
+				sem := global.SemaforosCPU[Cpu_disponible.Identificador]
+				global.MutexSemaforosCPU.Unlock()
+
+				<-sem
+
+				var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
+				if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+
+					global.IniciarMetrica("READY", "EXEC", &pcb_execute)
+					//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
+
+				} else {
+
+					global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu "))
+				}
+			}
+			global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))
 
 		default:
 
@@ -103,7 +125,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 			}
 
 		case "PMCP":
-			OrdenarColaPorTamanio(structs.ColaNew)
+			OrdenarColaPorPMCP(structs.ColaNew)
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 			if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
 				global.KernelLogger.Debug("El proceso fue aceptado en memoria")
@@ -143,7 +165,7 @@ func planificador_mediano_plazo() {
 			}
 
 		case "PMCP":
-			OrdenarColaPorTamanio(structs.ColaSuspReady)
+			OrdenarColaPorPMCP(structs.ColaSuspReady)
 			var pcb_a_cargar structs.PCB = structs.ColaSuspReady[0]
 			if respuesta := protocolos.MandarProcesoADesuspension(pcb_a_cargar.PID); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
 				global.KernelLogger.Debug("El proceso que estaba suspendido fue aceptado en memoria")
@@ -195,11 +217,7 @@ func limpieza_cola_exit() {
 
 		ProcesoExit := structs.ColaExit[0]
 
-		protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID)
-		<-global.SemFinalizacion
-		global.KernelLogger.Debug("memoria finalizo el proceso")
-		if global.ConfirmacionProcesoFinalizado == 1 {
-			global.ConfirmacionProcesoFinalizado = 0
+		if respuesta := protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID); respuesta == "OK" {
 			global.IniciarMetrica("EXIT", "FINALIZADO", &ProcesoExit)
 			if len(structs.ColaSuspReady) == 0 {
 				global.ProcesoCargado <- 0
@@ -213,7 +231,7 @@ func limpieza_cola_exit() {
 	}
 }
 
-func OrdenarColaPorTamanio(cola structs.ColaProcesos) {
+func OrdenarColaPorPMCP(cola structs.ColaProcesos) {
 	sort.Slice(cola, func(i, j int) bool {
 		if cola[i].Tamanio != cola[j].Tamanio {
 			return cola[i].Tamanio < cola[j].Tamanio

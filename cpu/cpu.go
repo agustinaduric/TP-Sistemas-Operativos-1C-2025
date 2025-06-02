@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 	fCpu "github.com/sisoputnfrba/tp-golang/cpu/funciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
@@ -19,6 +20,7 @@ func main() {
 	go fCpu.LevantarServidorCPU()
 	protocolos.Conectarse_con_Kernel(global.Nombre)
 	protocolos.Conectarse_con_Memoria(global.Nombre)
+	mmu.Inicializar_TLB()
 	global.WgCPU.Wait()
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy cpu, hola memoria")
 	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel, "Soy cpu,hola kernel")

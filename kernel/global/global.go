@@ -14,22 +14,25 @@ import (
 )
 
 var KernelLogger *logger.LoggerStruct
-
-// var ConfirmacionProcesoCargado int
-var ConfirmacionProcesoFinalizado int
-
+var ConfigCargadito config.KernelConfig
 var WgKernel sync.WaitGroup
 
-var MutexPlanificadores sync.Mutex //asi se crea un mutex jej
-var MutexLog sync.Mutex
+//-----------------------------------------------SEMOFOROS DE PLANIFICADORES-------------------------------------------------------
+
 var ProcesoCargado = make(chan int)
 var ProcesoListo = make(chan int)
 var ProcesoEnSuspReady = make(chan int)
 var ProcesoParaFinalizar = make(chan int)
-var MutexCpuDisponible sync.Mutex
-var ConfigCargadito config.KernelConfig
 
-var SemFinalizacion = make(chan int)
+//-----------------------------------------------ADMINISTRACION DE CPU-------------------------------------------------------
+
+var MutexCpuDisponible sync.Mutex
+var MutexCpuNoDisponibles sync.Mutex
+
+var (
+	SemaforosCPU      = make(map[string]chan struct{})
+	MutexSemaforosCPU sync.Mutex
+)
 
 //-----------------------------------------------MUTEX COLAS-------------------------------------------------------
 
@@ -46,7 +49,7 @@ var MutexEXIT sync.Mutex
 func Pop_estado(Cola *structs.ColaProcesos) structs.PCB {
 
 	if len(*Cola) == 0 {
-		return structs.PCB{} // o manejar el error como prefieras
+		return structs.PCB{}
 	}
 
 	pcb := (*Cola)[0]

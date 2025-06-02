@@ -107,9 +107,6 @@ func LevantarServidorKernel(configCargadito config.KernelConfig) {
 	mux.HandleFunc("/devolucion", protocolos.Recibir_devolucion_CPU)
 	mux.HandleFunc("/registrar-io", HandlerRegistrarIO)
 	mux.HandleFunc("/finalizar-io", HandlerFinalizarIO)
-	mux.HandleFunc("/confirmacion", protocolos.Recibir_confirmacionFinalizado)
-	//mux.HandleFunc("/confirma-finalizado", protocolos.Recibir_confirmacion)
-	mux.HandleFunc("/confirm-dumpmemory", protocolos.Recibir_confirmacion_DumpMemory)
 	mux.HandleFunc("/conectarcpu", protocolos.Conectarse_con_CPU)
 
 	puerto := config.IntToStringConPuntos(configCargadito.PortKernel)

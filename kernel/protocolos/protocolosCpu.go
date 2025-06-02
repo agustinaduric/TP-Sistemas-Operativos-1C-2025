@@ -27,7 +27,17 @@ func Conectarse_con_CPU(w http.ResponseWriter, r *http.Request) {
 
 	global.KernelLogger.Debug(fmt.Sprintf("se conecto una CPU"))
 	global.KernelLogger.Debug(fmt.Sprintf("identificador:: %s", CPUnuevo.Identificador))
+	global.MutexCpuDisponible.Lock()
 	structs.CPUs_Conectados = append(structs.CPUs_Conectados, CPUnuevo)
+	global.MutexCpuDisponible.Unlock()
+
+	global.MutexSemaforosCPU.Lock()
+	if _, exists := global.SemaforosCPU[CPUnuevo.Identificador]; !exists {
+		sem := make(chan struct{}, 1)
+		global.SemaforosCPU[CPUnuevo.Identificador] = sem
+	}
+	global.MutexSemaforosCPU.Unlock()
+
 }
 
 func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
@@ -53,25 +63,67 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
 
+	/* var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
+		CPU:     Cpu_disponible,
+		Proceso: pcb_a_cargar,
+	}                                                    CREO QUE NO VA PORQUE ESTO NO LO VA A USAR SRT
+	global.MutexCpuNoDisponibles.Lock()
+	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
+	global.MutexCpuNoDisponibles.Unlock()*/
+	return resp.StatusCode
+}
+
+func Enviar_datos_SRT_a_cpu(pcb_a_cargar structs.PCB, Cpu_disponible structs.CPU_a_kernel) int {
+	var PIDyPC structs.PIDyPC_Enviar_CPU = structs.PIDyPC_Enviar_CPU{
+		PID: pcb_a_cargar.PID,
+		PC:  pcb_a_cargar.PC,
+	}
+	body, err := json.Marshal(PIDyPC)
+	if err != nil {
+		global.KernelLogger.Error("error codificando el proceso")
+	}
+	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.IP, Cpu_disponible.Puerto)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
+	}
+	log.Printf("respuesta del servidor: %s", resp.Status)
+
 	var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
 		CPU:     Cpu_disponible,
 		Proceso: pcb_a_cargar,
 	}
+	global.MutexCpuNoDisponibles.Lock()
 	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
-
+	global.MutexCpuNoDisponibles.Unlock()
 	return resp.StatusCode
+}
+
+func Mandar_interrupcion(Cpu structs.CPU_a_kernel) {
+	var Interrupcion string = "Interrupcion"
+	body, err := json.Marshal(Interrupcion)
+	if err != nil {
+		global.KernelLogger.Error("error codificando la interrupcion")
+	}
+	url := fmt.Sprintf("http://%s:%d/interupcion", Cpu.IP, Cpu.Puerto)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		global.KernelLogger.Error(fmt.Sprintf("error enviando interrupcion al puerto:%d", Cpu.Puerto))
+	}
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
+	return
 }
 
 func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
 	var Reconectarse string = "Reconectarse"
 	body, err := json.Marshal(Reconectarse)
 	if err != nil {
-		global.KernelLogger.Error("error codificando el proceso")
+		global.KernelLogger.Error("error codificando el mensaje")
 	}
 	url := fmt.Sprintf("http://%s:%d/Reconectar", Cpu.IP, Cpu.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso al puerto:%d", Cpu.Puerto))
+		global.KernelLogger.Error(fmt.Sprintf("error enviando mensaje al puerto:%d", Cpu.Puerto))
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
 	return
@@ -122,7 +174,7 @@ func Buscar_CPU(identificador string) structs.CPU_a_kernel {
 	return structs.CPU_a_kernel{}
 }
 
-func Indisponibilidad_CPU(identificador string) {
+func Habilitar_CPU(identificador string) {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Identificador == identificador {
@@ -160,23 +212,29 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		Reconectarse_CPU(Cpu)
 
 	case structs.DUMP_MEMORY:
-		Indisponibilidad_CPU(Cpu.Identificador)
+		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: DUMP_MEMORY", proceso.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &proceso)
 		syscalls.DUMP_MEMORY(Devolucion.PID)
 
 	case structs.IO:
-		Indisponibilidad_CPU(Cpu.Identificador)
+		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: IO", proceso.PID))
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
 
 	case structs.EXIT_PROC:
-		Indisponibilidad_CPU(Cpu.Identificador)
+		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: EXIT", proceso.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &proceso)
 
 	case structs.REPLANIFICAR:
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", proceso.PID))
 
+		global.MutexSemaforosCPU.Lock()
+		sem := global.SemaforosCPU[Cpu.Identificador]
+		global.MutexSemaforosCPU.Unlock()
+
+		sem <- struct{}{}
 	}
 	return
 }

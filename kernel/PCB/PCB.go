@@ -28,7 +28,8 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	proceso.MetricasEstado = make(map[structs.Estado]int)
 
 	if strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SJF") || strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SRT") {
-		// HACER CUANDO HAGA SJF Y SRT
+		proceso.EstimadoRafaga = global.ConfigCargadito.InitialEstimate
+		proceso.UltimaRafagaReal = 0
 		return proceso
 	}
 

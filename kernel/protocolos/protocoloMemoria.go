@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
-	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
@@ -50,7 +48,7 @@ func Enviar_proceso_a_memoria(pcb_a_cargar structs.PCB) string {
 	return respuesta
 }
 
-func Enviar_P_Finalizado_memoria(PID int) {
+func Enviar_P_Finalizado_memoria(PID int) string {
 	var Proceso int = PID
 	body, err := json.Marshal(Proceso)
 	if err != nil {
@@ -61,51 +59,10 @@ func Enviar_P_Finalizado_memoria(PID int) {
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
-}
-
-func Recibir_confirmacionFinalizado(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var Devolucion string
-	err := decoder.Decode(&Devolucion)
-	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar mensaje"))
-		global.SemFinalizacion <- 0
-		return
-	}
-	if Devolucion == "OK" {
-		global.ConfirmacionProcesoFinalizado = 1
-		global.SemFinalizacion <- 0
-		return
-	}
-	global.SemFinalizacion <- 0
-	return
-
-}
-
-func Recibir_confirmacion_DumpMemory(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
-	err := decoder.Decode(&Devolucion_DumpMemory)
-	if err != nil {
-		log.Printf("error al decodificar mensaje: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar mensaje"))
-		return
-	}
-	var Proceso structs.PCB
-	Proceso = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
-	log.Printf("me llego una Devolucion de Memoria")
-	switch Devolucion_DumpMemory.Respuesta {
-	case "CONFIRMACION":
-		global.IniciarMetrica("BLOCKED", "READY", &Proceso)
-
-	case "ERROR":
-		global.IniciarMetrica("BLOCKED", "EXIT", &Proceso)
-
-	}
+	defer resp.Body.Close()
+	var respuesta string
+	json.NewDecoder(resp.Body).Decode(&respuesta)
+	return respuesta
 }
 
 func MandarProcesoADesuspension(PID int) string {

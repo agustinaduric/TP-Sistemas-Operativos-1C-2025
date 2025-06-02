@@ -24,6 +24,7 @@ var Proceso_Ejecutando structs.PIDyPC_Enviar_CPU
 var Proceso_reconectado = make(chan int)
 
 var Hubo_syscall bool
+var Hubo_interrupcion bool
 
 var CpuLogger *logger.LoggerStruct
 
@@ -33,6 +34,35 @@ var Hayinterrupcion bool = false
 var Page_size int        // se recibe en el handshake con memoria
 var Number_of_levels int // idem el de arriba
 var Entries_per_page int // idem
+
+//-----------------------------------------------------------TLB-----------------------------------------------------------------------------------------------
+
+var MAX_ENTRADAS int
+var ALGORITMO_TLB string
+
+type ResultadoBusqueda int
+
+const (
+	SEARCH_ERROR ResultadoBusqueda = iota
+	SEARCH_OK
+)
+
+type RespuestaTLB int
+
+const (
+	HIT RespuestaTLB = iota
+	MISS
+)
+
+type EntradaDeTLB struct {
+	PID       int
+	NroPagina int
+	NroMarco  int
+}
+
+var TLB []EntradaDeTLB
+
+//-----------------------------------------------------------FUNCIONES AUXULIARES-----------------------------------------------------------------------------------------------
 
 func String_a_int(cadena string) int {
 	var numero int

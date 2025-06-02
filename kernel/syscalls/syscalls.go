@@ -62,9 +62,23 @@ func DUMP_MEMORY(PID int) {
 	url := fmt.Sprintf("http://%s:%d/memorydump", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory)
+		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
-	//return resp.StatusCode
-	return
+
+	defer resp.Body.Close()
+	var Devolucion_DumpMemory structs.Devolucion_DumpMemory
+	json.NewDecoder(resp.Body).Decode(&Devolucion_DumpMemory)
+
+	var Proceso structs.PCB
+	Proceso = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
+	global.KernelLogger.Debug(fmt.Sprintf("me llego una Devolucion de Memoria"))
+	switch Devolucion_DumpMemory.Respuesta {
+	case "CONFIRMACION":
+		global.IniciarMetrica("BLOCKED", "READY", &Proceso)
+
+	case "ERROR":
+		global.IniciarMetrica("BLOCKED", "EXIT", &Proceso)
+
+	}
+
 }

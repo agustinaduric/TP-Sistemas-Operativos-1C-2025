@@ -11,7 +11,7 @@ import (
 )
 
 func Ciclo() {
-	//se_devolvio_contexto = 0
+	global.Hubo_interrupcion = false
 	global.Hubo_syscall = false
 	global.CpuLogger.Debug("Inicio de ciclo")
 
@@ -22,8 +22,9 @@ func Ciclo() {
 			break
 		}
 		CheckInterrupt() // se fija si hay interrupciones.
-		//if(se_devolvio_contexto){ break}
-
+		if global.Hubo_interrupcion {
+			break
+		}
 	}
 }
 
@@ -114,8 +115,9 @@ func CheckInterrupt() {
 			PC:     global.Proceso_Ejecutando.PC,
 			Motivo: "REPLANIFICAR"}
 		protocolos.Enviar_syscall(devolucion)
+		global.Hubo_interrupcion = true
 		return
-		// aca el tp dice que deberia esperar la cpu xd
+
 	}
 	return
 }
