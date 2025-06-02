@@ -1,7 +1,6 @@
 package fmemoria
 
 import (
-	//"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,11 +28,13 @@ func ConfigurarLog() *logger.LoggerStruct {
 
 func LevantarServidorMemoria() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/recibir-handshake", HandlerRecibirHandshake)
+	mux.HandleFunc("/recibir-handshake", HandshakeKernel)
 	mux.HandleFunc("/obtener-instruccion", HandlerObtenerInstruccion)
 	mux.HandleFunc("/espacio-libre", HandlerEspacioLibre)
 	mux.HandleFunc("/cargar-proceso", HandlerCargarProceso)
 	mux.HandleFunc("/conectarcpumemoria", HandshakeCpu)
+	mux.HandleFunc("/escribir", HandlerEscribirMemoria)
+	mux.HandleFunc("/leer", HandlerLeerMemoria)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
 	global.MemoriaLogger.Debug(
@@ -48,8 +49,8 @@ func LevantarServidorMemoria() {
 	}
 }
 
-func HandlerRecibirHandshake(w http.ResponseWriter, r *http.Request) {
-	global.MemoriaLogger.Debug("HandlerRecibirHandshake: entrada")
+func HandshakeKernel(w http.ResponseWriter, r *http.Request) {
+	global.MemoriaLogger.Debug("HandshakeKernel: entrada")
 
 	var handshake structs.Handshake
 	if err := json.NewDecoder(r.Body).Decode(&handshake); err != nil {
@@ -198,16 +199,55 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("Confirmacion enviada"),
 		)
 	}
+}
 
-
-	
-	/*url := fmt.Sprintf("http://%s:%d/confirmacion", global.IPkernel, global.PuertoKernel)
-	body, _ := json.Marshal("OK")
-	if _, err := http.Post(url, "application/json", bytes.NewBuffer(body)); err != nil {
+func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request){
+	global.MemoriaLogger.Debug("Entre a HandlerEscribirMemoria")
+	var escritura structs.Escritura
+	if err := json.NewDecoder(r.Body).Decode(&escritura); err != nil {
 		global.MemoriaLogger.Error(
-			fmt.Sprintf("Error enviando confirmación a Kernel: %s", err.Error()),
+			fmt.Sprintf("Error decodificando la solicitud de escritura: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar la solicitud de escritura", http.StatusBadRequest)
+		return
+	}
+	if escritura.DirFisica < 0 || escritura.DirFisica+len(escritura.Datos)> len(global.MemoriaUsuario){
+		http.Error(w, "Error: rango fuera de memoria", http.StatusBadRequest)
+		return
+	}
+	copy(global.MemoriaUsuario[escritura.DirFisica:], escritura.Datos)
+	global.MemoriaLogger.Debug("Ya escribi en memoria")
+
+	resp := 200
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error codificando respuesta de WRITE realizado: %s", err.Error()),
 		)
 	} else {
-		global.MemoriaLogger.Debug("Confirmación enviada a Kernel")
-	}*/
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("Confirmacion WRITE realizado enviada a CPU"),
+		)
+	}
+}
+
+func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request){
+	global.MemoriaLogger.Debug("Entre a HandlerLeerMemoria")
+	var lectura structs.Lectura
+	if err := json.NewDecoder(r.Body).Decode(&lectura); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Error decodificando la solicitud de lectura: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar la solicitud de lectura", http.StatusBadRequest)
+		return
+	}
+	if lectura.DirFisica < 0 || lectura.DirFisica+lectura.Tamanio> len(global.MemoriaUsuario){
+		http.Error(w, "Error: rango fuera de memoria", http.StatusBadRequest)
+		return
+	}
+	global.MemoriaLogger.Debug("Se pudo leer en memoria")
+	resultadoLectura := global.MemoriaUsuario[lectura.DirFisica: lectura.DirFisica+lectura.Tamanio]
+	json.NewEncoder(w).Encode(resultadoLectura)
+	global.MemoriaLogger.Debug("Lectura realizada enviada a CPU")
 }

@@ -67,3 +67,15 @@ type Handshake struct {
 	Puerto int
 	IP     string
 }
+
+type Escritura struct {
+	PID int
+	DirFisica int
+	Datos []byte
+}
+
+type Lectura struct {
+	PID int
+	DirFisica int
+	Tamanio int
+}
