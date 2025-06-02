@@ -71,3 +71,15 @@ type CPU_a_memoria struct {
 	Puerto        int
 	Identificador string
 }
+
+type Escritura struct {
+	PID int
+	DirFisica int
+	Datos []byte
+}
+
+type Lectura struct {
+	PID int
+	DirFisica int
+	Tamanio int
+}
