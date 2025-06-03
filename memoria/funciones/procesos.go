@@ -107,3 +107,66 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 
 	return instrucciones, nil
 }
+
+//ESTA FUNCION VA A TENER LLAMADOS A FUNCIONES QUE VAN A HACER ESTO
+//  Verifica espacio en MemoriaUsuario
+//  Reserva paginas 
+//  Carga instrucciones del archivo en memoria interna A CHEKCEAR
+// Agrega ProcesoMemoria a la lista interna de procesos
+//func CrearProceso(pid int, size int, instruccionesPath string) error
+
+// SuspenderProceso realiza la lógica de suspensión de un proceso:
+// - Serializa páginas modificadas a swapfile.bin (actualiza SwapOffsets) ¿?
+// - Libera los marcos en MemoriaUsuario
+// - Marca EnSwap = true y actualiza métricas.BajadasASwap
+//func SuspenderProceso(pid int) error
+
+// ReanudarProceso realiza la lógica de cancelar suspensión:
+// - Lee páginas desde swapfile.bin según SwapOffsets ¿?
+// - Reasigna marcos en MemoriaUsuario y libera entradas de swap
+// - Marca EnSwap = false y actualiza métricas.SubidasDeSwap
+//func ReanudarProceso(pid int) error
+
+// FinalizarProceso libera todos los recursos de un proceso:
+// - Libera marcos en MemoriaUsuario y marca SwapOffsets como libres
+// - Emite log con MetricasMemoria y elimina entrada en lista interna
+//func FinalizarProceso(pid int) error
+
+ETSA SI QUE A CHEKAER
+// TraducirDireccion convierte una dirección lógica a física:
+// - Dado pid y direcciónLógica, calcula page y offset
+// - Recorre N niveles de TablaRaiz (incrementa métricas.AccesosTabla)
+// - Retorna direcciónFisica = frame*PageSize + offset o error si falla
+//func TraducirDireccion(pid int, direccionLogica int) (int, error)
+
+// LeerMemoria realiza lectura de bloque en espacio de usuario:
+// - Traduce direcciónLógica a física con TraducirDireccion
+// - Copia 'size' bytes desde MemoriaUsuario[direccionFisica:]
+// - Incrementa métricas.LecturasUsuario
+// - Retorna el slice de bytes o error
+// - Nota: Si estas leyendo esto es xq te da miedo la palabra byte, trankilo
+func LeerMemoria(pid int, direccionLogica int, size int) ([]byte, error)
+
+// EscribirMemoria realiza escritura de bloque en espacio de usuario:
+// - Traduce direcciónLógica a física con TraducirDireccion
+// - Copia 'data' a MemoriaUsuario[direccionFisica:]
+// - Incrementa métricas.EscriturasUsuario
+// - Retorna nil o error si fuera de límites
+//func EscribirMemoria(pid int, direccionLogica int, data []byte) error
+
+// LeerPagina devuelve el contenido de una página completa dado un frame:
+// - Calcula offset = frame * PageSize
+// - Retorna MemoriaUsuario[offset:offset+PageSize] o error si fuera de límites
+// - Incrementa métricas.LecturasUsuario
+//func LeerPagina(frame int) ([]byte, error)
+
+// EscribirPagina escribe una página completa dado un frame:
+// - Calcula offset = frame * PageSize
+// - Escribe 'data' (de tamaño PageSize) en MemoriaUsuario[offset:]
+// - Incrementa métricas.EscriturasUsuario
+// - Retorna nil o error si data no coincide con PageSize
+//func EscribirPagina(frame int, data []byte) error
+
+
+
+
