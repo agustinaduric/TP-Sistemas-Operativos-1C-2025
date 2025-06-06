@@ -1,10 +1,14 @@
 package global
 
 import (
+	"sync"
+
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
+
+var MemoriaMutex sync.Mutex
 
 var MemoriaLogger *logger.LoggerStruct
 

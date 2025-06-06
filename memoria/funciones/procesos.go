@@ -110,7 +110,7 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 
 //ESTA FUNCION VA A TENER LLAMADOS A FUNCIONES QUE VAN A HACER ESTO
 //  Verifica espacio en MemoriaUsuario
-//  Reserva paginas 
+//  Reserva paginas
 //  Carga instrucciones del archivo en memoria interna A CHEKCEAR
 // Agrega ProcesoMemoria a la lista interna de procesos
 //func CrearProceso(pid int, size int, instruccionesPath string) error
@@ -132,7 +132,7 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 // - Emite log con MetricasMemoria y elimina entrada en lista interna
 //func FinalizarProceso(pid int) error
 
-ETSA SI QUE A CHEKAER
+//ETSA SI QUE A CHEKAER
 // TraducirDireccion convierte una dirección lógica a física:
 // - Dado pid y direcciónLógica, calcula page y offset
 // - Recorre N niveles de TablaRaiz (incrementa métricas.AccesosTabla)
@@ -166,7 +166,3 @@ func LeerMemoria(pid int, direccionLogica int, size int) ([]byte, error)
 // - Incrementa métricas.EscriturasUsuario
 // - Retorna nil o error si data no coincide con PageSize
 //func EscribirPagina(frame int, data []byte) error
-
-
-
-
