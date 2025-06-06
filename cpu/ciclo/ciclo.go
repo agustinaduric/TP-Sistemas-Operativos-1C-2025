@@ -18,11 +18,8 @@ func Ciclo() {
 	for {
 		fetch() // busca la siguiente instrucción.
 		decode_and_execute()
-		if global.Hubo_syscall {
-			break
-		}
 		CheckInterrupt() // se fija si hay interrupciones.
-		if global.Hubo_interrupcion {
+		if global.Hubo_syscall || global.Hubo_interrupcion {
 			break
 		}
 	}
