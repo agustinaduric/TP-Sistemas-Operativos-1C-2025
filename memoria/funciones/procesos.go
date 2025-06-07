@@ -190,5 +190,7 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 	global.MemoriaLogger.Debug("  marcos reservados con éxito")
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: PID=%d listo para ejecutar", pid))
+	//TODO
+	//mandar el ok del orto
 	return nil
 }
