@@ -1,21 +1,21 @@
 package structs
 
 type ProcesoMemoria struct {
-	PID           int
-	Tamanio       int
-	EnSwap        bool
-	Metricas      MetricasMemoria
-	Path          string
-	Instrucciones []Instruccion
+	PID           int             `json:"pid"`
+	Tamanio       int             `json:"tamanio"`
+	EnSwap        bool            `json:"en_swap"`
+	Metricas      MetricasMemoria `json:"metricas"`
+	Path          string          `json:"path"`
+	Instrucciones []Instruccion   `json:"instrucciones"`
 }
 
 type MetricasMemoria struct {
-	AccesosTabla    int
-	InstSolicitadas int
-	BajadasSwap     int
-	SubidasMem      int
-	LecturasMem     int
-	EscriturasMem   int
+	AccesosTabla    int `json:"accesos_tabla"`
+	InstSolicitadas int `json:"inst_solicitadas"`
+	BajadasSwap     int `json:"bajadas_swap"`
+	SubidasMem      int `json:"subidas_mem"`
+	LecturasMem     int `json:"lecturas_mem"`
+	EscriturasMem   int `json:"escrituras_mem"`
 }
 
 type Devolucion_DumpMemory struct {

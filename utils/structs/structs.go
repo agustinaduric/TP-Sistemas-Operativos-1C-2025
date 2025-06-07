@@ -17,8 +17,8 @@ const (
 )
 
 type Instruccion struct {
-	Operacion  string
-	Argumentos []string
+	Operacion  string   `json:"operacion"`
+	Argumentos []string `json:"argumentos"`
 }
 type PCB struct {
 	PID                 int
@@ -69,13 +69,13 @@ type Handshake struct {
 }
 
 type Escritura struct {
-	PID int
+	PID       int
 	DirFisica int
-	Datos []byte
+	Datos     []byte
 }
 
 type Lectura struct {
-	PID int
+	PID       int
 	DirFisica int
-	Tamanio int
+	Tamanio   int
 }
