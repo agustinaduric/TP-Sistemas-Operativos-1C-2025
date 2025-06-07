@@ -27,5 +27,4 @@ type RegistroIO struct{
 type RespuestaIO struct{
 	NombreIO      string
 	PID           int
-	Desconexion bool
 }

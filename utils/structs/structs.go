@@ -79,3 +79,7 @@ type Lectura struct {
 	DirFisica int
 	Tamanio   int
 }
+
+type IODesconectado struct {
+	Nombre string
+}

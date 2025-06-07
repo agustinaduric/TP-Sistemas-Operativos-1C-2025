@@ -87,3 +87,12 @@ func EnviarHandshake(ip string, puerto int, PuertoIP structs.Handshake) {
 	url := fmt.Sprintf("http://%s:%d/recibir-handshake", ip, puerto)
 	http.Post(url, "application/json", bytes.NewBuffer(body))
 }
+
+func EnviarDesconexion(ip string, puerto int,dispositivo structs.IODesconectado){
+	body, err := json.Marshal(dispositivo)
+	if err != nil {
+		log.Printf("error codificando la respuestaIO: %s", err.Error())
+	}
+	url := fmt.Sprintf("http://%s:%d/desconexion-io", ip, puerto)
+	http.Post(url, "application/json", bytes.NewBuffer(body))
+}

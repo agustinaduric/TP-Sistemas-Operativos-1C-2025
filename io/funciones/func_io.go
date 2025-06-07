@@ -7,7 +7,10 @@ import(
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
+
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -79,10 +82,20 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 	respuesta := structs.RespuestaIO{
 		NombreIO: solicitud.NombreIO,
 		PID: solicitud.PID,
-		Desconexion: false,
 	}
 	comunicacion.EnviarFinIO(globalIO.IpKernel, globalIO.PuertoKernel, respuesta)
 	globalIO.IOLogger.Debug(fmt.Sprintf("Se envio a kernel fin IO, Dispositivo: %s PID: %d", solicitud.NombreIO, solicitud.PID ))
+}
+
+func EsperarDesconexion(dispositivo string) {
+	globalIO.IOLogger.Debug(fmt.Sprintf("%s ingreso a EsperarDesconexion", dispositivo))
+	senial := make(chan os.Signal, 1)
+	signal.Notify(senial, syscall.SIGINT, syscall.SIGTERM)
+	<-senial
+	globalIO.IOLogger.Debug(fmt.Sprintf("Dispositivo: %s se esta desconectando", dispositivo))
+	ioDesconectado := structs.IODesconectado{Nombre: dispositivo}
+	comunicacion.EnviarDesconexion(globalIO.IpKernel, globalIO.PuertoKernel,ioDesconectado)
+	globalIO.IOLogger.Debug(fmt.Sprintf("AViso desconexion dispositivo: %s enviada a kernel", dispositivo))
 }
 
 func LevantarIO(configCargadito config.IOConfig) {
