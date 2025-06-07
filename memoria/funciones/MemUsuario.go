@@ -127,5 +127,8 @@ func escribirMemoriaUsuario(direccionFisica int, texto string) {
 			longitud, direccionFisica, texto),
 	)
 
+	//TODO
+	//ENVIAR EL OK
+
 	global.MemoriaMutex.Unlock()
 }

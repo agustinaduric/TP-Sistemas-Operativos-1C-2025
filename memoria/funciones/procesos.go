@@ -164,3 +164,31 @@ func OcuparMarcos(pid int) {
 	))
 	MarcosMutex.Unlock()
 }
+
+func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion) error {
+	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: inicio PID=%d, tamaño=%d", pid, tamanio))
+
+	proc := structs.ProcesoMemoria{
+		PID:           pid,
+		Tamanio:       tamanio,
+		EnSwap:        false,
+		Metricas:      structs.MetricasMemoria{}, // todas las métricas en 0
+		Path:          "",                        // CHAVALES NECESITO AYUDA CON ESTE
+		Instrucciones: instrucciones,
+	}
+	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
+
+	global.Procesos = append(global.Procesos, proc)
+	global.MemoriaLogger.Debug(fmt.Sprintf("  PID=%d agregado a memoria principal (total procesos=%d)", pid, len(global.Procesos)))
+
+	global.MemoriaLogger.Debug("  reservando marcos en MapMemoriaDeUsuario")
+	OcuparMarcos(pid) // Memoria de usuario  ockeada
+	//TODO
+	//Hacer todo el laburito de la paginacion jerarquica
+	//posdata: cada vez q vean un TODO seguramente es referido a la paginacion jerarquica
+
+	global.MemoriaLogger.Debug("  marcos reservados con éxito")
+
+	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: PID=%d listo para ejecutar", pid))
+	return nil
+}
