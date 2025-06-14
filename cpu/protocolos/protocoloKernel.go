@@ -42,6 +42,7 @@ func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+	global.TLB = nil
 }
 
 func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {
