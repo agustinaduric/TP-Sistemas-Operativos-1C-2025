@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"sort"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
-	"github.com/sisoputnfrba/tp-golang/utils/structs"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func ConfigurarLog() *logger.LoggerStruct {
@@ -201,7 +204,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request){
+func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug("Entre a HandlerEscribirMemoria")
 	var escritura structs.Escritura
 	if err := json.NewDecoder(r.Body).Decode(&escritura); err != nil {
@@ -211,7 +214,7 @@ func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Error al decodificar la solicitud de escritura", http.StatusBadRequest)
 		return
 	}
-	if escritura.DirFisica < 0 || escritura.DirFisica+len(escritura.Datos)> len(global.MemoriaUsuario){
+	if escritura.DirFisica < 0 || escritura.DirFisica+len(escritura.Datos) > len(global.MemoriaUsuario) {
 		http.Error(w, "Error: rango fuera de memoria", http.StatusBadRequest)
 		return
 	}
@@ -232,7 +235,7 @@ func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request){
 	}
 }
 
-func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request){
+func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug("Entre a HandlerLeerMemoria")
 	var lectura structs.Lectura
 	if err := json.NewDecoder(r.Body).Decode(&lectura); err != nil {
@@ -242,12 +245,75 @@ func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Error al decodificar la solicitud de lectura", http.StatusBadRequest)
 		return
 	}
-	if lectura.DirFisica < 0 || lectura.DirFisica+lectura.Tamanio> len(global.MemoriaUsuario){
+	if lectura.DirFisica < 0 || lectura.DirFisica+lectura.Tamanio > len(global.MemoriaUsuario) {
 		http.Error(w, "Error: rango fuera de memoria", http.StatusBadRequest)
 		return
 	}
 	global.MemoriaLogger.Debug("Se pudo leer en memoria")
-	resultadoLectura := global.MemoriaUsuario[lectura.DirFisica: lectura.DirFisica+lectura.Tamanio]
+	resultadoLectura := global.MemoriaUsuario[lectura.DirFisica : lectura.DirFisica+lectura.Tamanio]
 	json.NewEncoder(w).Encode(resultadoLectura)
 	global.MemoriaLogger.Debug("Lectura realizada enviada a CPU")
+}
+
+func DumpMemory(pid int) error { //Cabe aclarar que
+	cfg := global.MemoriaConfig
+	global.MemoriaLogger.Debug(fmt.Sprintf("DumpMemory: inicio PID=%d", pid))
+
+	//Agarramos todos los marcos que le pertenecen al proceso
+	var marcosOcupados []int
+	global.MemoriaMutex.Lock()
+	for indice, ocupante := range global.MapMemoriaDeUsuario {
+		if ocupante == pid {
+			marcosOcupados = append(marcosOcupados, indice)
+		}
+	}
+	global.MemoriaMutex.Unlock()
+
+	if len(marcosOcupados) == 0 {
+		global.MemoriaLogger.Error(fmt.Sprintf("DumpMemory: PID=%d sin marcos asignados", pid))
+		return fmt.Errorf("PID=%d no tiene memoria asignada", pid)
+	}
+
+	//cuando le pregunte a chatgpt cuestiones sobre el memory dump dijo que
+	//era bueno ordenarlos, asi que lo hacemos
+	sort.Ints(marcosOcupados)
+
+	//archivitp
+	timestamp := time.Now().Unix()
+	nombreArchivo := fmt.Sprintf("%d-%d.dmp", pid, timestamp)
+	rutaCompleta := filepath.Join(cfg.DumpPath, nombreArchivo)
+
+	archivo, err := os.Create(rutaCompleta)
+	if err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("DUmpMemory: fallo creando '%s': %s", rutaCompleta, err))
+		return fmt.Errorf("no se pudo crear dump: %w", err)
+	}
+	defer archivo.Close()
+
+	//y de chill recoremos memoria usuario asi eszcribimos en el archivo lo q dice cada marco, insta
+	tamañoPagina := cfg.PageSize
+	for _, numeroMarco := range marcosOcupados {
+		desplazamiento := numeroMarco * tamañoPagina
+		pagina := global.MemoriaUsuario[desplazamiento : desplazamiento+tamañoPagina]
+
+		escritos, err := archivo.Write(pagina)
+		if err != nil {
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"DumpMemory: error escribiendo marco %d: %s",
+				numeroMarco, err,
+			))
+			return fmt.Errorf("error al escribir dump: %w", err)
+		}
+
+		global.MemoriaLogger.Debug(fmt.Sprintf(
+			"DumpMemory: PID=%d marco %d volcado (%d bytes)",
+			pid, numeroMarco, escritos,
+		))
+	}
+
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"DumpMemory: fin PID=%d, archivo '%s' creado",
+		pid, rutaCompleta,
+	))
+	return nil
 }
