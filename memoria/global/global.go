@@ -10,6 +10,8 @@ import (
 
 var MemoriaMutex sync.Mutex
 
+var MarcosMutex sync.Mutex
+
 var MemoriaLogger *logger.LoggerStruct
 
 var MemoriaConfig config.MemoriaConfig
@@ -19,6 +21,8 @@ var MapMemoriaDeUsuario []int
 var MemoriaUsuario []byte
 
 var Procesos []structs.ProcesoMemoria
+
+var ProcesosTP []structs.ProcesoTP
 
 var IPkernel string
 

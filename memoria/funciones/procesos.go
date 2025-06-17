@@ -168,29 +168,165 @@ func OcuparMarcos(pid int) {
 func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: inicio PID=%d, tamaño=%d", pid, tamanio))
 
+	// 1. Crear el ProcesoMemoria con métricas a cero
 	proc := structs.ProcesoMemoria{
 		PID:           pid,
 		Tamanio:       tamanio,
 		EnSwap:        false,
 		Metricas:      structs.MetricasMemoria{}, // todas las métricas en 0
-		Path:          "",                        // CHAVALES NECESITO AYUDA CON ESTE
+		Path:          "",                        // TODO: ayuda
 		Instrucciones: instrucciones,
 	}
 	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
 
+	// 2. Agregar a memoria principal
 	global.Procesos = append(global.Procesos, proc)
-	global.MemoriaLogger.Debug(fmt.Sprintf("  PID=%d agregado a memoria principal (total procesos=%d)", pid, len(global.Procesos)))
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"  PID=%d agregado a memoria principal (total procesos=%d)",
+		pid, len(global.Procesos),
+	))
 
+	// 3. Reservar marcos en la memoria de usuario
 	global.MemoriaLogger.Debug("  reservando marcos en MapMemoriaDeUsuario")
-	OcuparMarcos(pid) // Memoria de usuario  ockeada
-	//TODO
-	//Hacer todo el laburito de la paginacion jerarquica
-	//posdata: cada vez q vean un TODO seguramente es referido a la paginacion jerarquica
-
+	OcuparMarcos(pid) // asume siempre hay espacio
 	global.MemoriaLogger.Debug("  marcos reservados con éxito")
 
-	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: PID=%d listo para ejecutar", pid))
-	//TODO
-	//mandar el ok del orto
+	// 4. Crear y agregar ProcesoTP
+	procTP := AgregarProcesoTP(pid)
+	// 5. Asignar esos marcos a las tablas de páginas
+	AsignarMarcosAProcesoTP(procTP)
+
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"InicializarProceso: PID=%d listo para ejecutar",
+		pid,
+	))
 	return nil
+}
+
+func FinalizarProceso(pid int) {
+	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: inicio PID=%d", pid))
+
+	LiberarMarcos(pid)
+	antesLen := len(global.Procesos)
+	for i := range global.Procesos {
+		if global.Procesos[i].PID == pid {
+			global.Procesos = append(global.Procesos[:i], global.Procesos[i+1:]...)
+			global.MemoriaLogger.Debug(fmt.Sprintf(
+				"  PID=%d removido de Procesos (antes %d, ahora %d)",
+				pid, antesLen, len(global.Procesos),
+			))
+			break
+		}
+	}
+	if len(global.Procesos) == antesLen {
+		global.MemoriaLogger.Error(fmt.Sprintf(
+			"  FinalizarProceso: PID=%d no encontrado en Procesos", pid,
+		))
+	}
+
+	// 2. Eliminar de global.ProcesosTP
+	antesLenTP := len(global.ProcesosTP)
+	for i := range global.ProcesosTP {
+		if global.ProcesosTP[i].PID == pid {
+			global.ProcesosTP = append(global.ProcesosTP[:i], global.ProcesosTP[i+1:]...)
+			global.MemoriaLogger.Debug(fmt.Sprintf(
+				"  PID=%d removido de ProcesosTP (antes %d, ahora %d)",
+				pid, antesLenTP, len(global.ProcesosTP),
+			))
+			break
+		}
+	}
+	if len(global.ProcesosTP) == antesLenTP {
+		global.MemoriaLogger.Error(fmt.Sprintf(
+			"  FinalizarProceso: PID=%d no encontrado en ProcesosTP", pid,
+		))
+	}
+
+	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: fin PID=%d", pid))
+}
+
+// AgregarProcesoTP construye la paginación jerárquica para un PID dado:
+// - NumberOfLevels tablas,
+// - EntriesPerPage entradas por tabla,
+// todas inicializadas a -1.
+// Devuelve un puntero al ProcesoTP recién creado.
+func AgregarProcesoTP(pid int) *structs.ProcesoTP {
+	cfg := global.MemoriaConfig
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"AgregarProcesoTP: iniciando para PID=%d con %d tablas de %d páginas cada una",
+		pid, cfg.NumberOfLevels, cfg.EntriesPerPage,
+	))
+
+	// 1. Construir el slice de Tp
+	tps := make([]structs.Tp, cfg.NumberOfLevels)
+	for i := range tps {
+		pags := make([]int, cfg.EntriesPerPage)
+		for j := range pags {
+			pags[j] = -1
+		}
+		tps[i] = structs.Tp{Paginas: pags}
+		global.MemoriaLogger.Debug(fmt.Sprintf(
+			"  Tabla %d inicializada: páginas = %v",
+			i, pags,
+		))
+	}
+
+	// 2. Crear el ProcesoTP y agregarlo a la lista global
+	procTP := &structs.ProcesoTP{
+		PID: pid,
+		TPS: tps,
+	}
+	global.ProcesosTP = append(global.ProcesosTP, *procTP)
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"AgregarProcesoTP: PID=%d agregado con éxito (total procesosTP=%d)",
+		pid, len(global.ProcesosTP),
+	))
+	return procTP
+}
+
+// AsignarMarcosAProcesoTP recorre MapMemoriaDeUsuario y asigna a
+// procTP.TPS las posiciones de marco donde el PID coincide. Reparte
+// los marcos en orden, llenando primero la Tabla[0], luego Tabla[1], etc.
+func AsignarMarcosAProcesoTP(procTP *structs.ProcesoTP) {
+	pid := procTP.PID
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"AsignarMarcosAProcesoTP: inicio PID=%d", pid,
+	))
+
+	tablaIdx := 0
+	paginaIdx := 0
+	numTablas := len(procTP.TPS)
+	if numTablas == 0 {
+		global.MemoriaLogger.Error("AsignarMarcosAProcesoTP: no hay tablas en el ProcesoTP")
+		return
+	}
+	numPaginas := len(procTP.TPS[0].Paginas)
+
+	global.MarcosMutex.Lock()
+
+	for marco, ocupante := range global.MapMemoriaDeUsuario {
+		if ocupante != pid {
+			continue
+		}
+
+		procTP.TPS[tablaIdx].Paginas[paginaIdx] = marco
+		global.MemoriaLogger.Debug(fmt.Sprintf(
+			"  PID=%d asigna marco %d a Tabla[%d].Paginas[%d]",
+			pid, marco, tablaIdx, paginaIdx,
+		))
+
+		paginaIdx++
+		if paginaIdx >= numPaginas {
+			paginaIdx = 0
+			tablaIdx++
+			if tablaIdx >= numTablas {
+				break
+			}
+		}
+	}
+
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"AsignarMarcosAProcesoTP: fin PID=%d", pid,
+	))
+	global.MarcosMutex.Unlock()
 }

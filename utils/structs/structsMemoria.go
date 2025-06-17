@@ -18,6 +18,15 @@ type MetricasMemoria struct {
 	EscriturasMem   int `json:"escrituras_mem"`
 }
 
+type ProcesoTP struct {
+	PID int
+	TPS []Tp
+}
+
+type Tp struct {
+	Paginas []int
+}
+
 type Devolucion_DumpMemory struct {
 	PID       int
 	Respuesta string
