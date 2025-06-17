@@ -85,9 +85,9 @@ func espacioDisponible() int {
 	return disponibles
 }
 
-func leerMemoriaUsuario(direccionFisica int) string {
+func leerMemoriaUsuario(pid int, direccionFisica int) string {
 	global.MemoriaMutex.Lock()
-
+	IncrementarLecturasMem(pid)
 	if direccionFisica < 0 || direccionFisica >= len(global.MemoriaUsuario) {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("leerMemoriaUsuario: dirección fuera de rango: %d", direccionFisica),
@@ -103,9 +103,9 @@ func leerMemoriaUsuario(direccionFisica int) string {
 	return string(valor)
 }
 
-func escribirMemoriaUsuario(direccionFisica int, texto string) {
+func escribirMemoriaUsuario(pid int, direccionFisica int, texto string) {
 	global.MemoriaMutex.Lock()
-
+	IncrementarEscriturasMem(pid)
 	longitud := len(texto)
 	limite := direccionFisica + longitud
 	if direccionFisica < 0 || limite > len(global.MemoriaUsuario) {

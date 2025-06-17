@@ -148,6 +148,7 @@ func PedidoDeDesSuspension(pid int) error {
 
 func SuspenderProceso(pid int) error {
 
+	IncrementarBajadasSwap(pid)
 	LiberarMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
 	LiberarPaginasProcesoTP(pid)
 
@@ -174,6 +175,7 @@ func SuspenderProceso(pid int) error {
 
 func DesuspenderProceso(pid int) error {
 
+	IncrementarSubidasMem(pid)
 	asignarMarcosAProcesoTPPorPID(pid)
 	OcuparMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
 

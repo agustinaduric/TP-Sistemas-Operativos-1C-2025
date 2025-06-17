@@ -206,7 +206,38 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 func FinalizarProceso(pid int) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: inicio PID=%d", pid))
 
+	// 1. Liberar marcos asignados
 	LiberarMarcos(pid)
+
+	// 2. Buscar métricas antes de eliminar
+	var met structs.MetricasMemoria
+	encontrado := false
+	for _, proc := range global.Procesos {
+		if proc.PID == pid {
+			met = proc.Metricas
+			encontrado = true
+			break
+		}
+	}
+	if !encontrado {
+		global.MemoriaLogger.Error(fmt.Sprintf(
+			"FinalizarProceso: PID=%d no encontrado para métricas", pid,
+		))
+	} else {
+		// 3. Log obligatorio de métricas al destruir
+		global.MemoriaLogger.Info(fmt.Sprintf(
+			"## PID: %d - Proceso Destruido - Métricas - Acc.T.Pag: %d; Inst.Sol.: %d; SWAP: %d; Mem.Prin.: %d; Lec.Mem.: %d; Esc.Mem.: %d",
+			pid,
+			met.AccesosTabla,
+			met.InstSolicitadas,
+			met.BajadasSwap,
+			met.SubidasMem,
+			met.LecturasMem,
+			met.EscriturasMem,
+		))
+	}
+
+	// 4. Eliminar de memoria principal
 	antesLen := len(global.Procesos)
 	for i := range global.Procesos {
 		if global.Procesos[i].PID == pid {
@@ -224,7 +255,7 @@ func FinalizarProceso(pid int) {
 		))
 	}
 
-	// 2. Eliminar de global.ProcesosTP
+	// 5. Eliminar de paginación jerárquica
 	antesLenTP := len(global.ProcesosTP)
 	for i := range global.ProcesosTP {
 		if global.ProcesosTP[i].PID == pid {
