@@ -70,6 +70,16 @@ type SolicitudDeMarco struct {
 
 var MarcoEncontrado int
 
+//-----------------------------------------------------------Cache-----------------------------------------------------------------------------------------------
+
+var CachePaginas []structs.EntradaCache
+
+var PunteroClock int
+
+var AlgoritmoCache string
+
+var EntradasMaxCache int
+
 //-----------------------------------------------------------FUNCIONES AUXULIARES-----------------------------------------------------------------------------------------------
 
 func String_a_int(cadena string) int {

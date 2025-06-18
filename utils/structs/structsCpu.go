@@ -43,10 +43,11 @@ type EntradaTLB struct {
 }
 
 type EntradaCache struct {
+	PID int
 	Pagina     int
 	Contenido  []byte
-	Modificado bool // si se escribio y hay que poner en Memoria
-	Referencia bool // para CLOCK
+	BitUso bool
+	BitModificado bool
 }
 
 type DevolucionCpu struct {
