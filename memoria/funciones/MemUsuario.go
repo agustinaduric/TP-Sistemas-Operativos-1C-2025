@@ -85,28 +85,33 @@ func espacioDisponible() int {
 	return disponibles
 }
 
-func leerMemoriaUsuario(pid int, direccionFisica int) string {
+func LeerMemoriaUsuario(pid int, direccionFisica int,tamanio int) []byte {
 	global.MemoriaMutex.Lock()
 	IncrementarLecturasMem(pid)
 	if direccionFisica < 0 || direccionFisica >= len(global.MemoriaUsuario) {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("leerMemoriaUsuario: dirección fuera de rango: %d", direccionFisica),
 		)
-		return ""
+		return nil
 	}
 
-	valor := global.MemoriaUsuario[direccionFisica]
+	fin := direccionFisica + tamanio
+    if fin > len(global.MemoriaUsuario) {
+        fin = len(global.MemoriaUsuario)
+    }
+
+	valor := global.MemoriaUsuario[direccionFisica:fin]
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("leerMemoriaUsuario: leyó byte en dirección %d → valor: %q", direccionFisica, valor),
 	)
 	global.MemoriaMutex.Unlock()
-	return string(valor)
+	return valor
 }
 
-func escribirMemoriaUsuario(pid int, direccionFisica int, texto string) {
+func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 	global.MemoriaMutex.Lock()
 	IncrementarEscriturasMem(pid)
-	longitud := len(texto)
+	longitud := len(bytesTexto)
 	limite := direccionFisica + longitud
 	if direccionFisica < 0 || limite > len(global.MemoriaUsuario) {
 		global.MemoriaLogger.Error(
@@ -117,18 +122,15 @@ func escribirMemoriaUsuario(pid int, direccionFisica int, texto string) {
 		return
 	}
 
-	bytesTexto := []byte(texto)
+	
 	for i := 0; i < longitud; i++ {
 		global.MemoriaUsuario[direccionFisica+i] = bytesTexto[i]
 	}
 
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("escribirMemoriaUsuario: escrito texto de tamaño %d en dirección %d. Datos: %q",
-			longitud, direccionFisica, texto),
+			longitud, direccionFisica, bytesTexto),
 	)
-
-	//TODO
-	//ENVIAR EL OK
 
 	global.MemoriaMutex.Unlock()
 }

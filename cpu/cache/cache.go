@@ -3,9 +3,10 @@ package cache
 import (
 	"fmt"
 
-	"github.com/sisoputnfrba/tp-golang/cpu/global"
-	"github.com/sisoputnfrba/tp-golang/utils/structs"
 	"github.com/sisoputnfrba/tp-golang/cpu/cache/algoritmos"
+	"github.com/sisoputnfrba/tp-golang/cpu/global"
+	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 var cachePags = global.CachePaginas
@@ -68,4 +69,19 @@ func ReemplazarEntrada(nuevaEntrada structs.EntradaCache){
 	default:
 		global.CpuLogger.Error(fmt.Sprintf("Algoritmo de reeemplazo no valido: %s", global.AlgoritmoCache))
 	}
+}
+
+func LimpiarCacheDelProceso(pid int){
+	global.CpuLogger.Debug(fmt.Sprintf("Limpiando cache PID: %d", pid))
+	for i:= 0; i<len(cachePags);i++{
+		if cachePags[i].PID == pid{
+			if cachePags[i].BitModificado{
+				comunicacion.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, &cachePags[i])
+			}
+			cachePags = append(cachePags[:i],cachePags[i+1:]...)
+		} else{
+			i++
+		}
+	}
+	global.CpuLogger.Debug(fmt.Sprintf("LImpieza cache terminada PID: %d", pid))
 }

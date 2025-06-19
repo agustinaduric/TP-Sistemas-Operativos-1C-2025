@@ -54,7 +54,7 @@ func Enviar_P_Finalizado_memoria(PID int) string {
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error codificando el proceso: %s", err.Error()))
 	}
-	url := fmt.Sprintf("http://%s:%d/finalizarproc", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	url := fmt.Sprintf("http://%s:%d/finalizar-proceso", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", PID, global.ConfigCargadito.PortMemory))

@@ -4,6 +4,7 @@ import (
 	"os"
 
 	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
+	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	fCpu "github.com/sisoputnfrba/tp-golang/cpu/funciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
@@ -20,8 +21,7 @@ func main() {
 	go fCpu.LevantarServidorCPU()
 	protocolos.Conectarse_con_Kernel(global.Nombre)
 	protocolos.Conectarse_con_Memoria(global.Nombre)
+	cache.InicializarCachePaginas(global.ConfigCargadito.CacheEntries, global.ConfigCargadito.CacheReplacement)
 	mmu.Inicializar_TLB()
 	global.WgCPU.Wait()
-	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, "Soy cpu, hola memoria")
-	//comunicacion.EnviarMensaje(global.ConfigCargadito.IpKernel, global.ConfigCargadito.PortKernel, "Soy cpu,hola kernel")
 }

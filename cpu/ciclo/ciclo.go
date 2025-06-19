@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
+	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -92,6 +93,7 @@ func decode_and_execute() {
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 	case "EXIT":
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: EXIT", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:    global.Proceso_Ejecutando.PID,

@@ -58,7 +58,7 @@ func BuscarInstruccion(pid int, pc int) (structs.Instruccion, error) {
 			pc, len(proceso.Instrucciones), pid,
 		)
 	}
-
+	IncrementarInstSolicitadas(pid)
 	instr := proceso.Instrucciones[pc]
 	global.MemoriaLogger.Info(
 		fmt.Sprintf(
@@ -165,7 +165,7 @@ func OcuparMarcos(pid int) {
 	MarcosMutex.Unlock()
 }
 
-func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion) error {
+func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion, path string) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: inicio PID=%d, tamaño=%d", pid, tamanio))
 
 	// 1. Crear el ProcesoMemoria con métricas a cero
@@ -174,7 +174,7 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 		Tamanio:       tamanio,
 		EnSwap:        false,
 		Metricas:      structs.MetricasMemoria{}, // todas las métricas en 0
-		Path:          "",                        // TODO: ayuda
+		Path:          path,               
 		Instrucciones: instrucciones,
 	}
 	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
@@ -203,7 +203,7 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 	return nil
 }
 
-func FinalizarProceso(pid int) {
+func FinalizarProceso(pid int) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: inicio PID=%d", pid))
 
 	// 1. Liberar marcos asignados
@@ -223,6 +223,7 @@ func FinalizarProceso(pid int) {
 		global.MemoriaLogger.Error(fmt.Sprintf(
 			"FinalizarProceso: PID=%d no encontrado para métricas", pid,
 		))
+		return fmt.Errorf("PID=%d no encontrado", pid)
 	} else {
 		// 3. Log obligatorio de métricas al destruir
 		global.MemoriaLogger.Info(fmt.Sprintf(
@@ -253,6 +254,7 @@ func FinalizarProceso(pid int) {
 		global.MemoriaLogger.Error(fmt.Sprintf(
 			"  FinalizarProceso: PID=%d no encontrado en Procesos", pid,
 		))
+		return fmt.Errorf("PID=%d no encontrado", pid)
 	}
 
 	// 5. Eliminar de paginación jerárquica
@@ -271,9 +273,11 @@ func FinalizarProceso(pid int) {
 		global.MemoriaLogger.Error(fmt.Sprintf(
 			"  FinalizarProceso: PID=%d no encontrado en ProcesosTP", pid,
 		))
+		return fmt.Errorf("PID=%d no encontrado", pid)
 	}
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: fin PID=%d", pid))
+	return nil
 }
 
 // AgregarProcesoTP construye la paginación jerárquica para un PID dado:
@@ -360,4 +364,29 @@ func AsignarMarcosAProcesoTP(procTP *structs.ProcesoTP) {
 		"AsignarMarcosAProcesoTP: fin PID=%d", pid,
 	))
 	global.MarcosMutex.Unlock()
+}
+
+
+func Marco(pid int, pagina int) int {
+    for _, procTP := range global.ProcesosTP {
+        if procTP.PID != pid {
+            continue
+        }
+        entradas := global.MemoriaConfig.EntriesPerPage
+        tablaIdx := pagina / entradas
+        offset := pagina % entradas
+
+		for i := 0; i < tablaIdx + 1; i++ {
+        	IncrementarAccesosTabla(pid)
+  		}
+
+        if tablaIdx < 0 || tablaIdx >= len(procTP.TPS) {
+            return -1
+        }
+        if offset < 0 || offset >= len(procTP.TPS[tablaIdx].Paginas) {
+            return -1
+        }
+        return procTP.TPS[tablaIdx].Paginas[offset]
+    }
+    return -1
 }

@@ -96,3 +96,18 @@ func EnviarDesconexion(ip string, puerto int,dispositivo structs.IODesconectado)
 	url := fmt.Sprintf("http://%s:%d/desconexion-io", ip, puerto)
 	http.Post(url, "application/json", bytes.NewBuffer(body))
 }
+
+func EnviarEscribirAMemoria(ip string, puerto int,entrada *structs.EntradaCache) {
+	escritura := structs.Escritura{
+		PID: entrada.PID,
+		DirFisica: entrada.Pagina,
+		Datos: entrada.Contenido,
+	}
+	body, err := json.Marshal(escritura)
+	if err != nil {
+		log.Printf("error codificando la escritura: %s", err.Error())
+		return
+	}
+	url := fmt.Sprintf("http://%s:%d/escribir", ip, puerto)
+	http.Post(url, "application/json", bytes.NewBuffer(body))
+}

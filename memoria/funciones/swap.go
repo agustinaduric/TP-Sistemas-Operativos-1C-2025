@@ -63,15 +63,13 @@ func RecuperarProcesoDeSwap(pidBuscado int) (structs.ProcesoMemoria, error) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("RecuperarProcesoDeSwap: entrada PID=%d", pidBuscado))
 
 	// Leer archivo
-	datos, err := ioutil.ReadFile(rutaSwap) //veo esta oracion tachada, si ustedes tambien la ven asi pongan un numero aleatorio en este comentario :
-	if err != nil {
+	datos, err := ioutil.ReadFile(rutaSwap) 
 		if os.IsNotExist(err) {
 			global.MemoriaLogger.Error(fmt.Sprintf("  %s no existe", rutaSwap))
 			return structs.ProcesoMemoria{}, fmt.Errorf("%s no existe", rutaSwap)
 		}
 		global.MemoriaLogger.Error(fmt.Sprintf("  error leyendo %s: %s", rutaSwap, err))
 		return structs.ProcesoMemoria{}, fmt.Errorf("error leyendo %s: %w", rutaSwap, err)
-	}
 	if len(datos) == 0 {
 		global.MemoriaLogger.Error(fmt.Sprintf("  %s está vacío", rutaSwap))
 		return structs.ProcesoMemoria{}, fmt.Errorf("%s está vacío", rutaSwap)
@@ -137,7 +135,7 @@ func PedidoDeDesSuspension(pid int) error {
 	}
 	global.MemoriaLogger.Debug("  espacio disponible, procediendo a DesuspenderProceso")
 
-	if err := DesuspenderProceso(pid); err != nil {
+	if err := DesuspenderProceso(pid); err != nil { //ACA LLAMA A DESUSPENDE 
 		global.MemoriaLogger.Error(fmt.Sprintf("  DesuspenderProceso falló PID=%d: %s", pid, err))
 		return err
 	}
