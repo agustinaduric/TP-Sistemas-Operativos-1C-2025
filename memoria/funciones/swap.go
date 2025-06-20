@@ -19,101 +19,14 @@ var swapMutex sync.Mutex
 
 func GuardarProcesoEnSwap(nuevo structs.ProcesoMemoria) error {
 	swapMutex.Lock()
-	global.MemoriaLogger.Debug(fmt.Sprintf("GuardarProcesoEnSwap: entrada PID=%d", nuevo.PID))
-
-	// 1. Leer lista actual
-	var lista []structs.ProcesoMemoria
-	if _, err := os.Stat(rutaSwap); err == nil {
-		global.MemoriaLogger.Debug("  swap.bin existe, leyéndolo")
-		datos, err := ioutil.ReadFile(rutaSwap)
-		if err != nil {
-			global.MemoriaLogger.Error(fmt.Sprintf("  error leyendo %s: %s", rutaSwap, err))
-			return fmt.Errorf("error leyendo %s: %w", rutaSwap, err)
-		}
-		if len(datos) > 0 {
-			if err := json.Unmarshal(datos, &lista); err != nil {
-				global.MemoriaLogger.Error(fmt.Sprintf("  error unmarshalling JSON: %s", err))
-				return fmt.Errorf("error unmarshalling JSON: %w", err)
-			}
-		}
-	}
-
-	// 2. Agregar nuevo
-	lista = append(lista, nuevo)
-	global.MemoriaLogger.Debug(fmt.Sprintf("  proceso añadido a lista, total=%d", len(lista)))
-
-	// 3. Serializar y escribir
-	bytesSalida, err := json.MarshalIndent(lista, "", "  ")
-	if err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("  error marshaling JSON: %s", err))
-		return fmt.Errorf("error haciendo Marshal de lista: %w", err)
-	}
-	if err := ioutil.WriteFile(rutaSwap, bytesSalida, 0644); err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("  error escribiendo %s: %s", rutaSwap, err))
-		return fmt.Errorf("error escribiendo %s: %w", rutaSwap, err)
-	}
-
-	global.MemoriaLogger.Debug("GuardarProcesoEnSwap: éxito al escribir swap.bin")
+	//TODO
 	swapMutex.Unlock()
 	return nil
 }
 
 func RecuperarProcesoDeSwap(pidBuscado int) (structs.ProcesoMemoria, error) {
 	swapMutex.Lock()
-	global.MemoriaLogger.Debug(fmt.Sprintf("RecuperarProcesoDeSwap: entrada PID=%d", pidBuscado))
-
-	// Leer archivo
-	datos, err := ioutil.ReadFile(rutaSwap) 
-		if os.IsNotExist(err) {
-			global.MemoriaLogger.Error(fmt.Sprintf("  %s no existe", rutaSwap))
-			return structs.ProcesoMemoria{}, fmt.Errorf("%s no existe", rutaSwap)
-		}
-		global.MemoriaLogger.Error(fmt.Sprintf("  error leyendo %s: %s", rutaSwap, err))
-		return structs.ProcesoMemoria{}, fmt.Errorf("error leyendo %s: %w", rutaSwap, err)
-	if len(datos) == 0 {
-		global.MemoriaLogger.Error(fmt.Sprintf("  %s está vacío", rutaSwap))
-		return structs.ProcesoMemoria{}, fmt.Errorf("%s está vacío", rutaSwap)
-	}
-	global.MemoriaLogger.Debug("  archivo swap.bin leído correctamente")
-
-	// Unmarshal
-	var lista []structs.ProcesoMemoria
-	if err := json.Unmarshal(datos, &lista); err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("  error unmarshalling JSON: %s", err))
-		return structs.ProcesoMemoria{}, fmt.Errorf("error unmarshalling JSON: %w", err)
-	}
-
-	// Buscar
-	indice := -1
-	for i, proc := range lista {
-		if proc.PID == pidBuscado {
-			indice = i
-			break
-		}
-	}
-	if indice < 0 {
-		global.MemoriaLogger.Error(fmt.Sprintf("  PID=%d no encontrado en lista", pidBuscado))
-		return structs.ProcesoMemoria{}, fmt.Errorf("PID=%d no encontrado en swap", pidBuscado)
-	}
-	procRecuperado := lista[indice]
-	global.MemoriaLogger.Debug(fmt.Sprintf("  PID=%d encontrado en índice %d", pidBuscado, indice))
-
-	// Eliminar de la lista
-	lista = append(lista[:indice], lista[indice+1:]...)
-	global.MemoriaLogger.Debug(fmt.Sprintf("  PID=%d eliminado de lista, quedan %d procesos", pidBuscado, len(lista)))
-
-	// Reescribir swap.bin
-	bytesSalida, err := json.MarshalIndent(lista, "", "  ")
-	if err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("  error marshaling JSON actualizado: %s", err))
-		return structs.ProcesoMemoria{}, fmt.Errorf("error marshaling lista actualizada: %w", err)
-	}
-	if err := ioutil.WriteFile(rutaSwap, bytesSalida, 0644); err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("  error escribiendo %s: %s", rutaSwap, err))
-		return structs.ProcesoMemoria{}, fmt.Errorf("error reescribiendo %s: %w", rutaSwap, err)
-	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf("RecuperarProcesoDeSwap: PID=%d recuperado y swap.bin actualizado", pidBuscado))
+	//TODO
 	swapMutex.Unlock()
 
 	return procRecuperado, nil
