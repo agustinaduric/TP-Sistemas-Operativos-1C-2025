@@ -5,7 +5,6 @@ import (
 
 	"github.com/sisoputnfrba/tp-golang/cpu/cache/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
-	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -53,6 +52,7 @@ func EscribirEnCache(pid int, pagina int, datos []byte){
 	if(len(cachePags) < global.EntradasMaxCache){
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
 		cachePags = append(cachePags, nuevaEntrada)
+		global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", pid, pagina))
 		global.CpuLogger.Debug("Se escribio en la cache")
 	} else {
 		global.CpuLogger.Debug("No hay espacio en la cache, reemplazo")
@@ -73,10 +73,10 @@ func ReemplazarEntrada(nuevaEntrada structs.EntradaCache){
 
 func LimpiarCacheDelProceso(pid int){
 	global.CpuLogger.Debug(fmt.Sprintf("Limpiando cache PID: %d", pid))
-	for i:= 0; i<len(cachePags);i++{
+	for i:= 0; i<len(cachePags);{
 		if cachePags[i].PID == pid{
 			if cachePags[i].BitModificado{
-				comunicacion.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, &cachePags[i])
+				algoritmoCache.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, &cachePags[i])
 			}
 			cachePags = append(cachePags[:i],cachePags[i+1:]...)
 		} else{

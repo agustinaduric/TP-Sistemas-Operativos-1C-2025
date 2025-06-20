@@ -12,25 +12,27 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func WRITE(direccion int, datos string) {
-	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, direccion))
-	pagina := direccion / global.Page_size
-	offset := direccion % global.Page_size
+func WRITE(dirLogica int, datos string) {
+	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
+	pagina := dirLogica / global.Page_size // ver responsabilidad
+	desplazamiento := dirLogica % global.Page_size // idem
 
 	//cache
 	if global.EntradasMaxCache > 0{
 		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, pagina, []byte(datos))
-		global.CpuLogger.Info(fmt.Sprintf("PID: %d - WRITE en CACHE - Pagina: %d - Dato: %s", global.Proceso_Ejecutando.PID, pagina, datos))
+		global.CpuLogger.Debug(fmt.Sprintf("PID: %d hizo write en cache, Pagina: %d - Dato: %s", global.Proceso_Ejecutando.PID, pagina, datos))
 		return
 	}
 
 	//tlb
 	if mmu.ConsultarMarcoEnTLB(pagina) == global.MISS {
-		mmu.ObtenerMarco(pagina, offset)
+		mmu.ObtenerMarco(pagina, desplazamiento)
 	}
 	
 	//memoria
-	dirFisica := global.MarcoEncontrado*global.Page_size + offset
+	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
+	//dirFisica := mmu.DL_a_DF(string(dirLogica)
+
 	soliEscritura := structs.Escritura{
 		PID: global.Proceso_Ejecutando.PID,
 		DirFisica: dirFisica,
@@ -57,25 +59,26 @@ func WRITE(direccion int, datos string) {
 	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: ESCRIBIR en MEMORIA PRINCIPAL, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
 }
 
-func READ(direccion int, tamanio int) {
-	global.CpuLogger.Debug(fmt.Sprintf("Entro a READ, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, direccion))
-	pagina := direccion / global.Page_size
-	offset := direccion % global.Page_size
+func READ(dirLogica int, tamanio int) {
+	global.CpuLogger.Debug(fmt.Sprintf("Entro a READ, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
+	pagina := dirLogica / global.Page_size // ver responsabilidad
+	desplazamiento := dirLogica % global.Page_size // idem
 
 	//cache
 	if global.EntradasMaxCache > 0{
 		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, pagina)
 		if hayEnCache { // hit
-			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, direccion, string([]byte{dato})))
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string([]byte{dato})))
 			return
 		}
 	}
 
 	//tlb
 	if mmu.ConsultarMarcoEnTLB(pagina) == global.MISS {
-		mmu.ObtenerMarco(pagina, offset)
+		mmu.ObtenerMarco(pagina, desplazamiento)
 	}
-	dirFisica := global.MarcoEncontrado*global.Page_size + offset
+	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
+	//dirFisica := mmu.DL_a_DF(string(dirLogica)
 
 	//memoria
 	soliLectura := structs.Lectura{

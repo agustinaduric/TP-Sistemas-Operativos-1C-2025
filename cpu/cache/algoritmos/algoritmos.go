@@ -1,11 +1,15 @@
 package algoritmoCache
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
-	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
+	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 )
 
 func Clock(entrada structs.EntradaCache) {
@@ -15,11 +19,12 @@ func Clock(entrada structs.EntradaCache) {
 		if !entradaActual.BitUso {
 			if entradaActual.BitModificado{
 				global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada, se la mando a memoria antes de reemplazar"))
-				comunicacion.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
+				EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
 				global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
 			}
 			global.CpuLogger.Debug(fmt.Sprintf("Reemplazo CLOCK en posicion: %d", global.PunteroClock))
 			global.CachePaginas[global.PunteroClock] = entrada
+			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
 			avanzarPuntero()
 			return
 		}
@@ -50,9 +55,10 @@ func ClockM(entrada structs.EntradaCache) {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso && entradaActual.BitModificado {
 			global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada U=0 M=1, se la mando a memoria antes de reemplazar"))
-			comunicacion.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
+			EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
 			global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
 			global.CachePaginas[global.PunteroClock] = entrada
+			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
 			avanzarPuntero()
 			return
 		}
@@ -69,4 +75,35 @@ func avanzarPuntero(){
 		global.CpuLogger.Debug("El puntero de clock volvio a cero")
 	}
 	global.CpuLogger.Debug("El puntero de clock avanzo")
+}
+
+func EnviarEscribirAMemoria(ip string, puerto int,entrada *structs.EntradaCache) {
+	desplazamiento :=0
+	marco :=mmu.ObtenerMarco(entrada.Pagina, desplazamiento)
+	dirFisica := marco*global.Page_size + desplazamiento
+
+	escritura := structs.Escritura{
+		PID: entrada.PID,
+		DirFisica: dirFisica,
+		Datos: entrada.Contenido,
+	}
+	body, err := json.Marshal(escritura)
+	if err != nil {
+		log.Printf("error codificando UPDATE: %s", err.Error())
+		return
+	}
+	url := fmt.Sprintf("http://%s:%d/escribir", ip, puerto)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("Error enviando UPDATE de memoria: %s", err.Error())
+		return
+	}
+	global.CpuLogger.Debug(fmt.Sprintf("Envie UPDATE a memoria, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirFisica))
+	defer resp.Body.Close()
+	// me responde memoria:
+	global.CpuLogger.Debug(fmt.Sprintf("Me respondio el UPDATE memoria, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirFisica))
+	if resp.StatusCode != 200 {
+		log.Printf("Memoria respondio con error en Memory Update: %d", resp.StatusCode)
+	}
+	global.CpuLogger.Info(fmt.Sprintf("PID: %d - Memory Update - Pagina: %d - Marco: %d", entrada.PID, entrada.Pagina, marco))
 }
