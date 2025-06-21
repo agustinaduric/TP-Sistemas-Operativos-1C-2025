@@ -7,65 +7,76 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func InicializarProcesoTP(pid int) {
-	// 1) Recoger todos los marcos asignados al pid
+// getProcesoTP devuelve puntero al structs.ProcesoTP para pid, o nil si no existe.
+func getProcesoTP(pid int) *structs.ProcesoTP {
+	for i := range global.ProcesosTP {
+		if global.ProcesosTP[i].PID == pid {
+			return &global.ProcesosTP[i]
+		}
+	}
+	return nil
+}
+
+// collectMarcos devuelve slice de índices de marcos en MapMemoriaDeUsuario asignados a pid.
+func collectMarcos(pid int) []int {
 	var marcos []int
-	for marco, ocupante := range global.MapMemoriaDeUsuario {
+	for idx, ocupante := range global.MapMemoriaDeUsuario {
 		if ocupante == pid {
-			marcos = append(marcos, marco)
+			marcos = append(marcos, idx)
 		}
 	}
-	// 2) Índice para asignar cada marco
-	idxMarco := 0
+	return marcos
+}
 
-	// 3) Función recursiva
-	var construir func(nivel int) []structs.Tp
-	construir = func(nivel int) []structs.Tp {
-		tps := make([]structs.Tp, global.MemoriaConfig.EntriesPerPage)
-		for i := range tps {
-			if nivel < global.MemoriaConfig.NumberOfLevels {
-				tps[i].TablaSiguienteNivel = construir(nivel + 1)
+// construirTablaNivel recorre recursivamente la jerarquía multinivel y asigna marcos desde el índice idx.
+// Retorna la tabla creada y el nuevo valor de idx después de consumir marcos en este subárbol.
+func construirTablaNivel(marcos []int, idx int, nivel int) ([]structs.Tp, int) {
+	entriesPerPage := global.MemoriaConfig.EntriesPerPage
+	numberOfLevels := global.MemoriaConfig.NumberOfLevels
+
+	tps := make([]structs.Tp, entriesPerPage)
+	for i := range tps {
+		if nivel < numberOfLevels {
+			subtabla, newIdx := construirTablaNivel(marcos, idx, nivel+1)
+			tps[i].TablaSiguienteNivel = subtabla
+			tps[i].EsUltimoNivel = false
+			tps[i].NumeroMarco = -1
+			idx = newIdx
+		} else {
+			if idx < len(marcos) {
+				tps[i].NumeroMarco = marcos[idx]
+				idx++
 			} else {
-				// nivel hoja: asignar numeroMarco
-				if idxMarco < len(marcos) {
-					tps[i].NumeroMarco = marcos[idxMarco]
-					idxMarco++
-				} else {
-					tps[i].NumeroMarco = -1
-				}
-				tps[i].EsUltimoNivel = true
+				tps[i].NumeroMarco = -1
 			}
+			tps[i].EsUltimoNivel = true
+			tps[i].TablaSiguienteNivel = nil
 		}
-		return tps
 	}
+	return tps, idx
+}
 
-	// 4) Crear ProcesoTP y añadir
+// InicializarProcesoTP recoge marcos y construye TablaNivel1 llamando a construirTablaNivel.
+func InicializarProcesoTP(pid int) {
+	marcos := collectMarcos(pid)
+	idxMarco := 0
+	tablaNivel1, _ := construirTablaNivel(marcos, idxMarco, 1)
 	procesoTP := structs.ProcesoTP{
 		PID:         pid,
-		TablaNivel1: construir(1),
+		TablaNivel1: tablaNivel1,
 	}
 	global.ProcesosTP = append(global.ProcesosTP, procesoTP)
 }
 
+// Marco recorre la jerarquía multinivel según nivelesIndices y devuelve el NúmeroMarco en hoja o -1.
 func Marco(pid int, nivelesIndices []int) int {
-	// 1) Buscar la tabla del proceso
-	var procTP *structs.ProcesoTP
-	for i := range global.ProcesosTP {
-		if global.ProcesosTP[i].PID == pid {
-			procTP = &global.ProcesosTP[i]
-			break
-		}
-	}
+	procTP := getProcesoTP(pid)
 	if procTP == nil {
 		return -1
 	}
-
-	// 2) Validar longitud de índices
 	if len(nivelesIndices) != global.MemoriaConfig.NumberOfLevels {
 		return -1
 	}
-
-	// 3) Recorrer niveles
 	nivelActual := procTP.TablaNivel1
 	for _, idx := range nivelesIndices {
 		if idx < 0 || idx >= len(nivelActual) {
@@ -73,66 +84,29 @@ func Marco(pid int, nivelesIndices []int) int {
 		}
 		entrada := nivelActual[idx]
 		if entrada.EsUltimoNivel {
-			// retornar el numero de marco en hoja
 			return entrada.NumeroMarco
 		}
 		nivelActual = entrada.TablaSiguienteNivel
+		if nivelActual == nil {
+			return -1
+		}
 	}
-
 	return -1
 }
 
+// AsignarMarcosAProcesoTPPorPID simplemente reutiliza InicializarProcesoTP para reasignar según MapMemoriaDeUsuario.
 func AsignarMarcosAProcesoTPPorPID(pidBuscado int) {
-	// 1) Recolectar índices de marcos en MapMemoriaDeUsuario
-	var marcos []int
-	for idx, pid := range global.MapMemoriaDeUsuario {
-		if pid == pidBuscado {
-			marcos = append(marcos, idx)
-		}
-	}
+	marcos := collectMarcos(pidBuscado)
 	if len(marcos) == 0 {
 		global.MemoriaLogger.Error(fmt.Sprintf("AsignarMarcos: no hay marcos asignados a PID %d", pidBuscado))
 		return
 	}
-
-	// 2) Encontrar ProcesoTP correspondiente
-	var procTP *structs.ProcesoTP
-	for i := range global.ProcesosTP {
-		if global.ProcesosTP[i].PID == pidBuscado {
-			procTP = &global.ProcesosTP[i]
-			break
-		}
-	}
+	procTP := getProcesoTP(pidBuscado)
 	if procTP == nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("AsignarMarcos: PID %d no encontrado en ProcesosTP", pidBuscado))
 		return
 	}
-
-	// 3) Iterador para asignar marcos en orden
 	idxMarco := 0
-	total := len(marcos)
-
-	// 4) Función recursiva para recorrer niveles
-	var asignar func(nivel []structs.Tp) bool
-	asignar = func(nivel []structs.Tp) bool {
-		for i := range nivel {
-			entry := &nivel[i]
-			if !entry.EsUltimoNivel {
-				if asignar(entry.TablaSiguienteNivel) {
-					return true
-				}
-			} else {
-				if idxMarco < total {
-					entry.NumeroMarco = marcos[idxMarco]
-					idxMarco++
-				} else {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
-	// 5) Iniciar asignación desde el nivel 1
-	asignar(procTP.TablaNivel1)
+	tablaNivel1, _ := construirTablaNivel(marcos, idxMarco, 1)
+	procTP.TablaNivel1 = tablaNivel1
 }

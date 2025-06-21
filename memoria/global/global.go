@@ -10,8 +10,6 @@ import (
 
 var MemoriaMutex sync.Mutex
 
-var MarcosMutex sync.Mutex
-
 var MemoriaLogger *logger.LoggerStruct
 
 var MemoriaConfig config.MemoriaConfig

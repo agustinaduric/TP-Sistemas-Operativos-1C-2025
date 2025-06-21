@@ -129,7 +129,7 @@ func EscribirMarcoEnSwap(marco int) error {
 	}
 
 	swapMutex.Lock()
-
+	defer swapMutex.Unlock()
 	f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -143,14 +143,13 @@ func EscribirMarcoEnSwap(marco int) error {
 		return fmt.Errorf("error escribiendo marco %d: %w", marco, err)
 	}
 
-	swapMutex.Unlock()
 	return nil
 }
 
 // EscribirPIDEnSwap escribe un entero (PID) en el archivo swap.bin.
 func EscribirPIDEnSwap(pid int) error {
 	swapMutex.Lock()
-
+	defer swapMutex.Unlock()
 	f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -161,6 +160,6 @@ func EscribirPIDEnSwap(pid int) error {
 	if err := binary.Write(f, binary.LittleEndian, int32(pid)); err != nil {
 		return fmt.Errorf("error escribiendo PID en swap: %w", err)
 	}
-	swapMutex.Unlock()
+
 	return nil
 }
