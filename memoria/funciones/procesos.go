@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -263,110 +262,4 @@ func FinalizarProceso(pid int) error {
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("FinalizarProceso: fin PID=%d", pid))
 	return nil
-}
-
-func InicializarProcesoTP(pid int) {
-	// 1) Recoger todos los marcos asignados al pid
-	var marcos []int
-	for marco, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pid {
-			marcos = append(marcos, marco)
-		}
-	}
-	// 2) Crear un índice para consumir marcos en el último nivel
-	idxMarco := 0
-	// 3) Función recursiva para construir niveles
-	var construir func(nivel int) []structs.Tp
-	construir = func(nivel int) []structs.Tp {
-		tps := make([]structs.Tp, global.MemoriaConfig.EntriesPerPage)
-		for i := range tps {
-			if nivel < global.MemoriaConfig.NumberOfLevels {
-				tps[i].TablaSiguienteNivel = construir(nivel + 1)
-			}
-			if nivel == global.MemoriaConfig.NumberOfLevels {
-				// asignar puntero a byte de MemoriaUsuario para este marco
-				if idxMarco < len(marcos) {
-					offset := marcos[idxMarco] * global.MemoriaConfig.PageSize
-					tps[i].ByteMemUsuario = []*byte{&global.MemoriaUsuario[offset]}
-				}
-				tps[i].EsUltimoNivel = true
-				idxMarco++
-			}
-		}
-		return tps
-	}
-	// 4) Construir la tabla de primer nivel
-	procesoTP := structs.ProcesoTP{
-		PID:         pid,
-		TablaNivel1: construir(1),
-	}
-	// 5) Agregar a la lista global
-	global.ProcesosTP = append(global.ProcesosTP, procesoTP)
-}
-
-func Marco(pid int, nivelesIndices []int) int {
-	niveles := global.MemoriaConfig.NumberOfLevels
-
-	if len(nivelesIndices) != niveles {
-		return -1
-	}
-
-	// Busca el ProcesoTP
-	var procTP *structs.ProcesoTP
-	for i := range global.ProcesosTP {
-		if global.ProcesosTP[i].PID == pid {
-			procTP = &global.ProcesosTP[i]
-			break
-		}
-	}
-	if procTP == nil {
-		return -1
-	}
-
-	// Recorre los niveles
-	nivelActual := procTP.TablaNivel1
-	for nivel, idx := range nivelesIndices {
-		if idx < 0 || idx >= len(nivelActual) {
-			return -1
-		}
-		entrada := nivelActual[idx]
-
-		// si no es el último nivel, descendemos
-		if nivel+1 < niveles {
-			nivelActual = entrada.TablaSiguienteNivel
-			continue
-		}
-
-		// nivel hoja: usamos idx para seleccionar el puntero al marco
-		if len(entrada.ByteMemUsuario) == 0 {
-			return -1
-		}
-		leafIdx := idx
-		ptr := entrada.ByteMemUsuario[leafIdx]
-		if ptr == nil {
-			return -1
-		}
-
-		// --- Aritmética de punteros para hallar el marco ---
-		base := uintptr(unsafe.Pointer(&global.MemoriaUsuario[0]))
-		target := uintptr(unsafe.Pointer(ptr))
-		if target < base {
-			return -1
-		}
-		offset := target - base
-		frameSize := uintptr(global.MemoriaConfig.PageSize)
-		frame := int(offset / frameSize)
-
-		// Validaciones finales
-		if frame < 0 || frame >= len(global.MapMemoriaDeUsuario) {
-			return -1
-		}
-		if owner := global.MapMemoriaDeUsuario[frame]; owner != pid {
-			return -1
-		}
-
-		return frame
-	}
-
-	return -1
 }

@@ -25,7 +25,7 @@ type ProcesoTP struct {
 
 type Tp struct {
 	TablaSiguienteNivel []Tp
-	ByteMemUsuario      []*byte
+	NumeroMarco         int
 	EsUltimoNivel       bool
 }
 
