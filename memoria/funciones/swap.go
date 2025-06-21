@@ -47,7 +47,7 @@ func SuspenderProceso(pid int) error {
 			global.Procesos[i].Metricas.BajadasSwap++
 			global.MemoriaLogger.Debug(fmt.Sprintf("  marcado EnSwap, BajadasSwap=%d", global.Procesos[i].Metricas.BajadasSwap))
 
-			if err := GuardarProcesoEnSwap(global.Procesos[i]); err != nil {
+			if err := GuardarProcesoEnSwap(pid); err != nil {
 				global.MemoriaLogger.Error(fmt.Sprintf("  error GuardarProcesoEnSwap: %s", err))
 				return err
 			}
