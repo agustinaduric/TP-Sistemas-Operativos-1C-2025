@@ -28,49 +28,42 @@ func collectMarcos(pid int) []int {
 	return marcos
 }
 
-// construirTablaNivel recorre recursivamente la jerarquía multinivel y asigna marcos desde el índice idx.
-// Retorna la tabla creada y el nuevo valor de idx después de consumir marcos en este subárbol.
 func construirTablaNivel(marcos []int, idx int, nivel int) ([]structs.Tp, int) {
 	entries := global.MemoriaConfig.EntriesPerPage
-	levels := global.MemoriaConfig.NumberOfLevels
+	maxLevels := global.MemoriaConfig.NumberOfLevels
 
 	tps := make([]structs.Tp, entries)
 	for i := range tps {
-		// Si no es el último nivel, construyo el subárbol
-		if nivel < levels {
-			subtabla, newIdx := construirTablaNivel(marcos, idx, nivel+1)
-			tps[i].TablaSiguienteNivel = subtabla
+		if nivel < maxLevels {
+			sub, newIdx := construirTablaNivel(marcos, idx, nivel+1)
+			tps[i].TablaSiguienteNivel = sub
 			tps[i].EsUltimoNivel = false
-			// NumeroMarco queda nil
+			tps[i].NumeroMarco = nil
 			idx = newIdx
 		} else {
-			// Nivel hoja: inicializo NumeroMarco con longitud entries
+			// último nivel: asignamos todos los marcos restantes en las entradas de NumeroMarco
 			tps[i].EsUltimoNivel = true
 			tps[i].TablaSiguienteNivel = nil
 			tps[i].NumeroMarco = make([]int, entries)
-			// Sólo en la posición i consumo un marco si sobra
-			if idx < len(marcos) {
-				tps[i].NumeroMarco[0] = marcos[idx]
-				idx++
-			} else {
-				tps[i].NumeroMarco[0] = -1
-			}
-			// para el resto dejo -1
-			for j := 1; j < entries; j++ {
-				tps[i].NumeroMarco[j] = -1
+			for j := 0; j < entries; j++ {
+				if idx < len(marcos) {
+					tps[i].NumeroMarco[j] = marcos[idx]
+					idx++
+				} else {
+					tps[i].NumeroMarco[j] = -1
+				}
 			}
 		}
 	}
 	return tps, idx
 }
 
-// InicializarProcesoTP recoge marcos y construye TablaNivel1 llamando a construirTablaNivel.
 func InicializarProcesoTP(pid int) {
 	marcos := collectMarcos(pid)
-	tabla, _ := construirTablaNivel(marcos, 0, 1)
+	tabla1, _ := construirTablaNivel(marcos, 0, 1)
 	procTP := structs.ProcesoTP{
 		PID:         pid,
-		TablaNivel1: tabla,
+		TablaNivel1: tabla1,
 	}
 	global.ProcesosTP = append(global.ProcesosTP, procTP)
 }
