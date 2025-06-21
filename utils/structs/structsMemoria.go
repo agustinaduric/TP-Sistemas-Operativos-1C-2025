@@ -19,12 +19,14 @@ type MetricasMemoria struct {
 }
 
 type ProcesoTP struct {
-	PID int
-	TPS []Tp
+	PID         int
+	TablaNivel1 []Tp
 }
 
 type Tp struct {
-	Paginas []int
+	TablaSiguienteNivel []Tp
+	ByteMemUsuario      []*byte
+	EsUltimoNivel       bool
 }
 
 type Devolucion_DumpMemory struct {

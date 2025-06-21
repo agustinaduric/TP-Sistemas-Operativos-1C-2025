@@ -41,8 +41,8 @@ func LevantarServidorMemoria() {
 	mux.HandleFunc("/desuspension-proceso", HandlerDesSuspenderProceso)
 	mux.HandleFunc("/suspension-proceso", HandlerSuspenderProceso)
 	mux.HandleFunc("/finalizar-proceso", HandlerFinalizarProceso)
-	mux.HandleFunc("/memory-dump",HandlerMemoryDump)
-	mux.HandleFunc("/solicitud-marco",HandlerSolicitudMarco)
+	mux.HandleFunc("/memory-dump", HandlerMemoryDump)
+	mux.HandleFunc("/solicitud-marco", HandlerSolicitudMarco)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
 	global.MemoriaLogger.Debug(
@@ -180,7 +180,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al cargar las instrucciones", http.StatusInternalServerError)
 		return
 	}
-	InicializarProceso(proc.PID , proc.Tamanio , instrucciones, proc.PATH)
+	InicializarProceso(proc.PID, proc.Tamanio, instrucciones, proc.PATH)
 
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Proceso cargado: PID=%d, Tamanio=%d, Instrucciones=%d",
@@ -202,7 +202,6 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug("Entre a HandlerEscribirMemoria")
 	var escritura structs.Escritura
@@ -213,10 +212,9 @@ func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al decodificar la solicitud de escritura", http.StatusBadRequest)
 		return
 	}
-	EscribirMemoriaUsuario(escritura.PID, escritura.DirFisica,escritura.Datos) 
-		global.MemoriaLogger.Debug("Confirmacion WRITE realizado enviada a CPU")
+	EscribirMemoriaUsuario(escritura.PID, escritura.DirFisica, escritura.Datos)
+	global.MemoriaLogger.Debug("Confirmacion WRITE realizado enviada a CPU")
 }
-
 
 func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug("Entre a HandlerLeerMemoria")
@@ -229,144 +227,148 @@ func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(LeerMemoriaUsuario(lectura.PID, lectura.DirFisica,lectura.Tamanio))
+	json.NewEncoder(w).Encode(LeerMemoriaUsuario(lectura.PID, lectura.DirFisica, lectura.Tamanio))
 	global.MemoriaLogger.Debug("Lectura realizada enviada a CPU")
 }
 
 func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
-    global.MemoriaLogger.Debug("HandlerDessuspenderProceso: entrada")
+	global.MemoriaLogger.Debug("HandlerDessuspenderProceso: entrada")
 
-    var req struct {
-        PID int
-    }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerDessuspenderProceso: error decodificando PID: %s", err.Error()),
-        )
-        http.Error(w, "Error al decodificar solicitud de des-suspensión", http.StatusBadRequest)
-        return
-    }
+	var req struct {
+		PID int
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerDessuspenderProceso: error decodificando PID: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar solicitud de des-suspensión", http.StatusBadRequest)
+		return
+	}
 
-    global.MemoriaLogger.Debug(fmt.Sprintf(
-        "HandlerDessuspenderProceso: pid=%d recibido", req.PID,
-    ))
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"HandlerDessuspenderProceso: pid=%d recibido", req.PID,
+	))
 
-    if err := PedidoDeDesSuspension(req.PID); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err.Error()),
-        )
-        http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
-        return
-    }
-    resp := "OK"
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(resp); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err.Error()),
-        )
-    } else {
-        global.MemoriaLogger.Debug(
-            fmt.Sprintf("HandlerDessuspenderProceso: PID=%d des-suspendido exitosamente", req.PID),
-        )
-    }
+	if err := PedidoDeDesSuspension(req.PID); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err.Error()),
+		)
+		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
+		return
+	}
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("HandlerDessuspenderProceso: PID=%d des-suspendido exitosamente", req.PID),
+		)
+	}
 }
 
 func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
-    global.MemoriaLogger.Debug("HandlerSuspenderProceso: entrada")
+	global.MemoriaLogger.Debug("HandlerSuspenderProceso: entrada")
 
-    var req struct {
-        PID int 
-    }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerSuspenderProceso: error decodificando PID: %s", err.Error()),
-        )
-        http.Error(w, "Error al decodificar solicitud de suspensión", http.StatusBadRequest)
-        return
-    }
+	var req struct {
+		PID int
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerSuspenderProceso: error decodificando PID: %s", err.Error()),
+		)
+		http.Error(w, "Error al decodificar solicitud de suspensión", http.StatusBadRequest)
+		return
+	}
 
-    global.MemoriaLogger.Debug(fmt.Sprintf(
-        "HandlerSuspenderProceso: pid=%d recibido", req.PID,
-    ))
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"HandlerSuspenderProceso: pid=%d recibido", req.PID,
+	))
 
-    if err := SuspenderProceso(req.PID); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
-        )
-        http.Error(w, fmt.Sprintf("No se pudo suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
-        return
-    }
-    resp := "OK"
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(resp); err != nil {
-        global.MemoriaLogger.Error(
-            fmt.Sprintf("HandlerSuspenderProceso: error codificando respuesta OK: %s", err.Error()),
-        )
-    } else {
-        global.MemoriaLogger.Debug(
-            fmt.Sprintf("HandlerSuspenderProceso: PID=%d suspendido exitosamente", req.PID),
-        )
-    }
+	if err := SuspenderProceso(req.PID); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
+		)
+		http.Error(w, fmt.Sprintf("No se pudo suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
+		return
+	}
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("HandlerSuspenderProceso: error codificando respuesta OK: %s", err.Error()),
+		)
+	} else {
+		global.MemoriaLogger.Debug(
+			fmt.Sprintf("HandlerSuspenderProceso: PID=%d suspendido exitosamente", req.PID),
+		)
+	}
 }
 
 func HandlerFinalizarProceso(w http.ResponseWriter, r *http.Request) {
-    global.MemoriaLogger.Debug("HandlerFinalizarProceso: entrada")
-    var req struct{ PID int `json:"pid"` }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Error al decodificar solicitud de finalización", http.StatusBadRequest)
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: decodificación fallida: %s", err))
-        return
-    }
-    if err := FinalizarProceso(req.PID); err != nil {
-        http.Error(w, fmt.Sprintf("No se pudo finalizar PID=%d: %s", req.PID, err), http.StatusConflict)
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: FinalizarProceso falló: %s", err))
-        return
-    }
-    resp := "OK"
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(resp); err != nil {
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: respuesta JSON falló: %s", err))
-    } else {
-        global.MemoriaLogger.Debug(fmt.Sprintf("HandlerFinalizarProceso: PID=%d finalizado", req.PID))
-    }
+	global.MemoriaLogger.Debug("HandlerFinalizarProceso: entrada")
+	var req struct {
+		PID int `json:"pid"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Error al decodificar solicitud de finalización", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: decodificación fallida: %s", err))
+		return
+	}
+	if err := FinalizarProceso(req.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo finalizar PID=%d: %s", req.PID, err), http.StatusConflict)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: FinalizarProceso falló: %s", err))
+		return
+	}
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: respuesta JSON falló: %s", err))
+	} else {
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerFinalizarProceso: PID=%d finalizado", req.PID))
+	}
 }
 
 func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
-    global.MemoriaLogger.Debug("HandlerMemoryDump: entrada")
-    var req struct{ PID int `json:"pid"` }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Error al decodificar solicitud de dump", http.StatusBadRequest)
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: decodificación fallida: %s", err))
-        return
-    }
-    if err := DumpMemory(req.PID); err != nil {
-        http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))
-        return
-    }
-    resp := "OK"
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(resp); err != nil {
-        global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: respuesta JSON falló: %s", err))
-    } else {
-        global.MemoriaLogger.Debug(fmt.Sprintf("HandlerMemoryDump: dump generado para PID=%d", req.PID))
-    }
+	global.MemoriaLogger.Debug("HandlerMemoryDump: entrada")
+	var req struct {
+		PID int `json:"pid"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Error al decodificar solicitud de dump", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: decodificación fallida: %s", err))
+		return
+	}
+	if err := DumpMemory(req.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))
+		return
+	}
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: respuesta JSON falló: %s", err))
+	} else {
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerMemoryDump: dump generado para PID=%d", req.PID))
+	}
 }
 
 func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
-    var req struct {
-        PID     int 
-        Pagina  int 
-    }
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Error al decodificar solicitud de marco", http.StatusBadRequest)
-        return
-    }
-    marco := Marco(req.PID, req.Pagina)
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(marco); err != nil {
-        http.Error(w, "Error al codificar respuesta de marco", http.StatusInternalServerError)
-    }
+	var req struct {
+		PID    int
+		Pagina int
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Error al decodificar solicitud de marco", http.StatusBadRequest)
+		return
+	}
+	marco := Marco(req.PID, req.Indices) //miri enviarme indices
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(marco); err != nil {
+		http.Error(w, "Error al codificar respuesta de marco", http.StatusInternalServerError)
+	}
 }
 
 func DumpMemory(pid int) error { //Cabe aclarar que

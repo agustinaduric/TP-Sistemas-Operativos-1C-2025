@@ -1,11 +1,11 @@
 package fmemoria
 
 import (
-	"encoding/json"
+	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync"
+	"unsafe"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -13,23 +13,128 @@ import (
 
 //SI este archivo anda es un milagro
 
-const rutaSwap = "swap.bin"
-
 var swapMutex sync.Mutex
 
 func GuardarProcesoEnSwap(nuevo structs.ProcesoMemoria) error {
 	swapMutex.Lock()
-	//TODO
+	// 1) Buscar la tabla multinivel para el PID
+	var procTP *structs.ProcesoTP
+	for i := range global.ProcesosTP {
+		if global.ProcesosTP[i].PID == nuevo.PID {
+			procTP = &global.ProcesosTP[i]
+			break
+		}
+	}
+	if procTP == nil {
+		return fmt.Errorf("GuardarProcesoEnSwap: PID %d no encontrado en ProcesosTP", nuevo.PID)
+	}
+
+	// 2) Abrir (o crear) el archivo swap
+	f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return fmt.Errorf("error al abrir swap: %w", err)
+	}
+	defer f.Close()
+
+	// 3) Escribir el PID (int32 little endian)
+	if err := binary.Write(f, binary.LittleEndian, int32(nuevo.PID)); err != nil {
+		return fmt.Errorf("error escribiendo PID en swap: %w", err)
+	}
+
+	// 4) Función recursiva para recorrer niveles hasta hoja y volcar páginas
+	frameSize := int(global.MemoriaConfig.PageSize)
+	var dumpNivel func(tabla []structs.Tp) error
+	dumpNivel = func(tabla []structs.Tp) error {
+		for _, entrada := range tabla {
+			if !entrada.EsUltimoNivel {
+				// descendemos
+				if err := dumpNivel(entrada.TablaSiguienteNivel); err != nil {
+					return err
+				}
+			} else {
+				// nivel hoja: cada ptr apunta al inicio de una página
+				for _, ptr := range entrada.ByteMemUsuario {
+					if ptr == nil {
+						continue
+					}
+					// convertir *byte a slice de longitud frameSize
+					datos := unsafe.Slice(ptr, frameSize)
+					// escribir contenido de página
+					if _, err := f.Write(datos); err != nil {
+						return fmt.Errorf("error escribiendo página en swap: %w", err)
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	// 5) Volcar todas las páginas
+	if err := dumpNivel(procTP.TablaNivel1); err != nil {
+		return err
+	}
 	swapMutex.Unlock()
 	return nil
 }
 
 func RecuperarProcesoDeSwap(pidBuscado int) (structs.ProcesoMemoria, error) {
 	swapMutex.Lock()
-	//TODO
-	swapMutex.Unlock()
 
-	return procRecuperado, nil
+	path := global.MemoriaConfig.SwapPath
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return structs.ProcesoMemoria{}, fmt.Errorf("error leyendo swap: %w", err)
+	}
+
+	var proc structs.ProcesoMemoria
+	var out []byte
+	i := 0
+	for i < len(data) {
+		if i+8 > len(data) {
+			break // datos corruptos
+		}
+		pid := int(int32(binary.LittleEndian.Uint32(data[i : i+4])))
+		tam := int(int32(binary.LittleEndian.Uint32(data[i+4 : i+8])))
+		numPages := (tam + int(global.MemoriaConfig.PageSize) - 1) / int(global.MemoriaConfig.PageSize)
+		start := i + 8
+		end := start + numPages*int(global.MemoriaConfig.PageSize)
+		if end > len(data) {
+			return structs.ProcesoMemoria{}, fmt.Errorf("datos de PID %d incompletos", pid)
+		}
+
+		block := data[i:end]
+		if pid == pidBuscado {
+			// reconstruir ProcesoMemoria
+			proc.PID = pid
+			proc.Tamanio = tam
+			proc.EnSwap = false
+			// podrías llenar instrucciones, métricas, etc., según convenga
+			procData := make([]byte, len(block)-8)
+			copy(procData, block[8:])
+			proc.Path = ""
+			proc.Instrucciones = nil
+			proc.Metricas = structs.MetricasMemoria{}
+			// asignar MemoriaUsuario:
+			procMem := procData
+
+		} else {
+			// conservar en salida
+			out = append(out, data[i:end]...)
+		}
+		i = end
+	}
+
+	// reescribir swap con los procesos que no coinciden
+	if err := os.WriteFile(path, out, 0666); err != nil {
+		return structs.ProcesoMemoria{}, fmt.Errorf("error reescribiendo swap: %w", err)
+	}
+
+	if proc.PID == 0 {
+		return proc, fmt.Errorf("PID %d no encontrado en swap", pidBuscado)
+	}
+	swapMutex.Unlock()
+	return proc, nil
 }
 
 func PedidoDeDesSuspension(pid int) error {
@@ -48,7 +153,7 @@ func PedidoDeDesSuspension(pid int) error {
 	}
 	global.MemoriaLogger.Debug("  espacio disponible, procediendo a DesuspenderProceso")
 
-	if err := DesuspenderProceso(pid); err != nil { //ACA LLAMA A DESUSPENDE 
+	if err := DesuspenderProceso(pid); err != nil { //ACA LLAMA A DESUSPENDE
 		global.MemoriaLogger.Error(fmt.Sprintf("  DesuspenderProceso falló PID=%d: %s", pid, err))
 		return err
 	}
@@ -61,7 +166,7 @@ func SuspenderProceso(pid int) error {
 
 	IncrementarBajadasSwap(pid)
 	LiberarMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
-	LiberarPaginasProcesoTP(pid)
+	//LiberarPaginasProcesoTP(pid)
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("SuspenderProceso: inicio PID=%d", pid))
 
@@ -87,7 +192,7 @@ func SuspenderProceso(pid int) error {
 func DesuspenderProceso(pid int) error {
 
 	IncrementarSubidasMem(pid)
-	asignarMarcosAProcesoTPPorPID(pid)
+	//asignarMarcosAProcesoTPPorPID(pid)
 	OcuparMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("DesuspenderProceso: inicio PID=%d", pid))
@@ -114,101 +219,4 @@ func DesuspenderProceso(pid int) error {
 	global.Procesos = append(global.Procesos, proc)
 	global.MemoriaLogger.Debug("  proceso agregado a memoria principal tras des-suspensión")
 	return nil
-}
-
-func LiberarPaginasProcesoTP(pid int) {
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"LiberarPaginasProcesoTP: inicio PID=%d", pid,
-	))
-
-	encontrado := false
-	for idx := range global.ProcesosTP {
-		if global.ProcesosTP[idx].PID == pid {
-			encontrado = true
-
-			// Recorrer cada tabla y cada página para resetear a -1
-			for t := range global.ProcesosTP[idx].TPS {
-				for p := range global.ProcesosTP[idx].TPS[t].Paginas {
-					global.ProcesosTP[idx].TPS[t].Paginas[p] = -1
-					global.MemoriaLogger.Debug(fmt.Sprintf(
-						"  PID=%d Tabla[%d].Paginas[%d] liberada (ahora = -1)",
-						pid, t, p,
-					))
-				}
-			}
-
-			global.MemoriaLogger.Debug(fmt.Sprintf(
-				"LiberarPaginasProcesoTP: fin PID=%d, todas las páginas liberadas",
-				pid,
-			))
-			break
-		}
-	}
-
-	if !encontrado {
-		global.MemoriaLogger.Error(fmt.Sprintf(
-			"LiberarPaginasProcesoTP: PID=%d no encontrado en ProcesosTP",
-			pid,
-		))
-	}
-}
-
-func asignarMarcosAProcesoTPPorPID(pid int) {
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"asignarMarcosAProcesoTPPorPID: inicio PID=%d", pid,
-	))
-
-	// 1. Buscar el ProcesoTP
-	var procTP *structs.ProcesoTP
-	for i := range global.ProcesosTP {
-		if global.ProcesosTP[i].PID == pid {
-			procTP = &global.ProcesosTP[i]
-			break
-		}
-	}
-	if procTP == nil {
-		global.MemoriaLogger.Error(fmt.Sprintf(
-			"asignarMarcosAProcesoTPPorPID: PID=%d no encontrado en ProcesosTP",
-			pid,
-		))
-		return
-	}
-
-	// 2. Configurar índices de tabla y página
-	tablaIdx, paginaIdx := 0, 0
-	numTablas := len(procTP.TPS)
-	numPaginas := 0
-	if numTablas > 0 {
-		numPaginas = len(procTP.TPS[0].Paginas)
-	}
-
-	global.MarcosMutex.Lock()
-	defer global.MarcosMutex.Unlock()
-
-	// 3. Recorrer MapMemoriaDeUsuario y asignar
-	for marco, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante != pid {
-			continue
-		}
-
-		procTP.TPS[tablaIdx].Paginas[paginaIdx] = marco
-		global.MemoriaLogger.Debug(fmt.Sprintf(
-			"  PID=%d asigna marco %d a Tabla[%d].Paginas[%d]",
-			pid, marco, tablaIdx, paginaIdx,
-		))
-
-		// Avanzar índices
-		paginaIdx++
-		if paginaIdx >= numPaginas {
-			paginaIdx = 0
-			tablaIdx++
-			if tablaIdx >= numTablas {
-				break
-			}
-		}
-	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"asignarMarcosAProcesoTPPorPID: fin PID=%d", pid,
-	))
 }
