@@ -69,27 +69,51 @@ func InicializarProcesoTP(pid int) {
 }
 
 // Marco recorre la jerarquía multinivel según nivelesIndices y devuelve el primer NúmeroMarco en hoja o -1.
-func Marco(pid int, nivelesIndices []int) int {
-	procTP := getProcesoTP(pid)
-	if procTP == nil {
+func Marco(pid int, indicesNiveles []int) int {
+	cfg := global.MemoriaConfig
+	niveles := cfg.NumberOfLevels
+
+	// Validar longitud de índices
+	if len(indicesNiveles) != niveles+1 {
 		return -1
 	}
-	if len(nivelesIndices) != global.MemoriaConfig.NumberOfLevels {
+
+	// 1) Obtener el ProcesoTP
+	procesoTP := getProcesoTP(pid)
+	if procesoTP == nil {
 		return -1
 	}
-	nivelActual := procTP.TablaNivel1
-	for _, idx := range nivelesIndices {
-		if idx < 0 || idx >= len(nivelActual) {
+
+	// 2) Navegar por los primeros 'niveles' índices
+	entradaActual := procesoTP.TablaNivel1
+	var hoja structs.Tp
+
+	for nivel := 1; nivel <= niveles; nivel++ {
+		idx := indicesNiveles[nivel-1]
+		if idx < 0 || idx >= len(entradaActual) {
 			return -1
 		}
-		entrada := nivelActual[idx]
-		if entrada.EsUltimoNivel {
-			// devolvemos el primer marco de esa hoja
-			return entrada.NumeroMarco[0]
+		entrada := entradaActual[idx]
+
+		if nivel < niveles {
+			// Bajar al siguiente nivel
+			entradaActual = entrada.TablaSiguienteNivel
+			if entradaActual == nil {
+				return -1
+			}
+		} else {
+			// Último nivel → guardamos la entrada hoja
+			hoja = entrada
 		}
-		nivelActual = entrada.TablaSiguienteNivel
 	}
-	return -1
+
+	// 3) En la hoja, usamos el último índice para elegir dentro de NumeroMarco
+	indicePuntero := indicesNiveles[niveles]
+	if indicePuntero < 0 || indicePuntero >= len(hoja.NumeroMarco) {
+		return -1
+	}
+
+	return hoja.NumeroMarco[indicePuntero]
 }
 
 // AsignarMarcosAProcesoTPPorPID reconstruye la tabla multinivel de un proceso tras una des-suspensión.
