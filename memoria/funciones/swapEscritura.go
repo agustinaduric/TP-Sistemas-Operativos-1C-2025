@@ -3,9 +3,12 @@ package fmemoria
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 )
+
+var swapMutex sync.Mutex
 
 // GuardarProcesoEnSwap escribe en el swap un bloque para el proceso con formato:
 //
@@ -15,12 +18,7 @@ import (
 func GuardarProcesoEnSwap(pid int) error {
 
 	global.MemoriaMutex.Lock()
-	var marcos []int
-	for frameIdx, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pid {
-			marcos = append(marcos, frameIdx)
-		}
-	}
+	marcos := RecolectarMarcos(pid)
 	global.MemoriaMutex.Unlock()
 
 	if len(marcos) == 0 {

@@ -67,7 +67,7 @@ func DesuspenderProceso(pid int) error {
 	AsignarMarcosAProcesoTPPorPID(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf("DesuspenderProceso: inicio PID=%d", pid))
 
-	proc, err := RecuperarProcesoDeSwap(pid)
+	err := RecuperarProcesoDeSwap(pid)
 	if err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("  RecuperarProcesoDeSwap falló: %s", err))
 		return err
@@ -82,11 +82,17 @@ func DesuspenderProceso(pid int) error {
 			return nil
 		}
 	}
-
-	// Si no existía en memoria principal, lo agrego:
-	proc.EnSwap = false
-	proc.Metricas.SubidasMem++
-	global.Procesos = append(global.Procesos, proc)
 	global.MemoriaLogger.Debug("  proceso agregado a memoria principal tras des-suspensión")
 	return nil
+}
+
+// recolectarMarcos devuelve la lista de índices de marcos ocupados por pid
+func RecolectarMarcos(pid int) []int {
+	var marcos []int
+	for idx, ocupante := range global.MapMemoriaDeUsuario {
+		if ocupante == pid {
+			marcos = append(marcos, idx)
+		}
+	}
+	return marcos
 }

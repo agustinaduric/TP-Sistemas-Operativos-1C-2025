@@ -9,8 +9,13 @@ import (
 )
 
 // BuscarProcesoI devuelve el índice en global.Procesos donde está el PID.
-// Retorna (índice, true) si existe, o (-1, false) si no.
-// Usa logging para depuración.
+// Ustedes diran, pero nardo, ya tenes una funcion llamada buscarProceso
+// era necesario esta¿
+// Bueno, si, esta al devolver el indice nos permite tratar con el proceso REAL
+// y no con una copia del mismo, asi puedo aumentar las metricas de forma correcta
+// y entonces para que existe buscarProceso¿
+// escribiendo este comentario me di cuenta que yo tampoco se la respuesta
+// pero se quedara
 func BuscarProcesoI(pid int) (int, bool) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("BuscarProcesoI: inicio PID=%d", pid))
 

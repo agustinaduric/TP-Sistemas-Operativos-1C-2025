@@ -1,207 +1,172 @@
 package fmemoria
 
 import (
-	"encoding/binary"
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"sync"
+	"strconv"
+	"strings"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
-	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-// swapMutex sincroniza acceso concurrente al archivo swap durante lectura/escritura de bloques.
-var swapMutex sync.Mutex
+// RecuperarProcesoDeSwap restaura del swap el proceso pidBuscado:
+//  1. extrae su bloque de swap,
+//  2. lee cuántas páginas tiene,
+//  3. lee esas páginas (bytes crudos),
+//  4. las escribe de vuelta en MemoriaUsuario usando MapMemoriaDeUsuario,
+//  5. y elimina su bloque del archivo swap.bin.
+func RecuperarProcesoDeSwap(pidBuscado int) error {
+	global.MemoriaLogger.Debug(fmt.Sprintf("RecuperarProcesoDeSwap: inicio PID=%d", pidBuscado))
 
-func RecuperarProcesoDeSwap(pidBuscado int) (structs.ProcesoMemoria, error) {
-	// 1) Buscar índice del proceso en global.Procesos para actualizar EnSwap
-	global.MemoriaMutex.Lock()
-	var procIdx int = -1
-	for i, pm := range global.Procesos {
-		if pm.PID == pidBuscado {
-			procIdx = i
-			break
-		}
-	}
-	global.MemoriaMutex.Unlock()
-	if procIdx < 0 {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: PID=%d no existe en memoria principal", pidBuscado)
+	// 1) Leer todo el swap
+	contenido, err := os.ReadFile(global.MemoriaConfig.SwapPath)
+	if err != nil {
+		return fmt.Errorf("no puedo leer swap: %w", err)
 	}
 
-	// 2) Snapshot de marcos reservados para el PID
-	global.MemoriaMutex.Lock()
-	var marcos []int
-	for frameIdx, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pidBuscado {
-			marcos = append(marcos, frameIdx)
-		}
+	// 2) Partir en bloques y quedarnos con el que importa
+	bloques, resto, err := dividirBloques(contenido, pidBuscado)
+	if err != nil {
+		return err
 	}
-	global.MemoriaMutex.Unlock()
-	if len(marcos) == 0 {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: PID=%d no tiene marcos reservados en memoria principal", pidBuscado)
+	if len(bloques) == 0 {
+		return fmt.Errorf("PID=%d no encontrado en swap", pidBuscado)
 	}
-	pageCountExpected := len(marcos)
+	bloque := bloques[0]
+
+	// 3) Parsear cantidad de páginas y datos de esas páginas
+	paginaCount, datosPaginas, err := parsearBloque(bloque)
+	if err != nil {
+		return err
+	}
+	global.MemoriaLogger.Debug(fmt.Sprintf("  PID=%d tiene %d páginas en swap", pidBuscado, paginaCount))
+
+	// 4) Recolectar los marcos asignados antes al PID
+	marcos := RecolectarMarcos(pidBuscado)
+	if len(marcos) < paginaCount {
+		return fmt.Errorf("no hay suficientes marcos para PID=%d: necesito %d, tengo %d",
+			pidBuscado, paginaCount, len(marcos))
+	}
+
+	// 5) Escribir cada página de vuelta en MemoriaUsuario
 	pageSize := int(global.MemoriaConfig.PageSize)
+	for i := 0; i < paginaCount; i++ {
+		inicio := i * pageSize
+		fin := inicio + pageSize
+		chunk := datosPaginas[inicio:fin]
+		marco := marcos[i]
+		offset := marco * pageSize
 
-	// 3) Abrir swapfile y temp bajo swapMutex
-	swapMutex.Lock()
-	defer swapMutex.Unlock()
+		global.MemoriaMutex.Lock()
+		copy(global.MemoriaUsuario[offset:offset+pageSize], chunk)
+		global.MemoriaMutex.Unlock()
 
-	swapPath := global.MemoriaConfig.SwapPath
-	f, err := os.Open(swapPath)
-	if err != nil {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: no se puede abrir swapfile: %w", err)
+		global.MemoriaLogger.Debug(fmt.Sprintf(
+			"  PID=%d: restaurada página %d en marco %d (bytes %d–%d)",
+			pidBuscado, i, marco, inicio, fin,
+		))
 	}
-	defer f.Close()
 
-	// Crear temp file en la misma carpeta
-	dir, file := filepath.Split(swapPath)
-	tmpName := filepath.Join(dir, file+".tmp")
-	tf, err := os.Create(tmpName)
-	if err != nil {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: no se puede crear temp file: %w", err)
+	// 6) Sobrescribir swap.bin sin el bloque recuperado
+	if err := os.WriteFile(global.MemoriaConfig.SwapPath, resto, 0664); err != nil {
+		return fmt.Errorf("no puedo actualizar swap: %w", err)
 	}
-	// En caso de error posterior, eliminar temp
-	defer func() {
-		tf.Close()
-		if err != nil {
-			os.Remove(tmpName)
-		}
-	}()
 
-	// 4) Leer secuencialmente bloques del swap
-	headerBuf := make([]byte, 8) // 4 bytes PID + 4 bytes PageCount
-	var offset int64 = 0
-	// idxMarco para copiar páginas en orden de marcos
-	idxMarco := 0
+	global.MemoriaLogger.Debug(fmt.Sprintf("RecuperarProcesoDeSwap: fin PID=%d", pidBuscado))
+	return nil
+}
 
-	for {
-		// Leer header
-		n, errRead := f.ReadAt(headerBuf, offset)
-		if errRead == io.EOF && n == 0 {
-			// fin de archivo
-			break
-		}
-		if errRead != nil && errRead != io.EOF {
-			return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: error leyendo header en offset %d: %w", offset, errRead)
-		}
-		if n < 8 {
-			return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: header incompleto en offset %d", offset)
-		}
-		// Parsear PID y PageCount
-		blockPID := int(int32(binary.LittleEndian.Uint32(headerBuf[0:4])))
-		pageCount := int(binary.LittleEndian.Uint32(headerBuf[4:8]))
-		// Validar pageCount no negativo
-		if pageCount < 0 {
-			return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: pageCount negativo %d en offset %d", pageCount, offset)
-		}
-		// Calcular tamaño de datos
-		blockSize := int64(pageCount) * int64(pageSize)
-		offset += 8
+// dividirBloques separa data en bloques por "PID: " y devuelve:
+//   - bloques que comienzan con el PID buscado,
+//   - resto del archivo sin esos bloques.
+func dividirBloques(data []byte, pid int) ([][]byte, []byte, error) {
+	partes := bytes.Split(data, []byte("PID: "))
+	var bloques [][]byte
+	var bufResto bytes.Buffer
 
-		if blockPID == pidBuscado {
-			// Validar cantidad esperada
-			if pageCount != pageCountExpected {
-				return structs.ProcesoMemoria{}, fmt.Errorf(
-					"RecuperarProcesoEnSwap: número de páginas en swap (%d) distinto de marcos reservados (%d) para PID %d",
-					pageCount, pageCountExpected, pidBuscado)
+	for i, parte := range partes {
+		if i == 0 {
+			bufResto.Write(parte)
+			continue
+		}
+		encabezado := fmt.Sprintf("%d\n", pid)
+		if bytes.HasPrefix(parte, []byte(encabezado)) {
+			bloque, rem, err := extraerBloque(parte)
+			if err != nil {
+				return nil, nil, err
 			}
-			// Copiar cada página a memoria principal
-			for j := 0; j < pageCount; j++ {
-				// Leer página j
-				pageBuf := make([]byte, pageSize)
-				n2, err2 := f.ReadAt(pageBuf, offset+int64(j*pageSize))
-				if err2 != nil && err2 != io.EOF {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: error leyendo página %d de PID %d en offset %d: %w",
-						j, pidBuscado, offset+int64(j*pageSize), err2)
-				}
-				if n2 < pageSize {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: lectura incompleta de página %d de PID %d", j, pidBuscado)
-				}
-				// Obtener marco reservado
-				if idxMarco >= len(marcos) {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: más páginas en swap (%d) que marcos reservados (%d) para PID %d",
-						pageCount, len(marcos), pidBuscado)
-				}
-				frame := marcos[idxMarco]
-				// Copiar a memoria bajo lock
-				global.MemoriaMutex.Lock()
-				start := frame * pageSize
-				copy(global.MemoriaUsuario[start:start+pageSize], pageBuf)
-				// Verificar consistencia de MapMemoriaDeUsuario
-				if global.MapMemoriaDeUsuario[frame] != pidBuscado {
-					global.MemoriaLogger.Error(fmt.Sprintf(
-						"RecuperarProcesoEnSwap: inconsistencia en marco reservado: frame=%d no marcado para PID=%d",
-						frame, pidBuscado))
-					global.MapMemoriaDeUsuario[frame] = pidBuscado
-				}
-				global.MemoriaMutex.Unlock()
-				idxMarco++
-			}
-			// No escribimos este bloque en temp: se elimina del swap.
+			bloques = append(bloques, bloque)
+			bufResto.Write(rem)
 		} else {
-			// PID distinto: copiar header + datos al temp
-			// Escribir header
-			if _, err := tf.Write(headerBuf); err != nil {
-				return structs.ProcesoMemoria{}, fmt.Errorf(
-					"RecuperarProcesoEnSwap: error escribiendo header PID %d en temp: %w", blockPID, err)
-			}
-			// Copiar datos en streaming de pageSize en pageSize
-			bytesLeft := blockSize
-			buf := make([]byte, pageSize)
-			curOffset := offset
-			for bytesLeft > 0 {
-				toRead := pageSize
-				if int64(toRead) > bytesLeft {
-					toRead = int(bytesLeft)
-				}
-				n2, err2 := f.ReadAt(buf[:toRead], curOffset)
-				if err2 != nil && err2 != io.EOF {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: error leyendo datos PID %d en offset %d: %w",
-						blockPID, curOffset, err2)
-				}
-				if n2 < toRead {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: lectura incompleta datos PID %d en offset %d",
-						blockPID, curOffset)
-				}
-				if _, err := tf.Write(buf[:toRead]); err != nil {
-					return structs.ProcesoMemoria{}, fmt.Errorf(
-						"RecuperarProcesoEnSwap: error escribiendo datos PID %d en temp: %w", blockPID, err)
-				}
-				curOffset += int64(toRead)
-				bytesLeft -= int64(toRead)
-			}
+			bufResto.Write([]byte("PID: "))
+			bufResto.Write(parte)
 		}
-		// Avanzar offset al siguiente bloque
-		offset += blockSize
 	}
+	return bloques, bufResto.Bytes(), nil
+}
 
-	// 5) Cerrar y reemplazar swapfile
-	if err := tf.Sync(); err != nil {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: error en Sync temp file: %w", err)
+// extraerBloque lee desde parte:
+//   - línea PID,
+//   - línea "Cantidad Paginas: N",
+//   - N * pageSize bytes,
+//
+// devuelve el bloque completo y el resto de bytes posteriores.
+func extraerBloque(parte []byte) ([]byte, []byte, error) {
+	lector := bufio.NewReader(bytes.NewReader(parte))
+	// descartar línea PID
+	_, err := lector.ReadString('\n')
+	if err != nil {
+		return nil, nil, err
 	}
-	if err := tf.Close(); err != nil {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: error cerrando temp file: %w", err)
+	// leer Cantidad Paginas
+	linea, err := lector.ReadString('\n')
+	if err != nil {
+		return nil, nil, err
 	}
-	f.Close()
-
-	// Renombrar temp sobre swapfile original
-	if err := os.Rename(tmpName, swapPath); err != nil {
-		return structs.ProcesoMemoria{}, fmt.Errorf("RecuperarProcesoEnSwap: no se pudo renombrar temp a swapfile: %w", err)
+	campos := strings.Fields(linea)
+	if len(campos) != 2 {
+		return nil, nil, fmt.Errorf("formato inválido: %q", linea)
 	}
+	N, err := strconv.Atoi(campos[1])
+	if err != nil {
+		return nil, nil, err
+	}
+	pageSize := int(global.MemoriaConfig.PageSize)
+	total := N * pageSize
 
-	// 6) Marcar EnSwap = false en global.Procesos
-	global.MemoriaMutex.Lock()
-	global.Procesos[procIdx].EnSwap = false
-	procCopy := global.Procesos[procIdx]
-	global.MemoriaMutex.Unlock()
+	// leer datos de páginas
+	datos := make([]byte, total)
+	if _, err := io.ReadFull(lector, datos); err != nil {
+		return nil, nil, err
+	}
+	// calcular longitud del header
+	consumed := len(parte) - lector.Buffered()
+	bloque := parte[:consumed]
+	resto := parte[consumed:]
+	return bloque, resto, nil
+}
 
-	return procCopy, nil
+// parsearBloque recibe un bloque completo y retorna N y los bytes de páginas
+func parsearBloque(bloque []byte) (int, []byte, error) {
+	lector := bufio.NewReader(bytes.NewReader(bloque))
+	// descartar línea PID
+	if _, err := lector.ReadString('\n'); err != nil {
+		return 0, nil, err
+	}
+	// leer Cant Paginas
+	linea, err := lector.ReadString('\n')
+	if err != nil {
+		return 0, nil, err
+	}
+	campos := strings.Fields(linea)
+	N, err := strconv.Atoi(campos[1])
+	if err != nil {
+		return 0, nil, err
+	}
+	// resto son los bytes
+	datos, err := io.ReadAll(lector)
+	return N, datos, err
 }
