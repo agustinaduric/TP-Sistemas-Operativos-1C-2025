@@ -15,7 +15,7 @@ func DL_a_DF(direccion_logica_string string) string {
 	var nro_pagina int = direccion_logica / global.Page_size
 	var desplazamiento int = direccion_logica % global.Page_size
 
-	var nro_marco int = ObtenerMarco(nro_pagina, desplazamiento)
+	var nro_marco int = ObtenerMarco(nro_pagina)
 
 	global.CpuLogger.Info(fmt.Sprintf("PID: <%d> - OBTENER MARCO - Página: <%d> - Marco: <%d>", global.Proceso_Ejecutando.PID, nro_pagina, nro_marco))
 
@@ -24,7 +24,7 @@ func DL_a_DF(direccion_logica_string string) string {
 	return direccion_fisica_string
 }
 
-func ObtenerMarco(nro_pagina int, desplazamiento int) int {
+func ObtenerMarco(nro_pagina int) int {
 
 	if ConsultarMarcoEnTLB(nro_pagina) == global.HIT {
 		return global.MarcoEncontrado
@@ -36,16 +36,15 @@ func ObtenerMarco(nro_pagina int, desplazamiento int) int {
 		entrada := (nro_pagina / potencia) % global.Entries_per_page
 		entradasPorNivel[x-1] = entrada
 	}
-	nro_marco := SolicitarMarco(entradasPorNivel, desplazamiento)
+	nro_marco := SolicitarMarco(entradasPorNivel)
 	AgregarATLB(nro_pagina, nro_marco)
 	return nro_marco
 }
 
-func SolicitarMarco(indice []int, desplazamiento int) int {
+func SolicitarMarco(indice []int) int {
 	var Solicitud global.SolicitudDeMarco = global.SolicitudDeMarco{
-		PID:            global.Proceso_Ejecutando.PID,
-		Indices:        indice,
-		Desplazamiento: desplazamiento,
+		PID:     global.Proceso_Ejecutando.PID,
+		Indices: indice,
 	}
 	body, err := json.Marshal(Solicitud)
 	if err != nil {

@@ -63,9 +63,8 @@ type EntradaDeTLB struct {
 var TLB []EntradaDeTLB
 
 type SolicitudDeMarco struct {
-	PID            int
-	Indices        []int // un indice por cada nivel
-	Desplazamiento int
+	PID     int
+	Indices []int // un indice por cada nivel
 }
 
 var MarcoEncontrado int

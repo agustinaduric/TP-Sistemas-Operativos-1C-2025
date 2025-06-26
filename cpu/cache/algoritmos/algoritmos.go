@@ -7,17 +7,17 @@ import (
 	"log"
 	"net/http"
 
+	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
-	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 )
 
 func Clock(entrada structs.EntradaCache) {
 	global.CpuLogger.Debug("Entro a clock")
-	for i:=0; i<len(global.CachePaginas); i++{
+	for i := 0; i < len(global.CachePaginas); i++ {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso {
-			if entradaActual.BitModificado{
+			if entradaActual.BitModificado {
 				global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada, se la mando a memoria antes de reemplazar"))
 				EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
 				global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
@@ -37,10 +37,10 @@ func Clock(entrada structs.EntradaCache) {
 func ClockM(entrada structs.EntradaCache) {
 	global.CpuLogger.Debug("Entro a clock-m")
 	// primera vuelta (U = 0 y M = 0)
-	for i:=0; i<len(global.CachePaginas); i++{
+	for i := 0; i < len(global.CachePaginas); i++ {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso && !entradaActual.BitModificado {
-			if entradaActual.BitModificado{
+			if entradaActual.BitModificado {
 				global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
 				global.CachePaginas[global.PunteroClock] = entrada
 				avanzarPuntero()
@@ -51,7 +51,7 @@ func ClockM(entrada structs.EntradaCache) {
 		avanzarPuntero()
 	}
 	//segunda vuelta
-	for  i:=0; i<len(global.CachePaginas); i++{
+	for i := 0; i < len(global.CachePaginas); i++ {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso && entradaActual.BitModificado {
 			global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada U=0 M=1, se la mando a memoria antes de reemplazar"))
@@ -62,13 +62,13 @@ func ClockM(entrada structs.EntradaCache) {
 			avanzarPuntero()
 			return
 		}
-		entradaActual.BitUso= false
+		entradaActual.BitUso = false
 		global.CpuLogger.Debug("Bit de uso pasa a 0 y continuo")
 		avanzarPuntero()
 	}
 }
 
-func avanzarPuntero(){
+func avanzarPuntero() {
 	global.PunteroClock++
 	if global.PunteroClock >= global.EntradasMaxCache {
 		global.PunteroClock = 0
@@ -77,15 +77,15 @@ func avanzarPuntero(){
 	global.CpuLogger.Debug("El puntero de clock avanzo")
 }
 
-func EnviarEscribirAMemoria(ip string, puerto int,entrada *structs.EntradaCache) {
-	desplazamiento :=0
-	marco :=mmu.ObtenerMarco(entrada.Pagina, desplazamiento)
+func EnviarEscribirAMemoria(ip string, puerto int, entrada *structs.EntradaCache) {
+	desplazamiento := 0
+	marco := mmu.ObtenerMarco(entrada.Pagina)
 	dirFisica := marco*global.Page_size + desplazamiento
 
 	escritura := structs.Escritura{
-		PID: entrada.PID,
+		PID:       entrada.PID,
 		DirFisica: dirFisica,
-		Datos: entrada.Contenido,
+		Datos:     entrada.Contenido,
 	}
 	body, err := json.Marshal(escritura)
 	if err != nil {
