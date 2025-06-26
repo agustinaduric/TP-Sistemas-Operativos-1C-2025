@@ -238,6 +238,7 @@ func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 
 func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay))
+
 	global.MemoriaLogger.Debug("HandlerDessuspenderProceso: entrada")
 
 	var req struct {
@@ -262,6 +263,8 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
 		return
 	}
+	//retraso de acceso tabla
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
 	resp := "OK"
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -293,7 +296,8 @@ func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"HandlerSuspenderProceso: pid=%d recibido", req.PID,
 	))
-
+	//retraso de acceso tabla
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
 	if err := SuspenderProceso(req.PID); err != nil {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
@@ -350,6 +354,8 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: decodificación fallida: %s", err))
 		return
 	}
+	//retraso de acceso tabla
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
 	if err := DumpMemory(req.PID); err != nil {
 		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))
@@ -367,13 +373,15 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
 	var req struct {
-		PID    int
-		Pagina int
+		PID     int
+		Indices []int
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Error al decodificar solicitud de marco", http.StatusBadRequest)
 		return
 	}
+	//retraso de acceso tabla
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
 	marco := Marco(req.PID, req.Indices) //miri enviarme indices
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(marco); err != nil {
