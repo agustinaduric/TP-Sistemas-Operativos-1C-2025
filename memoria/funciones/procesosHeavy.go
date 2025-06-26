@@ -32,18 +32,6 @@ func ÍndiceProcesoTP(pid int) int {
 	return -1
 }
 
-// collectMarcos devuelve el slice de índices de marcos reservados para pid.
-func collectMarcos(pid int) []int {
-	var marcos []int
-	for i, ocup := range global.MapMemoriaDeUsuario {
-		if ocup == pid {
-			marcos = append(marcos, i)
-		}
-	}
-	global.MemoriaLogger.Debug(fmt.Sprintf("collectMarcos: PID=%d marcos=%v", pid, marcos))
-	return marcos
-}
-
 // construirTabla crea recursivamente la jerarquía multinivel de tablas de páginas.
 //
 //	marcos   slice de índices de marcos a mapear
@@ -91,64 +79,20 @@ func construirTabla(marcos []int, nivel int) []structs.Tp {
 // InicializarProcesoTP crea la tabla multinivel para el proceso y lo agrega a global.ProcesosTP.
 func InicializarProcesoTP(pid int) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProcesoTP: inicio PID=%d", pid))
-	marcos := collectMarcos(pid)
+	marcos := RecolectarMarcos(pid)
 	tabla1 := construirTabla(marcos, 1)
 	procTP := structs.ProcesoTP{PID: pid, TablaNivel1: tabla1}
 	global.ProcesosTP = append(global.ProcesosTP, procTP)
 
-	for i := 0; i < (global.MemoriaConfig.NumberOfLevels); i++ {
-		IncrementarAccesosTabla(pid)
-	}
+	IncrementarAccesosTabla(pid)
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProcesoTP: PID=%d tabla creada con %d entradas en nivel 1", pid, len(tabla1)))
-}
-
-// Marco recorre la jerarquía según índices y devuelve el marco físico o -1.
-func Marco(pid int, indices []int) int {
-	cfg := global.MemoriaConfig
-	niveles := cfg.NumberOfLevels
-
-	if len(indices) != niveles+1 {
-		global.MemoriaLogger.Error(fmt.Sprintf("Marco: longitud de índices inválida %d, se espera %d", len(indices), niveles+1))
-		return -1
-	}
-	procTP := getProcesoTP(pid)
-	if procTP == nil {
-		return -1
-	}
-
-	nivelActual := procTP.TablaNivel1
-	var hoja structs.Tp
-	for lvl := 1; lvl <= niveles; lvl++ {
-		idx := indices[lvl-1]
-		if idx < 0 || idx >= len(nivelActual) {
-			global.MemoriaLogger.Error(fmt.Sprintf("Marco: índice fuera de rango en nivel %d: %d", lvl, idx))
-			return -1
-		}
-		entrada := nivelActual[idx]
-		if lvl < niveles {
-			nivelActual = entrada.TablaSiguienteNivel
-		} else {
-			hoja = entrada
-		}
-	}
-	puntero := indices[niveles]
-	if puntero < 0 || puntero >= len(hoja.NumeroMarco) {
-		global.MemoriaLogger.Error(fmt.Sprintf("Marco: puntero inválido en hoja: %d", puntero))
-		return -1
-	}
-	marco := hoja.NumeroMarco[puntero]
-	for i := 0; i < (global.MemoriaConfig.NumberOfLevels); i++ {
-		IncrementarAccesosTabla(pid)
-	}
-	global.MemoriaLogger.Debug(fmt.Sprintf("Marco: PID=%d, indices=%v → marco=%d", pid, indices, marco))
-	return marco
 }
 
 // AsignarMarcosAProcesoTPPorPID vuelve a construir la tabla tras des-suspensión.
 func AsignarMarcosAProcesoTPPorPID(pid int) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("AsignarMarcosAProcesoTPPorPID: inicio PID=%d", pid))
-	marcos := collectMarcos(pid)
+	marcos := RecolectarMarcos(pid)
 	if len(marcos) == 0 {
 		global.MemoriaLogger.Error(fmt.Sprintf("AsignarMarcos: PID=%d sin marcos", pid))
 		return
@@ -159,9 +103,7 @@ func AsignarMarcosAProcesoTPPorPID(pid int) {
 		global.MemoriaLogger.Error(fmt.Sprintf("AsignarMarcos: PID=%d no en ProcesosTP", pid))
 		return
 	}
-	for i := 0; i < (global.MemoriaConfig.NumberOfLevels); i++ {
-		IncrementarAccesosTabla(pid)
-	}
+	IncrementarAccesosTabla(pid)
 	global.ProcesosTP[idx].TablaNivel1 = tabla1
 	global.MemoriaLogger.Debug(fmt.Sprintf("AsignarMarcos: PID=%d tabla reconstruida", pid))
 

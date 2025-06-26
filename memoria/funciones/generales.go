@@ -264,7 +264,7 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
 	resp := "OK"
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -297,7 +297,7 @@ func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		"HandlerSuspenderProceso: pid=%d recibido", req.PID,
 	))
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
 	if err := SuspenderProceso(req.PID); err != nil {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
@@ -355,7 +355,7 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
 	if err := DumpMemory(req.PID); err != nil {
 		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))
@@ -381,7 +381,8 @@ func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * global.MemoriaConfig.NumberOfLevels))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
+
 	marco := Marco(req.PID, req.Indices) //miri enviarme indices
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(marco); err != nil {

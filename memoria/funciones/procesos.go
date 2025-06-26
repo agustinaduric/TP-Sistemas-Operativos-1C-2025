@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
-
-var MarcosMutex sync.Mutex
 
 func BuscarProceso(pid int) (structs.ProcesoMemoria, bool) {
 	// 1. Debug inicial con PID
@@ -109,60 +106,6 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 	)
 
 	return instrucciones, nil
-}
-
-func LiberarMarcos(pid int) {
-	MarcosMutex.Lock()
-	global.MemoriaLogger.Debug(fmt.Sprintf("LiberarMarcos: inicio PID=%d", pid))
-
-	for marco, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pid {
-			global.MapMemoriaDeUsuario[marco] = -1
-			global.MemoriaLogger.Debug(fmt.Sprintf(
-				"LiberarMarcos: marco %d liberado (antes ocupado por PID=%d)",
-				marco, pid,
-			))
-		}
-	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf("LiberarMarcos: fin PID=%d", pid))
-	MarcosMutex.Unlock()
-}
-
-func OcuparMarcos(pid int) {
-	MarcosMutex.Lock()
-	global.MemoriaLogger.Debug(fmt.Sprintf("OcuparMarcos: inicio PID=%d", pid))
-
-	// 1. Obtener el proceso para conocer su tamaño
-	proc, _ := BuscarProceso(pid) // asumimos que ya existe porque hay espacio
-	necesarios := MarcosNecesitados(proc.Tamanio)
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"OcuparMarcos: PID=%d requiere %d marcos (tamaño %d bytes)",
-		pid, necesarios, proc.Tamanio,
-	))
-
-	// 2. Asignar exactamente 'necesarios' marcos libres
-	asignados := 0
-
-	for idx, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == -1 {
-			global.MapMemoriaDeUsuario[idx] = pid
-			asignados++
-			global.MemoriaLogger.Debug(fmt.Sprintf(
-				"OcuparMarcos: PID=%d ocupa marco %d (%d/%d)",
-				pid, idx, asignados, necesarios,
-			))
-			if asignados == necesarios {
-				break
-			}
-		}
-	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"OcuparMarcos: fin PID=%d — se asignaron %d marcos",
-		pid, asignados,
-	))
-	MarcosMutex.Unlock()
 }
 
 func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion, PATH string) error {

@@ -186,7 +186,11 @@ func IncrementarAccesosTabla(pid int) error {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarAccesosTabla: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
-	global.Procesos[idx].Metricas.AccesosTabla++
+
+	for i := 0; i < CalcularAccesosTablas(len(RecolectarMarcos(pid))); i++ {
+		global.Procesos[idx].Metricas.AccesosTabla++
+	}
+
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"IncrementarAccesosTabla: PID=%d AccesosTabla=%d",
 		pid, global.Procesos[idx].Metricas.AccesosTabla,
@@ -194,4 +198,20 @@ func IncrementarAccesosTabla(pid int) error {
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarAccesosTabla: fin PID=%d", pid))
 	return nil
+}
+
+func CalcularAccesosTablas(cantidadMarcos int) int {
+	total := 0
+	for nivel := 1; nivel <= global.MemoriaConfig.NumberOfLevels; nivel++ {
+		// exponent = niveles - nivel + 1
+		exp := global.MemoriaConfig.NumberOfLevels - nivel + 1
+		divisor := 1
+		for i := 0; i < exp; i++ {
+			divisor *= global.MemoriaConfig.EntriesPerPage
+		}
+		// accesos en este nivel = ceil(marcos/divisor)
+		cnt := (cantidadMarcos + divisor - 1) / divisor
+		total += cnt
+	}
+	return total
 }

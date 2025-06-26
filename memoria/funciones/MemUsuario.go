@@ -6,55 +6,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 )
 
-func CantidadMarcos() int {
-	total := global.MemoriaConfig.MemorySize / global.MemoriaConfig.PageSize
-
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("CantidadMarcos: MemorySize=%d, PageSize=%d, TotalMarcos=%d",
-			global.MemoriaConfig.MemorySize,
-			global.MemoriaConfig.PageSize,
-			total,
-		),
-	)
-	return total
-}
-
-func MarcosDisponibles() int {
-
-	global.MemoriaLogger.Debug("MarcosDisponibles: contando marcos libres")
-
-	var contador int
-	for i := 0; i < CantidadMarcos(); i++ {
-		if global.MapMemoriaDeUsuario[i] == -1 {
-			contador++
-		}
-	}
-
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("MarcosDisponibles: TotalDisponibles=%d", contador),
-	)
-	return contador
-}
-
-func MarcosNecesitados(tamanioProceso int) int {
-
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("MarcosNecesitados: TamanioProceso=%d", tamanioProceso),
-	)
-
-	var necesarios int
-	if rem := tamanioProceso % global.MemoriaConfig.PageSize; rem == 0 {
-		necesarios = tamanioProceso / global.MemoriaConfig.PageSize
-	} else {
-		necesarios = (tamanioProceso / global.MemoriaConfig.PageSize) + 1
-	}
-
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("MarcosNecesitados: Necesarios=%d (para TamanioProceso=%d)", necesarios, tamanioProceso),
-	)
-	return necesarios
-}
-
 // trankilo, ya lo vamos a usar, compilador idiota
 func hayEspacio(tamanioProceso int) bool {
 	necesarios := MarcosNecesitados(tamanioProceso)
@@ -85,7 +36,7 @@ func espacioDisponible() int {
 	return disponibles
 }
 
-func LeerMemoriaUsuario(pid int, direccionFisica int,tamanio int) []byte {
+func LeerMemoriaUsuario(pid int, direccionFisica int, tamanio int) []byte {
 	global.MemoriaMutex.Lock()
 	IncrementarLecturasMem(pid)
 	if direccionFisica < 0 || direccionFisica >= len(global.MemoriaUsuario) {
@@ -96,9 +47,9 @@ func LeerMemoriaUsuario(pid int, direccionFisica int,tamanio int) []byte {
 	}
 
 	fin := direccionFisica + tamanio
-    if fin > len(global.MemoriaUsuario) {
-        fin = len(global.MemoriaUsuario)
-    }
+	if fin > len(global.MemoriaUsuario) {
+		fin = len(global.MemoriaUsuario)
+	}
 
 	valor := global.MemoriaUsuario[direccionFisica:fin]
 	global.MemoriaLogger.Debug(
@@ -122,7 +73,6 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 		return
 	}
 
-	
 	for i := 0; i < longitud; i++ {
 		global.MemoriaUsuario[direccionFisica+i] = bytesTexto[i]
 	}

@@ -16,6 +16,8 @@ import (
 // RecuperarProcesoDeSwap busca en el swap el bloque para pid, restaura sus páginas
 // en MemoriaUsuario (según MapMemoriaDeUsuario) y luego elimina ese bloque de swap.
 func RecuperarProcesoDeSwap(pid int) error {
+	swapMutex.Lock()
+	defer swapMutex.Unlock()
 	// 1) Leer y extraer el bloque completo de pid
 	bloque, err := leerBloqueSwap(pid)
 	if err != nil {

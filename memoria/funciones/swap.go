@@ -2,9 +2,12 @@ package fmemoria
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 )
+
+var swapMutex sync.Mutex
 
 //SI este archivo anda es un milagr
 
@@ -84,15 +87,4 @@ func DesuspenderProceso(pid int) error {
 	}
 	global.MemoriaLogger.Debug("  proceso agregado a memoria principal tras des-suspensión")
 	return nil
-}
-
-// recolectarMarcos devuelve la lista de índices de marcos ocupados por pid
-func RecolectarMarcos(pid int) []int {
-	var marcos []int
-	for idx, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pid {
-			marcos = append(marcos, idx)
-		}
-	}
-	return marcos
 }
