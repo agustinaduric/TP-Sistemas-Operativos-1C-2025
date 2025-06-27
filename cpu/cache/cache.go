@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/cpu/cache/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
@@ -19,6 +20,7 @@ func InicializarCachePaginas(tamanio int, algoritmo string){
 }
 
 func BuscarEncache(pid int, pagina int) (bool,byte){
+	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
 	global.CpuLogger.Debug(fmt.Sprintf("Comenzo busqueda en CachePaginas PID: %d, Pag: %d", pid, pagina))
 	for i:=0; i < len(cachePags); i++{
 		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina{
@@ -32,6 +34,7 @@ func BuscarEncache(pid int, pagina int) (bool,byte){
 }
 
 func EscribirEnCache(pid int, pagina int, datos []byte){
+	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
 	for i := range cachePags{
 		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina {
 			cachePags[i].Contenido = datos

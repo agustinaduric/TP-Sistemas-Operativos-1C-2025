@@ -60,6 +60,7 @@ func ClockM(entrada structs.EntradaCache) {
 			global.CachePaginas[global.PunteroClock] = entrada
 			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
 			avanzarPuntero()
+			//SEXO DESIJNTERESADOOO
 			return
 		}
 		entradaActual.BitUso = false

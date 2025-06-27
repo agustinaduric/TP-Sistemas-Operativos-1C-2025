@@ -31,7 +31,8 @@ func WRITE(dirLogica int, datos string) {
 
 	//memoria
 	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
-	//dirFisica := mmu.DL_a_DF(string(dirLogica)
+	// dirFisica := global.String_a_int(mmu.DL_a_DF(string(dirLogica))) // si dejo esto tira un warning: conversion de la conversion 
+																		//Warning: somos autistas
 
 	soliEscritura := structs.Escritura{
 		PID:       global.Proceso_Ejecutando.PID,
@@ -78,7 +79,7 @@ func READ(dirLogica int, tamanio int) {
 		mmu.ObtenerMarco(pagina)
 	}
 	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
-	//dirFisica := mmu.DL_a_DF(string(dirLogica)
+	// dirFisica := global.String_a_int(mmu.DL_a_DF(string(dirLogica))) // si dejo esto tira un warning: conversion de la conversion
 
 	//memoria
 	soliLectura := structs.Lectura{

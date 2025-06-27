@@ -201,6 +201,11 @@ func IncrementarAccesosTabla(pid int) error {
 }
 
 func CalcularAccesosTablas(cantidadMarcos int) int {
+	return global.MemoriaConfig.NumberOfLevels
+}
+
+/*
+func CalcularAccesosTablas(cantidadMarcos int) int {
 	total := 0
 	for nivel := 1; nivel <= global.MemoriaConfig.NumberOfLevels; nivel++ {
 		// exponent = niveles - nivel + 1
@@ -215,3 +220,5 @@ func CalcularAccesosTablas(cantidadMarcos int) int {
 	}
 	return total
 }
+	*/
+

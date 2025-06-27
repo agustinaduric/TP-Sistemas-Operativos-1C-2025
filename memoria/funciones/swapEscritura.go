@@ -32,9 +32,7 @@ func GuardarProcesoEnSwap(pid int) error {
 	if err := EScribirStringIntEnSwap("Cantidad Paginas: ", pageCount); err != nil {
 		return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 	}
-	for i := 0; i < (global.MemoriaConfig.NumberOfLevels); i++ {
-		IncrementarAccesosTabla(pid)
-	}
+	
 	// ) Escribir cada página en orden de marcos (orden ascendente de índice de marco)
 	for idx, marco := range marcos {
 		if err := EscribirMarcoEnSwap(marco); err != nil {

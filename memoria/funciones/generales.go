@@ -297,7 +297,7 @@ func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		"HandlerSuspenderProceso: pid=%d recibido", req.PID,
 	))
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
+	//time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
 	if err := SuspenderProceso(req.PID); err != nil {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
@@ -355,7 +355,7 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
+	//time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
 	if err := DumpMemory(req.PID); err != nil {
 		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))

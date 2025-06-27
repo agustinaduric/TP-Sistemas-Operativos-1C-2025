@@ -103,7 +103,7 @@ func AsignarMarcosAProcesoTPPorPID(pid int) {
 		global.MemoriaLogger.Error(fmt.Sprintf("AsignarMarcos: PID=%d no en ProcesosTP", pid))
 		return
 	}
-	IncrementarAccesosTabla(pid)
+	//IncrementarAccesosTabla(pid)
 	global.ProcesosTP[idx].TablaNivel1 = tabla1
 	global.MemoriaLogger.Debug(fmt.Sprintf("AsignarMarcos: PID=%d tabla reconstruida", pid))
 

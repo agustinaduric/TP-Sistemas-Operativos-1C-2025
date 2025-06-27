@@ -110,14 +110,14 @@ func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
 
 func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccion, PATH string) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("InicializarProceso: inicio PID=%d, tamaño=%d", pid, tamanio))
-
+	pathCompletito := global.MemoriaConfig.ScriptsPath + PATH
 	// 1. Crear el ProcesoMemoria con métricas a cero
 	proc := structs.ProcesoMemoria{
 		PID:           pid,
 		Tamanio:       tamanio,
 		EnSwap:        false,
 		Metricas:      structs.MetricasMemoria{}, // todas las métricas en 0
-		Path:          PATH,                      // TODO: ayuda
+		Path:          pathCompletito,                      
 		Instrucciones: instrucciones,
 	}
 	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
