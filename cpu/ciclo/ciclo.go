@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
@@ -34,10 +33,6 @@ func fetch() {
 
 func decode_and_execute() {
 	global.Instruccion_ejecutando = strings.Fields(global.Instruccion) // Dividimos las partes de la instruccion en un slice global.
-	if global.Instruccion_ejecutando[0] == "WRITE" || global.Instruccion_ejecutando[0] == "READ" {
-		var direccionfisica string = mmu.DL_a_DF(global.Instruccion_ejecutando[1])
-		global.Instruccion_ejecutando[1] = direccionfisica
-	}
 
 	switch global.Instruccion_ejecutando[0] {
 	case "WRITE":

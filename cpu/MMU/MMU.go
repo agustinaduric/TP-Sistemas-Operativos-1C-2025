@@ -10,8 +10,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 )
 
-func DL_a_DF(direccion_logica_string string) string {
-	var direccion_logica int = global.String_a_int(direccion_logica_string)
+func DL_a_DF(direccion_logica int) int {
 	var nro_pagina int = direccion_logica / global.Page_size
 	var desplazamiento int = direccion_logica % global.Page_size
 
@@ -20,8 +19,7 @@ func DL_a_DF(direccion_logica_string string) string {
 	global.CpuLogger.Info(fmt.Sprintf("PID: <%d> - OBTENER MARCO - Página: <%d> - Marco: <%d>", global.Proceso_Ejecutando.PID, nro_pagina, nro_marco))
 
 	var direccion_fisica int = (nro_marco * global.Page_size) + desplazamiento
-	var direccion_fisica_string string = global.Int_a_String(direccion_fisica)
-	return direccion_fisica_string
+	return direccion_fisica
 }
 
 func ObtenerMarco(nro_pagina int) int {

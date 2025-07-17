@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sisoputnfrba/tp-golang/cpu/cache/algoritmos"
+	algoritmoCache "github.com/sisoputnfrba/tp-golang/cpu/cache/algoritmos"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 var cachePags = global.CachePaginas
 
-func InicializarCachePaginas(tamanio int, algoritmo string){
+func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.EntradasMaxCache = tamanio
 	global.AlgoritmoCache = algoritmo
 	cachePags = make([]structs.EntradaCache, 0, global.EntradasMaxCache)
@@ -19,23 +19,23 @@ func InicializarCachePaginas(tamanio int, algoritmo string){
 	global.CpuLogger.Debug(fmt.Sprintf("Se inicializo CachePaginas con algoritmo: %s", algoritmo))
 }
 
-func BuscarEncache(pid int, pagina int) (bool,byte){
+func BuscarEncache(pid int, pagina int) (bool, byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
 	global.CpuLogger.Debug(fmt.Sprintf("Comenzo busqueda en CachePaginas PID: %d, Pag: %d", pid, pagina))
-	for i:=0; i < len(cachePags); i++{
-		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina{
+	for i := 0; i < len(cachePags); i++ {
+		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina {
 			cachePags[i].BitUso = true
-			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Hit - Pagina: %d ", pid, pagina)) 
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Hit - Pagina: %d ", pid, pagina))
 			return true, cachePags[i].Contenido[0]
 		}
 	}
-	global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Miss - Pagina: %d ", pid, pagina)) 
+	global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Miss - Pagina: %d ", pid, pagina))
 	return false, 0
 }
 
-func EscribirEnCache(pid int, pagina int, datos []byte){
+func EscribirEnCache(pid int, pagina int, datos []byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
-	for i := range cachePags{
+	for i := range cachePags {
 		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina {
 			cachePags[i].Contenido = datos
 			cachePags[i].BitUso = true
@@ -46,13 +46,13 @@ func EscribirEnCache(pid int, pagina int, datos []byte){
 	}
 	global.CpuLogger.Debug("No existe la entrada")
 	nuevaEntrada := structs.EntradaCache{
-		PID: pid,
-		Pagina: pagina,
-		Contenido: datos,
-		BitUso: true,
+		PID:           pid,
+		Pagina:        pagina,
+		Contenido:     datos,
+		BitUso:        true,
 		BitModificado: true,
 	}
-	if(len(cachePags) < global.EntradasMaxCache){
+	if len(cachePags) < global.EntradasMaxCache {
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
 		cachePags = append(cachePags, nuevaEntrada)
 		global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", pid, pagina))
@@ -63,8 +63,8 @@ func EscribirEnCache(pid int, pagina int, datos []byte){
 	}
 }
 
-func ReemplazarEntrada(nuevaEntrada structs.EntradaCache){
-	switch global.AlgoritmoCache{
+func ReemplazarEntrada(nuevaEntrada structs.EntradaCache) {
+	switch global.AlgoritmoCache {
 	case "CLOCK":
 		algoritmoCache.Clock(nuevaEntrada)
 	case "CLOCK-M":
@@ -74,15 +74,15 @@ func ReemplazarEntrada(nuevaEntrada structs.EntradaCache){
 	}
 }
 
-func LimpiarCacheDelProceso(pid int){
+func LimpiarCacheDelProceso(pid int) {
 	global.CpuLogger.Debug(fmt.Sprintf("Limpiando cache PID: %d", pid))
-	for i:= 0; i<len(cachePags);{
-		if cachePags[i].PID == pid{
-			if cachePags[i].BitModificado{
+	for i := 0; i < len(cachePags); {
+		if cachePags[i].PID == pid {
+			if cachePags[i].BitModificado {
 				algoritmoCache.EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, &cachePags[i])
 			}
-			cachePags = append(cachePags[:i],cachePags[i+1:]...)
-		} else{
+			cachePags = append(cachePags[:i], cachePags[i+1:]...)
+		} else {
 			i++
 		}
 	}

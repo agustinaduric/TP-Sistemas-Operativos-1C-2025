@@ -14,8 +14,7 @@ import (
 
 func WRITE(dirLogica int, datos string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
-	pagina := dirLogica / global.Page_size         // ver responsabilidad
-	desplazamiento := dirLogica % global.Page_size // idem
+	pagina := dirLogica / global.Page_size // ver responsabilidad
 
 	//cache
 	if global.EntradasMaxCache > 0 {
@@ -24,15 +23,8 @@ func WRITE(dirLogica int, datos string) {
 		return
 	}
 
-	//tlb
-	if mmu.ConsultarMarcoEnTLB(pagina) == global.MISS {
-		mmu.ObtenerMarco(pagina)
-	}
-
 	//memoria
-	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
-	// dirFisica := global.String_a_int(mmu.DL_a_DF(string(dirLogica))) // si dejo esto tira un warning: conversion de la conversion 
-																		//Warning: somos autistas
+	dirFisica := mmu.DL_a_DF(dirLogica)
 
 	soliEscritura := structs.Escritura{
 		PID:       global.Proceso_Ejecutando.PID,
@@ -62,8 +54,7 @@ func WRITE(dirLogica int, datos string) {
 
 func READ(dirLogica int, tamanio int) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a READ, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
-	pagina := dirLogica / global.Page_size         // ver responsabilidad
-	desplazamiento := dirLogica % global.Page_size // idem
+	pagina := dirLogica / global.Page_size // ver responsabilidad
 
 	//cache
 	if global.EntradasMaxCache > 0 {
@@ -74,12 +65,7 @@ func READ(dirLogica int, tamanio int) {
 		}
 	}
 
-	//tlb
-	if mmu.ConsultarMarcoEnTLB(pagina) == global.MISS {
-		mmu.ObtenerMarco(pagina)
-	}
-	dirFisica := global.MarcoEncontrado*global.Page_size + desplazamiento
-	// dirFisica := global.String_a_int(mmu.DL_a_DF(string(dirLogica))) // si dejo esto tira un warning: conversion de la conversion
+	dirFisica := mmu.DL_a_DF(dirLogica)
 
 	//memoria
 	soliLectura := structs.Lectura{
