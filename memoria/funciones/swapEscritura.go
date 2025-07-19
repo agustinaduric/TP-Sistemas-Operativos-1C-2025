@@ -19,9 +19,9 @@ func GuardarProcesoEnSwap(pid int) error {
 	marcos := RecolectarMarcos(pid)
 	global.MemoriaMutex.Unlock()
 
-	if len(marcos) == 0 {
-		return fmt.Errorf("GuardarProcesoEnSwap: PID %d no tiene marcos reservados en memoria principal", pid)
-	}
+	//if len(marcos) == 0 {
+	//	return fmt.Errorf("GuardarProcesoEnSwap: PID %d no tiene marcos reservados en memoria principal", pid)
+	//}
 
 	pageCount := len(marcos)
 
@@ -32,15 +32,16 @@ func GuardarProcesoEnSwap(pid int) error {
 	if err := EScribirStringIntEnSwap("Cantidad Paginas: ", pageCount); err != nil {
 		return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 	}
-	
-	// ) Escribir cada página en orden de marcos (orden ascendente de índice de marco)
-	for idx, marco := range marcos {
-		if err := EscribirMarcoEnSwap(marco); err != nil {
-			// Registramos el error, pero continuamos con las demás páginas
-			fmt.Fprintf(os.Stderr, "GuardarProcesoEnSwap: error escribiendo página %d (marco %d) para PID %d: %v\n",
-				idx, marco, pid, err)
+	if pageCount > 0 {
+		for idx, marco := range marcos {
+			if err := EscribirMarcoEnSwap(marco); err != nil {
+				// Registramos el error, pero continuamos con las demás páginas
+				fmt.Fprintf(os.Stderr, "GuardarProcesoEnSwap: error escribiendo página %d (marco %d) para PID %d: %v\n",
+					idx, marco, pid, err)
+			}
 		}
 	}
+	// ) Escribir cada página en orden de marcos (orden ascendente de índice de marco)
 
 	return nil
 }
