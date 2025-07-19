@@ -121,12 +121,12 @@ func Mandar_interrupcion(Cpu structs.CPU_a_kernel) {
 }
 
 func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
-	var Reconectarse string = "Reconectarse"
+	var Reconectarse string = "Reconectarse" //aca esta el error
 	body, err := json.Marshal(Reconectarse)
 	if err != nil {
 		global.KernelLogger.Error("error codificando el mensaje")
 	}
-	url := fmt.Sprintf("http://%s:%d/Reconectar", Cpu.IP, Cpu.Puerto)
+	url := fmt.Sprintf("http://%s:%d/reconectar", Cpu.IP, Cpu.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando mensaje al puerto:%d", Cpu.Puerto))
@@ -217,10 +217,9 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	case structs.INIT_PROC:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
-		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		global.KernelLogger.Debug(fmt.Sprintf("intentando reconectarse al cpu id: %s", Cpu.Identificador))
-		Reconectarse_CPU(Cpu)
-		global.KernelLogger.Debug(fmt.Sprintf("se logro reconectar"))
+		go Reconectarse_CPU(Cpu) //intento 1 (bien, era el error)
+		global.KernelLogger.Debug(fmt.Sprintf("se manda intento de reconectar"))
 
 	case structs.DUMP_MEMORY:
 		Habilitar_CPU(Cpu.Identificador)
