@@ -12,6 +12,7 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func IniciarConfiguracionCpu(filePath string) config.CPUConfig {
@@ -46,15 +47,34 @@ func LevantarServidorCPU() {
 }
 
 func Recibir_Proceso_Kernel(w http.ResponseWriter, r *http.Request) {
+	global.CpuLogger.Debug("Recibi un proceso de kernel")
+	var proceso structs.PIDyPC_Enviar_CPU
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&global.Proceso_Ejecutando)
+	err := decoder.Decode(&proceso)
 	if err != nil {
 		log.Printf("error al decodificar mensaje: %s\n", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("error al decodificar mensaje"))
 		return
 	}
-	ciclo.Ciclo()
+	procesoejec := structs.PIDyPC_Enviar_CPU {
+		PID: proceso.PID,
+		PC: proceso.PC,
+	}
+	global.Proceso_Ejecutando = procesoejec
+	resp := "OK"
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		global.CpuLogger.Error(
+			fmt.Sprintf("Error codificando respuesta de recibir proceso: %s", err.Error()),
+		)
+	} else {
+		global.CpuLogger.Debug(
+			fmt.Sprintf("Confirmacion enviada"),
+		)
+	}
+	go ciclo.Ciclo()
 	return
 }
 

@@ -3,6 +3,7 @@ package ciclo
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
@@ -59,6 +60,11 @@ func decode_and_execute() {
 			PID:    global.Proceso_Ejecutando.PID,
 			PC:     global.Proceso_Ejecutando.PC,
 			Motivo: "IO",
+			SolicitudIO: structs.Solicitud{
+				PID:      global.Proceso_Ejecutando.PID,
+				NombreIO: global.Instruccion_ejecutando[1],
+				Duracion: time.Duration(global.String_a_int(global.Instruccion_ejecutando[2])),
+			},
 		}
 		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
@@ -80,9 +86,10 @@ func decode_and_execute() {
 	case "DUMP_MEMORY":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: DUMP_MEMORY", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
-			PID:    global.Proceso_Ejecutando.PID,
-			PC:     global.Proceso_Ejecutando.PC,
-			Motivo: "DUMP_MEMORY",
+			PID:           global.Proceso_Ejecutando.PID,
+			PC:            global.Proceso_Ejecutando.PC,
+			Motivo:        "DUMP_MEMORY",
+			Identificador: global.Nombre,
 		}
 		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
@@ -91,9 +98,10 @@ func decode_and_execute() {
 		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: EXIT", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
-			PID:    global.Proceso_Ejecutando.PID,
-			PC:     global.Proceso_Ejecutando.PC,
-			Motivo: "EXIT",
+			PID:           global.Proceso_Ejecutando.PID,
+			PC:            global.Proceso_Ejecutando.PC,
+			Motivo:        "EXIT",
+			Identificador: global.Nombre,
 		}
 		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
@@ -105,9 +113,11 @@ func decode_and_execute() {
 func CheckInterrupt() {
 	if global.Hayinterrupcion {
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
-			PID:    global.Proceso_Ejecutando.PID,
-			PC:     global.Proceso_Ejecutando.PC,
-			Motivo: "REPLANIFICAR"}
+			PID:           global.Proceso_Ejecutando.PID,
+			PC:            global.Proceso_Ejecutando.PC,
+			Motivo:        "REPLANIFICAR",
+			Identificador: global.Nombre}
+
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_interrupcion = true
 		return

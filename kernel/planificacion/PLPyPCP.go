@@ -21,15 +21,17 @@ func planificador_corto_plazo() {
 	global.KernelLogger.Debug(fmt.Sprintf("Algoritmo de planificación: %s", algoritmo_planificacion_corto))
 
 	for {
-
-		<-global.ProcesoListo
-
+		global.KernelLogger.Debug("PASA EL MALDITO SEMAFORO?")
+		<-(global.ProcesoListo)
+		global.KernelLogger.Debug("LO PASOOO")
 		switch algoritmo_planificacion_corto {
 		case "FIFO":
+			global.KernelLogger.Debug("Entre a case FIFO")
 			pcb_execute = structs.ColaReady[0]
+			global.KernelLogger.Debug("Trato de enviar a cpu")
 			var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
-
+				global.KernelLogger.Debug("se envio bien el proceso a cpu")
 				global.IniciarMetrica("READY", "EXEC", &pcb_execute)
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
@@ -38,12 +40,14 @@ func planificador_corto_plazo() {
 				global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu o no hay cpu libres"))
 			}
 		case "SJF":
+			global.KernelLogger.Debug("Entre a case SJF")
 			OrdenarColaPorSJF(structs.ColaReady)
 			pcb_execute = structs.ColaReady[0]
 			pcb_execute.EstimadoRafagaAnt = pcb_execute.EstimadoRafaga
+			global.KernelLogger.Debug("Trato de enviar a cpu")
 			var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
 			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
-
+				global.KernelLogger.Debug("se envio bien el proceso a cpu")
 				global.IniciarMetrica("READY", "EXEC", &pcb_execute)
 				//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 
@@ -53,7 +57,7 @@ func planificador_corto_plazo() {
 			}
 
 		case "SRT":
-
+			global.KernelLogger.Debug("Entre a case SRT")
 			OrdenarColaPorSJF(structs.ColaReady)
 			pcb_execute = structs.ColaReady[0]
 			pcb_execute.EstimadoRafagaAnt = pcb_execute.EstimadoRafaga
@@ -109,7 +113,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 	global.KernelLogger.Debug(fmt.Sprintf("el algoritmo de largo plazo es: %s", algoritmo_planificacion))
 
 	for {
-		<-global.ProcesoCargado
+		<-(global.ProcesoCargado)
 		global.KernelLogger.Debug("Llego un proceso al planificador largo")
 		switch algoritmo_planificacion {
 		case "FIFO":
@@ -120,8 +124,8 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 				global.KernelLogger.Debug("El proceso fue aceptado en memoria")
 				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
 
-				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
-				global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
+				//global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				//global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
 			}
 
 		case "PMCP":
@@ -131,7 +135,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 				global.KernelLogger.Debug("El proceso fue aceptado en memoria")
 				global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
 
-				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				//global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
 				global.KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
 			}
 
@@ -160,7 +164,7 @@ func planificador_mediano_plazo() {
 				global.KernelLogger.Debug("El proceso que estaba suspendido fue aceptado en memoria")
 				global.IniciarMetrica("SUSP_READY", "READY", &pcb_a_cargar)
 
-				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				//global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
 				global.KernelLogger.Debug("Se envia aviso desde plani mediano a plani corto")
 			}
 
@@ -171,7 +175,7 @@ func planificador_mediano_plazo() {
 				global.KernelLogger.Debug("El proceso que estaba suspendido fue aceptado en memoria")
 				global.IniciarMetrica("SUSP_READY", "READY", &pcb_a_cargar)
 
-				global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
+				//global.ProcesoListo <- 0 // aviso al plani corto que tiene un proceso en ready
 				global.KernelLogger.Debug("Se envia aviso desde plani mediano a plani corto")
 			}
 

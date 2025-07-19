@@ -42,20 +42,24 @@ func IncrementarBajadasSwap(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	// Proteger actualización de métricas
 	global.MemoriaMutex.Lock()
 	defer global.MemoriaMutex.Unlock()
 
-	// Verificar consistencia: que global.Procesos[idx] siga siendo el PID
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarBajadasSwap: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
+
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.BajadasSwap
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarBajadasSwap: PID=%d BajadasSwap=%d", pid, old))
+
+	// Incremento
 	global.Procesos[idx].Metricas.BajadasSwap++
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarBajadasSwap: PID=%d BajadasSwap=%d",
-		pid, global.Procesos[idx].Metricas.BajadasSwap,
-	))
+
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.BajadasSwap
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarBajadasSwap: PID=%d BajadasSwap=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarBajadasSwap: fin PID=%d", pid))
 	return nil
@@ -78,11 +82,17 @@ func IncrementarInstSolicitadas(pid int) error {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarInstSolicitadas: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
+
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.InstSolicitadas
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarInstSolicitadas: PID=%d InstSolicitadas=%d", pid, old))
+
+	// Incremento
 	global.Procesos[idx].Metricas.InstSolicitadas++
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarInstSolicitadas: PID=%d InstSolicitadas=%d",
-		pid, global.Procesos[idx].Metricas.InstSolicitadas,
-	))
+
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.InstSolicitadas
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarInstSolicitadas: PID=%d InstSolicitadas=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarInstSolicitadas: fin PID=%d", pid))
 	return nil
@@ -105,11 +115,17 @@ func IncrementarSubidasMem(pid int) error {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarSubidasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
+
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.SubidasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarSubidasMem: PID=%d SubidasMem=%d", pid, old))
+
+	// Incremento
 	global.Procesos[idx].Metricas.SubidasMem++
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarSubidasMem: PID=%d SubidasMem=%d",
-		pid, global.Procesos[idx].Metricas.SubidasMem,
-	))
+
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.SubidasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarSubidasMem: PID=%d SubidasMem=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarSubidasMem: fin PID=%d", pid))
 	return nil
@@ -132,11 +148,17 @@ func IncrementarLecturasMem(pid int) error {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarLecturasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
+
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.LecturasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarLecturasMem: PID=%d LecturasMem=%d", pid, old))
+
+	// Incremento
 	global.Procesos[idx].Metricas.LecturasMem++
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarLecturasMem: PID=%d LecturasMem=%d",
-		pid, global.Procesos[idx].Metricas.LecturasMem,
-	))
+
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.LecturasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarLecturasMem: PID=%d LecturasMem=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarLecturasMem: fin PID=%d", pid))
 	return nil
@@ -159,11 +181,17 @@ func IncrementarEscriturasMem(pid int) error {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarEscriturasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
+
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.EscriturasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarEscriturasMem: PID=%d EscriturasMem=%d", pid, old))
+
+	// Incremento
 	global.Procesos[idx].Metricas.EscriturasMem++
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarEscriturasMem: PID=%d EscriturasMem=%d",
-		pid, global.Procesos[idx].Metricas.EscriturasMem,
-	))
+
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.EscriturasMem
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarEscriturasMem: PID=%d EscriturasMem=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarEscriturasMem: fin PID=%d", pid))
 	return nil
@@ -187,14 +215,18 @@ func IncrementarAccesosTabla(pid int) error {
 		return fmt.Errorf("inconsistencia al actualizar métricas para PID=%d", pid)
 	}
 
+	// Valor antes de incrementar
+	old := global.Procesos[idx].Metricas.AccesosTabla
+	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarAccesosTabla: PID=%d AccesosTabla=%d", pid, old))
+
+	// Incremento según niveles
 	for i := 0; i < CalcularAccesosTablas(len(RecolectarMarcos(pid))); i++ {
 		global.Procesos[idx].Metricas.AccesosTabla++
 	}
 
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"IncrementarAccesosTabla: PID=%d AccesosTabla=%d",
-		pid, global.Procesos[idx].Metricas.AccesosTabla,
-	))
+	// Valor después de incrementar
+	newVal := global.Procesos[idx].Metricas.AccesosTabla
+	global.MemoriaLogger.Debug(fmt.Sprintf("Después IncrementarAccesosTabla: PID=%d AccesosTabla=%d", pid, newVal))
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("IncrementarAccesosTabla: fin PID=%d", pid))
 	return nil

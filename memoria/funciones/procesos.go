@@ -68,10 +68,10 @@ func BuscarInstruccion(pid int, pc int) (structs.Instruccion, error) {
 }
 
 func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
+		
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Cargando instrucciones desde ruta: %s", ruta),
 	)
-
 	archivo, err := os.Open(ruta)
 	if err != nil {
 		global.MemoriaLogger.Error(
@@ -117,7 +117,7 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 		Tamanio:       tamanio,
 		EnSwap:        false,
 		Metricas:      structs.MetricasMemoria{}, // todas las métricas en 0
-		Path:          pathCompletito,                      
+		Path:          pathCompletito,
 		Instrucciones: instrucciones,
 	}
 	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
@@ -130,9 +130,12 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 	))
 
 	// 3. Reservar marcos en la memoria de usuario
-	global.MemoriaLogger.Debug("  reservando marcos en MapMemoriaDeUsuario")
-	OcuparMarcos(pid) // asume siempre hay espacio
-	global.MemoriaLogger.Debug("  marcos reservados con éxito")
+
+	if tamanio > 0 {
+		global.MemoriaLogger.Debug("  reservando marcos en MapMemoriaDeUsuario")
+		OcuparMarcos(pid) // asume siempre hay espacio
+		global.MemoriaLogger.Debug("  marcos reservados con éxito")
+	}
 
 	InicializarProcesoTP(pid)
 

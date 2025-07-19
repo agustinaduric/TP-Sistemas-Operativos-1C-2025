@@ -46,11 +46,12 @@ func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
 
 	for i := 0; i < len(*Cola); i++ {
 		if (*Cola)[i].PID == PID {
+			global.KernelLogger.Debug(fmt.Sprintf("Se encontro el proceso por pid"))
 			return (*Cola)[i]
 		}
 
 	}
-
+     global.KernelLogger.Debug(fmt.Sprintf("No Se encontro el proceso por pid"))
 	return structs.PCB{}
 
 }

@@ -67,18 +67,3 @@ func Conectarse_con_Memoria(identificador string) {
 	}
 
 }
-
-// **** la comento porque solicitarInstruccion ya recibe la respuesta de memoria: pide y espera(? ****
-/*
-func Recibir_instruccion(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&global.Instruccion)
-	if err != nil {
-		log.Printf("error al decodificar instruccion: %s\n", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error al decodificar instruccion"))
-		os.Exit(1)
-	}
-	<-global.InstruccionRecibida
-}
-*/

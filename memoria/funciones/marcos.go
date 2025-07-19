@@ -14,17 +14,28 @@ func MarcosDisponibles() int {
 
 	global.MemoriaLogger.Debug("MarcosDisponibles: contando marcos libres")
 
-	var contador int
-	for i := 0; i < CantidadMarcos(); i++ {
+	var contadorMarcosDisponibles int
+
+	totalMarcos := CantidadMarcos()
+
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("MarcosDisponibles =  TamanioMemoria = %d, TamanioPagina = %d, TotalMarcos = %d",
+			global.MemoriaConfig.MemorySize,
+			global.MemoriaConfig.PageSize,
+			totalMarcos,
+		),
+	)
+
+	for i := 0; i < totalMarcos; i++ {
 		if global.MapMemoriaDeUsuario[i] == -1 {
-			contador++
+			contadorMarcosDisponibles++
 		}
 	}
 
 	global.MemoriaLogger.Debug(
-		fmt.Sprintf("MarcosDisponibles: TotalDisponibles=%d", contador),
+		fmt.Sprintf("MarcosDisponibles = %d", contadorMarcosDisponibles),
 	)
-	return contador
+	return contadorMarcosDisponibles
 }
 
 func MarcosNecesitados(tamanioProceso int) int {
@@ -47,16 +58,7 @@ func MarcosNecesitados(tamanioProceso int) int {
 }
 
 func CantidadMarcos() int {
-	total := global.MemoriaConfig.MemorySize / global.MemoriaConfig.PageSize
-
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("CantidadMarcos: MemorySize=%d, PageSize=%d, TotalMarcos=%d",
-			global.MemoriaConfig.MemorySize,
-			global.MemoriaConfig.PageSize,
-			total,
-		),
-	)
-	return total
+	return global.MemoriaConfig.MemorySize / global.MemoriaConfig.PageSize
 }
 
 func LiberarMarcos(pid int) {

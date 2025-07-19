@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"time"
+	"io"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -165,7 +166,6 @@ func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
 	global.MemoriaLogger.Debug("HandlerCargarProceso: entrada")
-
 	var proc structs.Proceso_a_enviar
 	if err := json.NewDecoder(r.Body).Decode(&proc); err != nil {
 		global.MemoriaLogger.Error(
@@ -174,8 +174,8 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al decodificar el proceso recibido", http.StatusBadRequest)
 		return
 	}
-
-	instrucciones, err := CargarInstrucciones(proc.PATH) //____---
+	rutaCompleta:="../pruebas/"+proc.PATH
+	instrucciones, err := CargarInstrucciones(rutaCompleta) //____---
 	if err != nil {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("Error cargando instrucciones para PID=%d: %s", proc.PID, err.Error()),
@@ -183,7 +183,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al cargar las instrucciones", http.StatusInternalServerError)
 		return
 	}
-	InicializarProceso(proc.PID, proc.Tamanio, instrucciones, proc.PATH)
+	InicializarProceso(proc.PID, proc.Tamanio, instrucciones, rutaCompleta)
 
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Proceso cargado: PID=%d, Tamanio=%d, Instrucciones=%d",
@@ -238,135 +238,176 @@ func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 
 func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay))
-
 	global.MemoriaLogger.Debug("HandlerDessuspenderProceso: entrada")
 
-	var req struct {
-		PID int
+	// Leer todo el cuerpo de la petición
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error leyendo cuerpo", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: lectura de body fallida: %s", err))
+		return
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerDessuspenderProceso: error decodificando PID: %s", err.Error()),
-		)
-		http.Error(w, "Error al decodificar solicitud de des-suspensión", http.StatusBadRequest)
+	defer r.Body.Close()
+
+	// Intentar decodificar como objeto JSON {"pid":X}
+	var reqObj struct{ PID int `json:"pid"` }
+	if err := json.Unmarshal(data, &reqObj); err != nil {
+		// Si falla, intentar decodificar como número puro
+		var pidSolo int
+		if err2 := json.Unmarshal(data, &pidSolo); err2 != nil {
+			http.Error(w, "Error al decodificar solicitud de des-suspensión", http.StatusBadRequest)
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"HandlerDessuspenderProceso: decodificación fallida (objeto: %v, número: %v)", err, err2))
+			return
+		}
+		reqObj.PID = pidSolo
+	}
+
+	global.MemoriaLogger.Debug(fmt.Sprintf("HandlerDessuspenderProceso: pid=%d recibido", reqObj.PID))
+
+	if err := PedidoDeDesSuspension(reqObj.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", reqObj.PID, err.Error()), http.StatusConflict)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err.Error()))
 		return
 	}
 
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"HandlerDessuspenderProceso: pid=%d recibido", req.PID,
-	))
+	// retraso de acceso tabla luego de des-suspender
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))))
 
-	if err := PedidoDeDesSuspension(req.PID); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err.Error()),
-		)
-		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
-		return
-	}
-	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
-	resp := "OK"
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err.Error()),
-		)
+	if err := json.NewEncoder(w).Encode("OK"); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err.Error()))
 	} else {
-		global.MemoriaLogger.Debug(
-			fmt.Sprintf("HandlerDessuspenderProceso: PID=%d des-suspendido exitosamente", req.PID),
-		)
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerDessuspenderProceso: PID=%d des-suspendido exitosamente", reqObj.PID))
 	}
 }
 
+// HandlerSuspenderProceso adapta la solicitud para aceptar un número crudo o un objeto JSON para suspensión.
 func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay))
 	global.MemoriaLogger.Debug("HandlerSuspenderProceso: entrada")
 
-	var req struct {
-		PID int
+	// Leer todo el cuerpo de la petición
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error leyendo cuerpo", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerSuspenderProceso: lectura de body fallida: %s", err))
+		return
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerSuspenderProceso: error decodificando PID: %s", err.Error()),
-		)
-		http.Error(w, "Error al decodificar solicitud de suspensión", http.StatusBadRequest)
+	defer r.Body.Close()
+
+	// Intentar decodificar como objeto JSON {"pid":X}
+	var reqObj struct{ PID int `json:"pid"` }
+	if err := json.Unmarshal(data, &reqObj); err != nil {
+		// Si falla, intentar decodificar como número puro
+		var pidSolo int
+		if err2 := json.Unmarshal(data, &pidSolo); err2 != nil {
+			http.Error(w, "Error al decodificar solicitud de suspensión", http.StatusBadRequest)
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"HandlerSuspenderProceso: decodificación fallida (objeto: %v, número: %v)", err, err2))
+			return
+		}
+		reqObj.PID = pidSolo
+	}
+
+	global.MemoriaLogger.Debug(fmt.Sprintf("HandlerSuspenderProceso: pid=%d recibido", reqObj.PID))
+
+	if err := SuspenderProceso(reqObj.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo suspender PID=%d: %s", reqObj.PID, err.Error()), http.StatusConflict)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", reqObj.PID, err.Error()))
 		return
 	}
 
-	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"HandlerSuspenderProceso: pid=%d recibido", req.PID,
-	))
-	//retraso de acceso tabla
-	//time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
-	if err := SuspenderProceso(req.PID); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerSuspenderProceso: SuspenderProceso falló para PID=%d: %s", req.PID, err.Error()),
-		)
-		http.Error(w, fmt.Sprintf("No se pudo suspender PID=%d: %s", req.PID, err.Error()), http.StatusConflict)
-		return
-	}
-	resp := "OK"
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		global.MemoriaLogger.Error(
-			fmt.Sprintf("HandlerSuspenderProceso: error codificando respuesta OK: %s", err.Error()),
-		)
+	if err := json.NewEncoder(w).Encode("OK"); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerSuspenderProceso: error codificando respuesta OK: %s", err.Error()))
 	} else {
-		global.MemoriaLogger.Debug(
-			fmt.Sprintf("HandlerSuspenderProceso: PID=%d suspendido exitosamente", req.PID),
-		)
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerSuspenderProceso: PID=%d suspendido exitosamente", reqObj.PID))
 	}
 }
 
 func HandlerFinalizarProceso(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
 	global.MemoriaLogger.Debug("HandlerFinalizarProceso: entrada")
-	var req struct {
-		PID int `json:"pid"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Error al decodificar solicitud de finalización", http.StatusBadRequest)
-		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: decodificación fallida: %s", err))
+
+	// Leer todo el cuerpo de la petición
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error leyendo cuerpo", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: lectura de body fallida:%s ", err))
 		return
 	}
-	if err := FinalizarProceso(req.PID); err != nil {
-		http.Error(w, fmt.Sprintf("No se pudo finalizar PID=%d: %s", req.PID, err), http.StatusConflict)
+	defer r.Body.Close()
+
+	// Intentar decodificar como objeto JSON {"pid":X}
+	var reqObj struct { PID int `json:"pid"` }
+	if err := json.Unmarshal(data, &reqObj); err != nil {
+		// Si falla, intentar decodificar como número puro
+		var pidSolo int
+		if err2 := json.Unmarshal(data, &pidSolo); err2 != nil {
+			http.Error(w, "Error al decodificar solicitud de finalización", http.StatusBadRequest)
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"HandlerFinalizarProceso: decodificación fallida (objeto: %v, número: %v)", err, err2))
+			return
+		}
+		reqObj.PID = pidSolo
+	}
+
+	// Llamar a FinalizarProceso con el PID obtenido
+	if err := FinalizarProceso(reqObj.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo finalizar PID=%d: %s", reqObj.PID, err), http.StatusConflict)
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: FinalizarProceso falló: %s", err))
 		return
 	}
-	resp := "OK"
+
+	// Responder OK
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(w).Encode("OK"); err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerFinalizarProceso: respuesta JSON falló: %s", err))
 	} else {
-		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerFinalizarProceso: PID=%d finalizado", req.PID))
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerFinalizarProceso: PID=%d finalizado", reqObj.PID))
 	}
 }
 
 func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
 	global.MemoriaLogger.Debug("HandlerMemoryDump: entrada")
-	var req struct {
-		PID int `json:"pid"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Error al decodificar solicitud de dump", http.StatusBadRequest)
-		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: decodificación fallida: %s", err))
+
+	// Leer todo el cuerpo de la petición
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error leyendo cuerpo", http.StatusBadRequest)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: lectura de body fallida: %s", err))
 		return
 	}
-	//retraso de acceso tabla
-	//time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
-	if err := DumpMemory(req.PID); err != nil {
-		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", req.PID, err), http.StatusInternalServerError)
+	defer r.Body.Close()
+
+	// Intentar decodificar como objeto JSON {"pid":X}
+	var reqObj struct{ PID int `json:"pid"` }
+	if err := json.Unmarshal(data, &reqObj); err != nil {
+		// Si falla, intentar decodificar como número puro
+		var pidSolo int
+		if err2 := json.Unmarshal(data, &pidSolo); err2 != nil {
+			http.Error(w, "Error al decodificar solicitud de dump", http.StatusBadRequest)
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"HandlerMemoryDump: decodificación fallida (objeto: %v, número: %v)", err, err2))
+			return
+		}
+		reqObj.PID = pidSolo
+	}
+
+	// Llamar a DumpMemory con el PID obtenido
+	if err := DumpMemory(reqObj.PID); err != nil {
+		http.Error(w, fmt.Sprintf("No se pudo generar dump para PID=%d: %s", reqObj.PID, err), http.StatusInternalServerError)
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: DumpMemory falló: %s", err))
 		return
 	}
-	resp := "OK"
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(w).Encode("OK"); err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: respuesta JSON falló: %s", err))
 	} else {
-		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerMemoryDump: dump generado para PID=%d", req.PID))
+		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerMemoryDump: dump generado para PID=%d", reqObj.PID))
 	}
 }
 

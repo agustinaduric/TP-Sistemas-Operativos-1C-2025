@@ -15,13 +15,11 @@ import (
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute) // esto es una copia(?
+	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
 		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
-		/*global.MutexEXIT.Lock()
-		global.Push_estado(&structs.ColaExit, pcbSolicitante)
-		global.MutexEXIT.Unlock() */
 		structs.ProcesoEjecutando = structs.PCB{}
 		return
 	}

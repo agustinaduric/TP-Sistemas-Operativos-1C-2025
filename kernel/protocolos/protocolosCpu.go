@@ -45,24 +45,31 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 		PID: pcb_a_cargar.PID,
 		PC:  pcb_a_cargar.PC,
 	}
+	global.KernelLogger.Debug(fmt.Sprintf("Entre a la funcion Enviar_datos_a_cpu"))
 	global.MutexCpuDisponible.Lock()
 	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
 	global.MutexCpuDisponible.Unlock()
+	global.KernelLogger.Debug(fmt.Sprintf("Se encontro la cpu libre: %s", Cpu_disponible.Identificador))
 	if Cpu_disponible.Identificador == "" {
 
 		return 0
 	}
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
+		global.KernelLogger.Error("llegue a la parte 4")
 		global.KernelLogger.Error("error codificando el proceso")
 	}
+	global.KernelLogger.Error("llegue a la parte 1")
 	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.IP, Cpu_disponible.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+
+	global.KernelLogger.Error("llegue a la parte 2")
 	if err != nil {
+		global.KernelLogger.Error("llegue a la parte 3")
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
-
+	log.Printf("respuesta del servidor: %s , ENVIAR_DATOS_A_CPU", resp.Status)
+	global.KernelLogger.Error("llegue a la parte 5")
 	/* var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
 		CPU:     Cpu_disponible,
 		Proceso: pcb_a_cargar,
@@ -70,6 +77,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	global.MutexCpuNoDisponibles.Lock()
 	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
 	global.MutexCpuNoDisponibles.Unlock()*/
+	global.KernelLogger.Error("llegue a la parte 6")
 	return resp.StatusCode
 }
 
@@ -166,11 +174,12 @@ func Buscar_CPU(identificador string) structs.CPU_a_kernel {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Identificador == identificador {
+			global.KernelLogger.Debug(fmt.Sprintf("Se encontro cpu con ese id :) id: %s", identificador))
 			return structs.CPUs_Conectados[i]
 		}
 
 	}
-	global.KernelLogger.Debug("No se encontro cpu con ese id >:(")
+	global.KernelLogger.Debug(fmt.Sprintf("No se encontro cpu con ese id >:( %s:" ,identificador))
 	return structs.CPU_a_kernel{}
 }
 
@@ -209,7 +218,10 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	case structs.INIT_PROC:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
+		global.KernelLogger.Debug(fmt.Sprintf("intentando reconectarse al cpu id: %s", Cpu.Identificador))
 		Reconectarse_CPU(Cpu)
+		global.KernelLogger.Debug(fmt.Sprintf("se logro reconectar"))
 
 	case structs.DUMP_MEMORY:
 		Habilitar_CPU(Cpu.Identificador)
