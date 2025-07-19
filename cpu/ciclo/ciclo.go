@@ -57,9 +57,10 @@ func decode_and_execute() {
 	case "IO":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: IO - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
-			PID:    global.Proceso_Ejecutando.PID,
-			PC:     global.Proceso_Ejecutando.PC,
-			Motivo: "IO",
+			PID:           global.Proceso_Ejecutando.PID,
+			PC:            global.Proceso_Ejecutando.PC,
+			Motivo:        "IO",
+			Identificador: global.Nombre,
 			SolicitudIO: structs.Solicitud{
 				PID:      global.Proceso_Ejecutando.PID,
 				NombreIO: global.Instruccion_ejecutando[1],

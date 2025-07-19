@@ -26,7 +26,7 @@ func Conectarse_con_CPU(w http.ResponseWriter, r *http.Request) {
 	}
 
 	global.KernelLogger.Debug(fmt.Sprintf("se conecto una CPU"))
-	global.KernelLogger.Debug(fmt.Sprintf("identificador:: %s", CPUnuevo.Identificador))
+	global.KernelLogger.Debug(fmt.Sprintf("identificador: %s", CPUnuevo.Identificador))
 	global.MutexCpuDisponible.Lock()
 	structs.CPUs_Conectados = append(structs.CPUs_Conectados, CPUnuevo)
 	global.MutexCpuDisponible.Unlock()
@@ -56,7 +56,6 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	}
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
-		global.KernelLogger.Error("llegue a la parte 4")
 		global.KernelLogger.Error("error codificando el proceso")
 	}
 	global.KernelLogger.Error("llegue a la parte 1")
@@ -77,7 +76,6 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	global.MutexCpuNoDisponibles.Lock()
 	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
 	global.MutexCpuNoDisponibles.Unlock()*/
-	global.KernelLogger.Error("llegue a la parte 6")
 	return resp.StatusCode
 }
 
@@ -179,7 +177,7 @@ func Buscar_CPU(identificador string) structs.CPU_a_kernel {
 		}
 
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("No se encontro cpu con ese id >:( %s:" ,identificador))
+	global.KernelLogger.Debug(fmt.Sprintf("No se encontro cpu con ese id >:( %s:", identificador))
 	return structs.CPU_a_kernel{}
 }
 
@@ -188,6 +186,7 @@ func Habilitar_CPU(identificador string) {
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Identificador == identificador {
 			structs.CPUs_Conectados[i].Disponible = true
+			global.KernelLogger.Debug(fmt.Sprintf("Se habilita la cpu: %s", identificador))
 			return
 		}
 

@@ -209,7 +209,7 @@ func Iniciar_planificacion(configCargadito config.KernelConfig) {
 
 func esperarEnter() {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...")
+	fmt.Print("Presione ENTER para iniciar el planificador de largo plazo...\n")
 	_, _ = reader.ReadString('\n') // espera hasta que se ingrese ENTER
 }
 

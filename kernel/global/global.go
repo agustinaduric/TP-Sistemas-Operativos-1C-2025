@@ -219,6 +219,7 @@ func IniciarContadorDeSuspension(proceso *structs.PCB) {
 	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
 	IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
 	if respuesta := MandarProcesoASuspension(proceso.PID); respuesta == "OK" {
+		KernelLogger.Debug("Memoria avalo la suspension")
 		//al suspender un proceso hay mas lugar en la memoria y capaz puede entrar otro proceso
 		if len(structs.ColaSuspReady) == 0 {
 			ProcesoCargado <- 0
@@ -228,9 +229,11 @@ func IniciarContadorDeSuspension(proceso *structs.PCB) {
 		ProcesoEnSuspReady <- 0
 		KernelLogger.Debug("Se envia aviso desde el contador para suspender a plani mediano")
 	}
+	KernelLogger.Debug("Memoria no avalo la suspension, este mensaje no deberia estar supongo")
 }
 
 func MandarProcesoASuspension(PID int) string {
+	KernelLogger.Debug("Entramos a la funcion MandarProcesoASuspension")
 	var Proceso int = PID
 	body, err := json.Marshal(Proceso)
 	if err != nil {

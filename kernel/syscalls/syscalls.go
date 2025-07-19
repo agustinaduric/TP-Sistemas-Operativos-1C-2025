@@ -24,7 +24,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		return
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("Existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-	global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+	global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante) // esta linea para mi va despues de que te comunicas con IO, Liena 42
 	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante.IOPendiente = dispositivo.Nombre
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
@@ -40,7 +40,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		dispositivo.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
-		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
+		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 	}
 	structs.ProcesoEjecutando = structs.PCB{}
 }

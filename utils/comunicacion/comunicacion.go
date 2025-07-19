@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
@@ -51,7 +52,7 @@ func EnviarMensaje(ip string, puerto int, mensajeTxt string) {
 	log.Printf("respuesta del servidor: %s", resp.Status)
 }
 
-func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.Solicitud){
+func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.Solicitud) {
 	body, err := json.Marshal(soliUsoIO)
 	if err != nil {
 		log.Printf("error codificando solicitudIO: %s", err.Error())
@@ -62,10 +63,10 @@ func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.Solicitud){
 		log.Printf("error enviando solicitudIO:%s puerto:%d", ip, puerto)
 	}
 
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	log.Printf("respuesta del servidor: %s, EnviarSolicitudIO", resp.Status)
 }
 
-func EnviarFinIO(ip string, puerto int, respuestaIO structs.RespuestaIO){
+func EnviarFinIO(ip string, puerto int, respuestaIO structs.RespuestaIO) {
 	body, err := json.Marshal(respuestaIO)
 	if err != nil {
 		log.Printf("error codificando la respuestaIO: %s", err.Error())
@@ -88,7 +89,7 @@ func EnviarHandshake(ip string, puerto int, PuertoIP structs.Handshake) {
 	http.Post(url, "application/json", bytes.NewBuffer(body))
 }
 
-func EnviarDesconexion(ip string, puerto int,dispositivo structs.IODesconectado){
+func EnviarDesconexion(ip string, puerto int, dispositivo structs.IODesconectado) {
 	body, err := json.Marshal(dispositivo)
 	if err != nil {
 		log.Printf("error codificando la respuestaIO: %s", err.Error())
