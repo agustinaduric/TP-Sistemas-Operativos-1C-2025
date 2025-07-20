@@ -27,7 +27,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante.IOPendiente = dispositivo.Nombre
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
-	if dispositivo.PIDActual != 0 { // ocupado
+	if dispositivo.PIDActual != -1 { // ocupado
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		global.MutexBLOCKED.Lock()
@@ -37,6 +37,11 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		global.MutexBLOCKED.Unlock()
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
+		global.MutexBLOCKED.Lock()
+		cola := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
+		global.Push_estado(&cola, pcbSolicitante)
+		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = cola
+		global.MutexBLOCKED.Unlock()
 		dispositivo.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))

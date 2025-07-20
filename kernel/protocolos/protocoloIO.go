@@ -23,7 +23,7 @@ func HandlerRegistrarIO(w http.ResponseWriter, r *http.Request) {
 		Nombre:       registro.Nombre,
 		IP:           registro.IP,
 		Puerto:       registro.Puerto,
-		PIDActual:    0,
+		PIDActual:    -1,
 		ColaEsperaIO: []*structs.PCB{},
 	}
 	structs.IOsRegistrados[registro.Nombre] = &nuevoIO
@@ -49,7 +49,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
     }
 
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
-	dispositivo.PIDActual = 0
+	dispositivo.PIDActual = -1
 	global.KernelLogger.Debug(fmt.Sprintf("El dispositivo %s esta libre", respuestaFin.NombreIO))
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
 		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0]
@@ -73,7 +73,7 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 	global.KernelLogger.Debug(fmt.Sprintf("Recibi la desconexion de: %s", ioDesconectado.Nombre))
 	dispositivo := structs.IOsRegistrados[ioDesconectado.Nombre]
 	// si hay uno ejecutando, lo mato
-	if dispositivo.PIDActual !=0 {
+	if dispositivo.PIDActual !=-1 {
 		proceso := PCB.Buscar_por_pid(dispositivo.PIDActual, &structs.ColaBlocked)
 		global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
 		global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))

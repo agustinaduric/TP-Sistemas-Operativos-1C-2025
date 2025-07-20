@@ -40,14 +40,12 @@ func ClockM(entrada structs.EntradaCache) {
 	for i := 0; i < len(global.CachePaginas); i++ {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso && !entradaActual.BitModificado {
-			if entradaActual.BitModificado {
-				global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
-				global.CachePaginas[global.PunteroClock] = entrada
-				avanzarPuntero()
-			}
+			global.CachePaginas[global.PunteroClock] = entrada
+			global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
 			avanzarPuntero()
 			return
 		}
+		entradaActual.BitUso = false
 		avanzarPuntero()
 	}
 	//segunda vuelta
@@ -60,13 +58,13 @@ func ClockM(entrada structs.EntradaCache) {
 			global.CachePaginas[global.PunteroClock] = entrada
 			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
 			avanzarPuntero()
-			//SEXO DESIJNTERESADOOO
 			return
 		}
 		entradaActual.BitUso = false
 		global.CpuLogger.Debug("Bit de uso pasa a 0 y continuo")
 		avanzarPuntero()
 	}
+	global.CpuLogger.Error(fmt.Sprintf("NO hay victima para clock-m"))
 }
 
 func avanzarPuntero() {

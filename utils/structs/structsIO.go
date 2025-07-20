@@ -8,7 +8,7 @@ type DispositivoIO struct {
 	Nombre       string
 	IP           string
 	Puerto       int
-	PIDActual    int // 0 si no hay procesos usando el io
+	PIDActual    int // -1 si no hay procesos usando el io
 	ColaEsperaIO []*PCB
 }
 
