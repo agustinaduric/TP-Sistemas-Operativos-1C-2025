@@ -104,10 +104,10 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexREADY.Lock()
 		Push_estado(&structs.ColaReady, *proceso)
 		MutexREADY.Unlock()
+		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado READY", proceso.PID, estadoViejo))
 		KernelLogger.Debug("Se intenta enviar aviso desde plani largo a plani corto")
 		ProcesoListo <- 0
 		KernelLogger.Debug("Se envia aviso desde plani largo a plani corto")
-		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado READY", proceso.PID, estadoViejo))
 	case "EXEC":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.EXEC
@@ -228,8 +228,7 @@ func IniciarContadorDeSuspension(proceso *structs.PCB) {
 		}
 		ProcesoEnSuspReady <- 0
 		KernelLogger.Debug("Se envia aviso desde el contador para suspender a plani mediano")
-	}
-	KernelLogger.Debug("Memoria no avalo la suspension, este mensaje no deberia estar supongo")
+	} else {KernelLogger.Debug("Memoria no avalo la suspension, este mensaje no deberia estar supongo")}
 }
 
 func MandarProcesoASuspension(PID int) string {

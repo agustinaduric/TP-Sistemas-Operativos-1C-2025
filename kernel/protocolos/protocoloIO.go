@@ -38,10 +38,15 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	cola := structs.ColaBlockedIO[respuestaFin.NombreIO]
-	proceso := PCB.Buscar_por_pid(respuestaFin.PID, &cola) // esto es una copia(?
-	structs.ColaBlockedIO[respuestaFin.NombreIO] = cola
-	global.IniciarMetrica("BLOCKED", "READY", &proceso)
+    proceso := BuscarPorPidColaIO(respuestaFin.PID,respuestaFin.NombreIO, structs.ColaBlockedIO)
+    if proceso == nil {
+        global.KernelLogger.Error(
+            fmt.Sprintf("No se encontró PID %d en cola de IO '%s'", respuestaFin.PID, respuestaFin.NombreIO),
+        )
+		return
+    } else {
+        global.IniciarMetrica("BLOCKED", "READY", proceso)
+    }
 
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
 	dispositivo.PIDActual = 0
@@ -83,4 +88,20 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 	delete(structs.IOsRegistrados, ioDesconectado.Nombre)
 	delete(structs.ColaBlockedIO, ioDesconectado.Nombre)
 	global.KernelLogger.Debug(fmt.Sprintf("todos los procesos esperando %s se fueron a EXIT", ioDesconectado.Nombre))
+}
+
+func BuscarPorPidColaIO(pid int, dispositivo string, colaIOBlocked map[string]structs.ColaProcesos,) *structs.PCB {
+    procesos, existe := colaIOBlocked[dispositivo]
+    if !existe {
+        global.KernelLogger.Error(fmt.Sprintf("No existe la cola de IO para el dispositivo '%s'", dispositivo))
+        return nil
+    }
+    for posicion, proceso := range procesos {
+		if proceso.PID == pid {
+            global.KernelLogger.Debug(fmt.Sprintf("Proceso %d encontrado en cola de '%s'", pid, dispositivo))
+            return &colaIOBlocked[dispositivo][posicion]
+        }
+    }
+    global.KernelLogger.Debug(fmt.Sprintf("Proceso %d no está en la cola de '%s'", pid, dispositivo))
+    return nil
 }

@@ -24,12 +24,12 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		return
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("Existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-	global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante) // esta linea para mi va despues de que te comunicas con IO, Liena 42
 	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	pcbSolicitante.IOPendiente = dispositivo.Nombre
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
 	if dispositivo.PIDActual != 0 { // ocupado
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
+		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		global.MutexBLOCKED.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
 		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
@@ -39,7 +39,9 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		dispositivo.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
+		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
+		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 	}
 	structs.ProcesoEjecutando = structs.PCB{}

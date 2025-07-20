@@ -228,6 +228,7 @@ func limpieza_cola_exit() {
 		ProcesoExit := structs.ColaExit[0]
 
 		if respuesta := protocolos.Enviar_P_Finalizado_memoria(ProcesoExit.PID); respuesta == "OK" {
+			global.KernelLogger.Debug("Memoria avalo la finalizacion del proceso")
 			global.IniciarMetrica("EXIT", "FINALIZADO", &ProcesoExit)
 			if len(structs.ColaSuspReady) == 0 {
 				global.ProcesoCargado <- 0
@@ -237,7 +238,8 @@ func limpieza_cola_exit() {
 			global.ProcesoEnSuspReady <- 0
 			global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani mediano")
 
-		}
+		} else { global.KernelLogger.Debug("Memoria no avalo la finalizacion del proceso")}
+
 	}
 }
 

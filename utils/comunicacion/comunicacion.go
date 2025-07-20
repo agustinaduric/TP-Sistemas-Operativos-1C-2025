@@ -62,7 +62,7 @@ func EnviarSolicitudIO(ip string, puerto int, soliUsoIO structs.Solicitud) {
 	if err != nil {
 		log.Printf("error enviando solicitudIO:%s puerto:%d", ip, puerto)
 	}
-
+	
 	log.Printf("respuesta del servidor: %s, EnviarSolicitudIO", resp.Status)
 }
 

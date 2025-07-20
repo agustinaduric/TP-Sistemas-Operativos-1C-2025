@@ -76,7 +76,7 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 	}
 	// log obligatorio 1/2
 	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Inicio de IO - Tiempo %d", solicitud.PID, solicitud.Duracion))
-	time.Sleep(time.Duration(solicitud.Duracion)*time.Second)
+	time.Sleep(time.Duration(solicitud.Duracion)*time.Millisecond)
 	// log obligatorio 2/2
 	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Fin de IO", solicitud.PID))
 	respuesta := structs.RespuestaIO{
@@ -100,7 +100,7 @@ func EsperarDesconexion(dispositivo string) {
 
 func LevantarIO(configCargadito config.IOConfig) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/solicitar-io", RealizarIO)
+	mux.HandleFunc("/solicitud-io", RealizarIO)
 	puerto := config.IntToStringConPuntos(configCargadito.PortIo)
 
 	globalIO.IOLogger.Debug(fmt.Sprintf("IO escuchando solicitudes en %s", puerto))
