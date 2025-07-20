@@ -81,8 +81,10 @@ func decode_and_execute() {
 			Identificador: global.Nombre,
 		}
 		protocolos.Enviar_syscall(devolucion)
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d se envio a kernel para el init_proc", global.Proceso_Ejecutando.PID))
 		global.Proceso_Ejecutando.PC++
 		<-global.Proceso_reconectado
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d se reconecto desde kernel", global.Proceso_Ejecutando.PID))
 		//global.Hubo_syscall = true no va porque tiene que volver el proceso
 	case "DUMP_MEMORY":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: DUMP_MEMORY", global.Proceso_Ejecutando.PID))

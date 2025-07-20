@@ -35,7 +35,7 @@ func LevantarServidorCPU() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/datoCPU", Recibir_Proceso_Kernel)
 	mux.HandleFunc("/interrupcion", protocolos.Ocurrio_Interrupcion)
-	mux.HandleFunc("/Reconectar", protocolos.Reconectar_Proceso)
+	mux.HandleFunc("/reconectar", protocolos.Reconectar_Proceso)
 
 	puerto := config.IntToStringConPuntos(global.ConfigCargadito.PortCpu)
 

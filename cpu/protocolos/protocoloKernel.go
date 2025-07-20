@@ -62,6 +62,7 @@ func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {
 }
 
 func Reconectar_Proceso(w http.ResponseWriter, r *http.Request) {
+	global.CpuLogger.Debug("## Llego una solicitud de reconexion")
 	decoder := json.NewDecoder(r.Body)
 	var Reconectar string
 	err := decoder.Decode(&Reconectar)
@@ -72,6 +73,8 @@ func Reconectar_Proceso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if Reconectar == "Reconectar" {
+		global.CpuLogger.Debug("se envia señal para la reconexion")
 		global.Proceso_reconectado <- 0
+
 	}
 }

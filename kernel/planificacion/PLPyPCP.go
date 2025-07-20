@@ -24,6 +24,9 @@ func planificador_corto_plazo() {
 		global.KernelLogger.Debug("PASA EL MALDITO SEMAFORO?")
 		<-(global.ProcesoListo)
 		global.KernelLogger.Debug("LO PASOOO")
+		if  (len(structs.ColaReady)) == 0 {
+			global.KernelLogger.Debug("No hay procesos en la cola READY")
+		} else{
 		switch algoritmo_planificacion_corto {
 		case "FIFO":
 			global.KernelLogger.Debug("Entre a case FIFO")
@@ -95,7 +98,7 @@ func planificador_corto_plazo() {
 
 		default:
 
-		}
+		} }
 	}
 }
 
@@ -114,7 +117,10 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 
 	for {
 		<-(global.ProcesoCargado)
-		global.KernelLogger.Debug("Llego un proceso al planificador largo")
+		global.KernelLogger.Debug("Se intenta activar el planificador largo")
+		if  (len(structs.ColaNew)) == 0 {
+			global.KernelLogger.Debug("No hay procesos en la cola NEW")
+		} else{
 		switch algoritmo_planificacion {
 		case "FIFO":
 			var pcb_a_cargar structs.PCB = structs.ColaNew[0]
@@ -141,7 +147,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 
 		default:
 
-		}
+		} }
 	}
 }
 
