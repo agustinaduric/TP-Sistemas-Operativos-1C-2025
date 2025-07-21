@@ -69,7 +69,7 @@ func planificador_corto_plazo() {
 			global.MutexCpuDisponible.Unlock()
 			if Cpu_disponible.Identificador == "" {
 				global.KernelLogger.Debug(fmt.Sprintf("no hay cpus libres, probando desalojar alguno"))
-			}
+			
 			global.MutexCpuNoDisponibles.Lock()
 			Cpu_disponible = protocolos.Buscar_CPU_Para_Desalojar(pcb_execute.EstimadoRafaga)
 			global.MutexCpuNoDisponibles.Unlock()
@@ -82,9 +82,11 @@ func planificador_corto_plazo() {
 				global.MutexSemaforosCPU.Unlock()
 
 				<-sem
+				}
+			} else{global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))}
 
-				var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
-				if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+			var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
+			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 
 					global.IniciarMetrica("READY", "EXEC", &pcb_execute)
 					//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
@@ -92,9 +94,8 @@ func planificador_corto_plazo() {
 				} else {
 
 					global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu "))
-				}
 			}
-			global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))
+			
 
 		default:
 

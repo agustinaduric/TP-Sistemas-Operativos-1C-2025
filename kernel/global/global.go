@@ -113,10 +113,10 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.Estado = structs.EXEC
 		proceso.MetricasEstado[structs.EXEC] = proceso.MetricasEstado[structs.EXEC] + 1
 		proceso.TiempoInicioEstado = time.Now()
+		proceso.Auxiliar = float64(proceso.TiemposEstado[structs.EXEC])
 		MutexEXEC.Lock()
 		Push_estado(&structs.ColaExecute, *proceso)
 		MutexEXEC.Unlock()
-		proceso.Auxiliar = float64(proceso.TiemposEstado[structs.EXEC])
 		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado EXEC", proceso.PID, estadoViejo))
 	case "BLOCKED":
 		DetenerMetrica(estadoViejo, proceso)

@@ -89,7 +89,7 @@ func Enviar_datos_SRT_a_cpu(pcb_a_cargar structs.PCB, Cpu_disponible structs.CPU
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	log.Printf("respuesta del servidor: %s, Enviar_datos_SRT_a_cpu", resp.Status)
 
 	var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
 		CPU:     Cpu_disponible,
@@ -192,7 +192,6 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	global.KernelLogger.Debug("me llego una Devolucion del CPU")
 	log.Printf("PID devuelto: %d", Devolucion.PID)
 	global.KernelLogger.Debug(fmt.Sprintf("PID devuelto: %d", Devolucion.PID))
-	
 	proceso := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
 	PCB.Actualizar_PC(proceso.PID, Devolucion.PC)
 	proceso.PC = Devolucion.PC

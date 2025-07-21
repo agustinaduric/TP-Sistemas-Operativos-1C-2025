@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
@@ -16,20 +15,23 @@ import (
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu string) {
 	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
-	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))
+	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))// muestra PID Solicitud
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	if !hayMatch {
-		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
+
+	if !hayMatch { // no esta registrado
+		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))// muestra PID encontrado
 		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		structs.ProcesoEjecutando = structs.PCB{}
 		return
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("Existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-	dispositivo := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
-	pcbSolicitante.IOPendiente = dispositivo.Nombre
+	pcbSolicitante.IOPendiente = NuevaSolicitudIO.NombreIO
 	pcbSolicitante.IOPendienteDuracion = NuevaSolicitudIO.Duracion
-	if dispositivo.PIDActual != -1 { // ocupado
+
+	dispositivoLibre := BuscarIOLibre(NuevaSolicitudIO.NombreIO)
+
+	if dispositivoLibre == nil{ // estan todos ocupados
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
@@ -41,14 +43,14 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.MutexBLOCKED.Lock()
-		cola := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] 
-		global.Push_estado(&cola, pcbSolicitante)
-		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = cola
+		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] 
+		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
+		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
 		global.MutexBLOCKED.Unlock()
-		dispositivo.PIDActual = pcbSolicitante.PID
+		dispositivoLibre.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
+		comunicacion.EnviarSolicitudIO(dispositivoLibre.IP, dispositivoLibre.Puerto, SolicitudParaIO)
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
@@ -90,4 +92,19 @@ func DUMP_MEMORY(PID int) {
 
 	}
 
+}
+
+//----------------------------------- funcion axuliar para syscall io -----------------------------------//
+
+func BuscarIOLibre(nombreIO string) *structs.DispositivoIO {
+    dispositivos, existe := structs.IOsRegistrados[nombreIO]
+    if !existe {
+        return nil
+    }
+    for _, dispositivo := range dispositivos {
+        if dispositivo.PIDActual == -1 {
+            return dispositivo
+        }
+    }
+    return nil
 }
