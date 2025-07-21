@@ -7,19 +7,21 @@ import (
 	"log"
 	"net/http"
 
+	
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
+func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu string) {
 	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
 	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
 		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
+		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		structs.ProcesoEjecutando = structs.PCB{}
 		return
 	}
@@ -30,6 +32,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	if dispositivo.PIDActual != -1 { // ocupado
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		global.MutexBLOCKED.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
 		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
@@ -47,6 +50,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 	}
 	structs.ProcesoEjecutando = structs.PCB{}

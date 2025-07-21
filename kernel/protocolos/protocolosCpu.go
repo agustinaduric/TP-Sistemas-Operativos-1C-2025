@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
 	"github.com/sisoputnfrba/tp-golang/kernel/global"
 	"github.com/sisoputnfrba/tp-golang/kernel/syscalls"
@@ -178,18 +177,6 @@ func Buscar_CPU(identificador string) structs.CPU_a_kernel {
 	return structs.CPU_a_kernel{}
 }
 
-func Habilitar_CPU(identificador string) {
-	longitud := len(structs.CPUs_Conectados)
-	for i := 0; i < longitud; i++ {
-		if structs.CPUs_Conectados[i].Identificador == identificador {
-			structs.CPUs_Conectados[i].Disponible = true
-			global.KernelLogger.Debug(fmt.Sprintf("Se habilita la cpu: %s", identificador))
-			return
-		}
-
-	}
-	return
-}
 
 func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
@@ -220,20 +207,19 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		global.KernelLogger.Debug(fmt.Sprintf("se manda intento de reconectar"))
 
 	case structs.DUMP_MEMORY:
-		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: DUMP_MEMORY", proceso.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &proceso)
+		go global.Habilitar_CPU_con_plani_corto(Cpu.Identificador)
 		syscalls.DUMP_MEMORY(Devolucion.PID)
 
 	case structs.IO:
-		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: IO", proceso.PID))
-		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO))
+		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO) ,Cpu.Identificador)
 
 	case structs.EXIT_PROC:
-		Habilitar_CPU(Cpu.Identificador)
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: EXIT", proceso.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &proceso)
+		go global.Habilitar_CPU_con_plani_corto(Cpu.Identificador)
 
 	case structs.REPLANIFICAR:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", proceso.PID))

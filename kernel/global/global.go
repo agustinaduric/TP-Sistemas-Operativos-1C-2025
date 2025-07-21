@@ -266,3 +266,19 @@ func Esta_en_block(PID int) bool{
 	
 
 }
+
+
+
+func Habilitar_CPU_con_plani_corto(identificador string) {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Identificador == identificador {
+			structs.CPUs_Conectados[i].Disponible = true
+			KernelLogger.Debug(fmt.Sprintf("Se habilita la cpu: %s y se manda señal al plani corto", identificador))
+			ProcesoListo <- 0
+			return
+		}
+
+	}
+	return
+}
