@@ -72,7 +72,6 @@ func decode_and_execute() {
 		global.Hubo_syscall = true
 	case "INIT_PROC":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: INIT_PROC - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
-		global.Proceso_Ejecutando.PC++
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,

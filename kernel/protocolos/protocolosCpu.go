@@ -121,7 +121,7 @@ func Mandar_interrupcion(Cpu structs.CPU_a_kernel) {
 }
 
 func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
-	var Reconectarse string = "Reconectarse" //aca esta el error
+	var Reconectarse string = "Reconectar" //aca esta el error
 	body, err := json.Marshal(Reconectarse)
 	if err != nil {
 		global.KernelLogger.Error("error codificando el mensaje")
