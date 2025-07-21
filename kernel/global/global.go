@@ -123,7 +123,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.Estado = structs.BLOCKED
 		proceso.MetricasEstado[structs.BLOCKED] = proceso.MetricasEstado[structs.BLOCKED] + 1
 		proceso.TiempoInicioEstado = time.Now()
-		go IniciarContadorDeSuspension(proceso)
+		go IniciarContadorDeSuspension(proceso,proceso.MetricasEstado[structs.BLOCKED] )
 		MutexBLOCKED.Lock()
 		Push_estado(&structs.ColaBlocked, *proceso)
 		MutexBLOCKED.Unlock()
@@ -208,14 +208,13 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 
 //-----------------------------------------------FUNCIONES QUE NO SE DONDE PONER PORQUE TODO SE CICLA----------------------------------------------------------------
 
-func IniciarContadorDeSuspension(proceso *structs.PCB) {
+func IniciarContadorDeSuspension(proceso *structs.PCB, contador int) {
 	KernelLogger.Debug("Entro a la funcion IniciarContadorDeSuspension")
 	time.Sleep(time.Duration(ConfigCargadito.SuspensionTime) * time.Millisecond)
-	KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
-	if proceso.Estado != structs.BLOCKED {
+	if (proceso.Estado != structs.BLOCKED) || (proceso.MetricasEstado[structs.BLOCKED] != contador) {
 		return
 	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
-
+	KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
 	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
 	IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
 	if respuesta := MandarProcesoASuspension(proceso.PID); respuesta == "OK" {

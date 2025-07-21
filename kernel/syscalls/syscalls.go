@@ -14,7 +14,7 @@ import (
 )
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
-	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute) // esto es una copia(?
+	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
 	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 	if !hayMatch {
@@ -38,7 +38,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud) {
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.MutexBLOCKED.Lock()
-		cola := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
+		cola := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] 
 		global.Push_estado(&cola, pcbSolicitante)
 		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = cola
 		global.MutexBLOCKED.Unlock()

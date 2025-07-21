@@ -44,16 +44,17 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
             fmt.Sprintf("No se encontró PID %d en cola de IO '%s'", respuestaFin.PID, respuestaFin.NombreIO),
         )
 		return
-    } else {
-        global.IniciarMetrica("BLOCKED", "READY", proceso)
-    }
+    } 
+	structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
+    global.IniciarMetrica("BLOCKED", "READY", proceso)
+
 
 	dispositivo := structs.IOsRegistrados[respuestaFin.NombreIO]
+	//(structs.IOsRegistrados[respuestaFin.NombreIO]).PIDActual= -1
 	dispositivo.PIDActual = -1
 	global.KernelLogger.Debug(fmt.Sprintf("El dispositivo %s esta libre", respuestaFin.NombreIO))
 	if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
 		siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0]
-		structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
 		dispositivo.PIDActual = siguiente.PID
 		global.KernelLogger.Debug(fmt.Sprintf("PID: %d ocupo el dispositivo: %s", siguiente.PID, respuestaFin.NombreIO))
 		SolicitudParaIO := structs.Solicitud{PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}

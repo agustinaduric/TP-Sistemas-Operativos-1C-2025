@@ -1,6 +1,6 @@
 package fio
 
-import(
+import (
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,11 +11,11 @@ import(
 	"syscall"
 	"time"
 
+	globalIO "github.com/sisoputnfrba/tp-golang/io/global"
 	"github.com/sisoputnfrba/tp-golang/utils/comunicacion"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
-	"github.com/sisoputnfrba/tp-golang/utils/structs"
-	"github.com/sisoputnfrba/tp-golang/io/global"
 	"github.com/sisoputnfrba/tp-golang/utils/logger"
+	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 func ConfigurarLog() *logger.LoggerStruct {
@@ -49,10 +49,10 @@ func IniciarConfiguracionIO(filePath string) config.IOConfig {
 	return config
 }
 
-func RegistrarEnKernel(nombre string, config config.IOConfig){
+func RegistrarEnKernel(nombre string, config config.IOConfig) {
 	ioARegistrar := structs.RegistroIO{
 		Nombre: nombre,
-		IP: config.IpIo,
+		IP:     config.IpIo,
 		Puerto: config.PortIo,
 	}
 	body, err := json.Marshal(ioARegistrar)
@@ -62,9 +62,9 @@ func RegistrarEnKernel(nombre string, config config.IOConfig){
 	url := fmt.Sprintf("http://%s:%d/registrar-io", config.IpKernel, config.PortKernel)
 	http.Post(url, "application/json", bytes.NewBuffer(body))
 	globalIO.IOLogger.Debug(fmt.Sprintf("IO envio al kernel el dispositivo: %s", nombre))
-	}
+}
 
-func RealizarIO(w http.ResponseWriter, r *http.Request){
+func RealizarIO(w http.ResponseWriter, r *http.Request) {
 	var solicitud structs.Solicitud
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&solicitud)
@@ -74,17 +74,21 @@ func RealizarIO(w http.ResponseWriter, r *http.Request){
 		w.Write([]byte("Error al decodificar la solicitud"))
 		return
 	}
+	go EjecutarIO(solicitud)
+}
+
+func EjecutarIO(solicitud structs.Solicitud) {
 	// log obligatorio 1/2
 	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Inicio de IO - Tiempo %d", solicitud.PID, solicitud.Duracion))
-	time.Sleep(time.Duration(solicitud.Duracion)*time.Millisecond)
+	time.Sleep(time.Duration(solicitud.Duracion) * time.Millisecond)
 	// log obligatorio 2/2
 	globalIO.IOLogger.Info(fmt.Sprintf("PID: %d - Fin de IO", solicitud.PID))
 	respuesta := structs.RespuestaIO{
 		NombreIO: solicitud.NombreIO,
-		PID: solicitud.PID,
+		PID:      solicitud.PID,
 	}
 	comunicacion.EnviarFinIO(globalIO.IpKernel, globalIO.PuertoKernel, respuesta)
-	globalIO.IOLogger.Debug(fmt.Sprintf("Se envio a kernel fin IO, Dispositivo: %s PID: %d", solicitud.NombreIO, solicitud.PID ))
+	globalIO.IOLogger.Debug(fmt.Sprintf("Se envio a kernel fin IO, Dispositivo: %s PID: %d", solicitud.NombreIO, solicitud.PID))
 }
 
 func EsperarDesconexion(dispositivo string) {
@@ -94,7 +98,7 @@ func EsperarDesconexion(dispositivo string) {
 	<-senial
 	globalIO.IOLogger.Debug(fmt.Sprintf("Dispositivo: %s se esta desconectando", dispositivo))
 	ioDesconectado := structs.IODesconectado{Nombre: dispositivo}
-	comunicacion.EnviarDesconexion(globalIO.IpKernel, globalIO.PuertoKernel,ioDesconectado)
+	comunicacion.EnviarDesconexion(globalIO.IpKernel, globalIO.PuertoKernel, ioDesconectado)
 	globalIO.IOLogger.Debug(fmt.Sprintf("AViso desconexion dispositivo: %s enviada a kernel", dispositivo))
 }
 
