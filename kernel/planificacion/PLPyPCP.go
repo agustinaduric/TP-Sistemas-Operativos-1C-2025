@@ -233,10 +233,9 @@ func limpieza_cola_exit() {
 			if len(structs.ColaSuspReady) == 0 {
 				global.ProcesoCargado <- 0
 				global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani largo, la cola de SUSP_READY estaba vacia")
-				return
-			}
-			global.ProcesoEnSuspReady <- 0
-			global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani mediano")
+			} else {global.ProcesoEnSuspReady <- 0
+					global.KernelLogger.Debug("Se envia aviso desde la limpieza de cola exit a plani mediano")
+				   }
 
 		} else { global.KernelLogger.Debug("Memoria no avalo la finalizacion del proceso")}
 

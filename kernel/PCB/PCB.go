@@ -60,13 +60,13 @@ func Actualizar_PC(PID int, PC int) {
 
 	for i := 0; i < len(structs.ColaExecute); i++ {
 		if (structs.ColaExecute)[i].PID == PID {
-			global.KernelLogger.Debug(fmt.Sprintf("Se Actualizo PC de PID: %d", PID))
+			//global.KernelLogger.Debug(fmt.Sprintf("Se Actualizo PC de PID: %d", PID))
 			(structs.ColaExecute)[i].PC = PC
 			return
 		}
 
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("No Se PID para actualiza PC, este mensaje no deberia salir"))
+	//global.KernelLogger.Debug(fmt.Sprintf("No Se PID para actualiza PC, este mensaje no deberia salir"))
 	return
 
 }

@@ -49,26 +49,23 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	global.MutexCpuDisponible.Lock()
 	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
 	global.MutexCpuDisponible.Unlock()
-	global.KernelLogger.Debug(fmt.Sprintf("Se encontro la cpu libre: %s", Cpu_disponible.Identificador))
+	
 	if Cpu_disponible.Identificador == "" {
 
 		return 0
 	}
+	global.KernelLogger.Debug(fmt.Sprintf("Se encontro la cpu libre: %s", Cpu_disponible.Identificador))
 	body, err := json.Marshal(PIDyPC)
 	if err != nil {
 		global.KernelLogger.Error("error codificando el proceso")
 	}
-	global.KernelLogger.Error("llegue a la parte 1")
 	url := fmt.Sprintf("http://%s:%d/datoCPU", Cpu_disponible.IP, Cpu_disponible.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 
-	global.KernelLogger.Error("llegue a la parte 2")
 	if err != nil {
-		global.KernelLogger.Error("llegue a la parte 3")
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
 	log.Printf("respuesta del servidor: %s , ENVIAR_DATOS_A_CPU", resp.Status)
-	global.KernelLogger.Error("llegue a la parte 5")
 	/* var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
 		CPU:     Cpu_disponible,
 		Proceso: pcb_a_cargar,
