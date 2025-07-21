@@ -56,6 +56,7 @@ func decode_and_execute() {
 		global.Proceso_Ejecutando.PC = numero
 	case "IO":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: IO - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
+		global.Proceso_Ejecutando.PC++
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,
@@ -67,11 +68,11 @@ func decode_and_execute() {
 				Duracion: time.Duration(global.String_a_int(global.Instruccion_ejecutando[2])),
 			},
 		}
-		global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 	case "INIT_PROC":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: INIT_PROC - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
+		global.Proceso_Ejecutando.PC++
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,
@@ -88,6 +89,7 @@ func decode_and_execute() {
 		//global.Hubo_syscall = true no va porque tiene que volver el proceso
 	case "DUMP_MEMORY":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: DUMP_MEMORY", global.Proceso_Ejecutando.PID))
+		global.Proceso_Ejecutando.PC++
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,
@@ -106,7 +108,7 @@ func decode_and_execute() {
 			Motivo:        "EXIT",
 			Identificador: global.Nombre,
 		}
-		global.Proceso_Ejecutando.PC++
+		//global.Proceso_Ejecutando.PC++
 		protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 	}

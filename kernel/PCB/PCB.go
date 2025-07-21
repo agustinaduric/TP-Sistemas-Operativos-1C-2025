@@ -51,7 +51,22 @@ func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
 		}
 
 	}
-     global.KernelLogger.Debug(fmt.Sprintf("No Se encontro el proceso por pid"))
+	global.KernelLogger.Debug(fmt.Sprintf("No Se encontro el proceso por pid"))
 	return structs.PCB{}
+
+}
+
+func Actualizar_PC(PID int, PC int) {
+
+	for i := 0; i < len(structs.ColaExecute); i++ {
+		if (structs.ColaExecute)[i].PID == PID {
+			global.KernelLogger.Debug(fmt.Sprintf("Se Actualizo PC de PID: %d", PID))
+			(structs.ColaExecute)[i].PC = PC
+			return
+		}
+
+	}
+	global.KernelLogger.Debug(fmt.Sprintf("No Se PID para actualiza PC, este mensaje no deberia salir"))
+	return
 
 }

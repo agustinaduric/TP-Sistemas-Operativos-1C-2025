@@ -208,8 +208,9 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	global.KernelLogger.Debug("me llego una Devolucion del CPU")
 	log.Printf("PID devuelto: %d", Devolucion.PID)
 	global.KernelLogger.Debug(fmt.Sprintf("PID devuelto: %d", Devolucion.PID))
-
+	
 	proceso := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
+	PCB.Actualizar_PC(proceso.PID, Devolucion.PC)
 	proceso.PC = Devolucion.PC
 	Cpu := Buscar_CPU(Devolucion.Identificador)
 	switch Devolucion.Motivo {

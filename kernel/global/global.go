@@ -123,7 +123,7 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.Estado = structs.BLOCKED
 		proceso.MetricasEstado[structs.BLOCKED] = proceso.MetricasEstado[structs.BLOCKED] + 1
 		proceso.TiempoInicioEstado = time.Now()
-		go IniciarContadorDeSuspension(proceso,proceso.MetricasEstado[structs.BLOCKED] )
+		go IniciarContadorDeSuspension(proceso, proceso.MetricasEstado[structs.BLOCKED])
 		MutexBLOCKED.Lock()
 		Push_estado(&structs.ColaBlocked, *proceso)
 		MutexBLOCKED.Unlock()
@@ -211,9 +211,12 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 func IniciarContadorDeSuspension(proceso *structs.PCB, contador int) {
 	KernelLogger.Debug("Entro a la funcion IniciarContadorDeSuspension")
 	time.Sleep(time.Duration(ConfigCargadito.SuspensionTime) * time.Millisecond)
-	if (proceso.Estado != structs.BLOCKED) || (proceso.MetricasEstado[structs.BLOCKED] != contador) {
+	//KernelLogger.Debug(fmt.Sprintf("Estado: %s", proceso.Estado))
+	//proceso.Estado != structs.BLOCKED
+	if ((!Esta_en_block(proceso.PID)) || (proceso.MetricasEstado[structs.BLOCKED] != contador)) {
 		return
 	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
+	
 	KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
 	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
 	IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
@@ -227,7 +230,9 @@ func IniciarContadorDeSuspension(proceso *structs.PCB, contador int) {
 		}
 		ProcesoEnSuspReady <- 0
 		KernelLogger.Debug("Se envia aviso desde el contador para suspender a plani mediano")
-	} else {KernelLogger.Debug("Memoria no avalo la suspension, este mensaje no deberia estar supongo")}
+	} else {
+		KernelLogger.Debug("Memoria no avalo la suspension, este mensaje no deberia estar supongo")
+	}
 }
 
 func MandarProcesoASuspension(PID int) string {
@@ -246,4 +251,18 @@ func MandarProcesoASuspension(PID int) string {
 	var respuesta string
 	json.NewDecoder(resp.Body).Decode(&respuesta)
 	return respuesta
+}
+
+func Esta_en_block(PID int) bool{
+		for i := 0; i < len(structs.ColaBlocked); i++ {
+			if (structs.ColaBlocked)[i].PID == PID {
+				//KernelLogger.Debug(fmt.Sprintf("PID: %d esta en la cola Bloqueados", PID))
+				return true
+			}
+	
+		}
+		//KernelLogger.Debug(fmt.Sprintf("PID: %d NO esta en la cola Bloqueados", PID))
+		return false
+	
+
 }
