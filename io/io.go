@@ -14,6 +14,6 @@ func main() {
 	ConfigCargadito := fio.IniciarConfiguracionIO(configPath)
 	globalIO.IOLogger = fio.ConfigurarLog()
 	fio.RegistrarEnKernel(nombre, ConfigCargadito)
-	go fio.EsperarDesconexion(nombre)
+	go fio.EsperarDesconexion(nombre, ConfigCargadito.PortIo, ConfigCargadito.IpIo)
 	fio.LevantarIO(ConfigCargadito)
 }

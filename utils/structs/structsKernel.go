@@ -32,7 +32,8 @@ var (
 	ColaExit        ColaProcesos
 )
 
-var IOsRegistrados map[string]*DispositivoIO
+// var IOsRegistrados map[string]*DispositivoIO
+var IOsRegistrados map[string][]*DispositivoIO
 var ProcesoEjecutando PCB // chequear
 
 // nota para desp -> despachar: ProcesoEjecutando = ... ¿?

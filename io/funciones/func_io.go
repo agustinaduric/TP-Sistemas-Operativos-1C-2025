@@ -91,13 +91,13 @@ func EjecutarIO(solicitud structs.Solicitud) {
 	globalIO.IOLogger.Debug(fmt.Sprintf("Se envio a kernel fin IO, Dispositivo: %s PID: %d", solicitud.NombreIO, solicitud.PID))
 }
 
-func EsperarDesconexion(dispositivo string) {
+func EsperarDesconexion(dispositivo string, puertoDispositivo int, ipDispositivo string) {
 	globalIO.IOLogger.Debug(fmt.Sprintf("%s ingreso a EsperarDesconexion", dispositivo))
 	senial := make(chan os.Signal, 1)
 	signal.Notify(senial, syscall.SIGINT, syscall.SIGTERM)
 	<-senial
 	globalIO.IOLogger.Debug(fmt.Sprintf("Dispositivo: %s se esta desconectando", dispositivo))
-	ioDesconectado := structs.IODesconectado{Nombre: dispositivo}
+	ioDesconectado := structs.IODesconectado{Nombre: dispositivo, Puerto: puertoDispositivo, IP: ipDispositivo}
 	comunicacion.EnviarDesconexion(globalIO.IpKernel, globalIO.PuertoKernel, ioDesconectado)
 	globalIO.IOLogger.Debug(fmt.Sprintf("AViso desconexion dispositivo: %s enviada a kernel", dispositivo))
 }

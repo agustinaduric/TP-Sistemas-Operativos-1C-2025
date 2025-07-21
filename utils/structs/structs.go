@@ -82,4 +82,6 @@ type Lectura struct {
 
 type IODesconectado struct {
 	Nombre string
+	Puerto int
+	IP     string
 }
