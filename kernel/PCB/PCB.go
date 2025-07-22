@@ -43,17 +43,17 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	return proceso
 }
 
-func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) structs.PCB {
+func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) (structs.PCB, bool) {
 
 	for i := 0; i < len(*Cola); i++ {
 		if (*Cola)[i].PID == PID {
 			global.KernelLogger.Debug(fmt.Sprintf("Se encontro el proceso por pid"))
-			return (*Cola)[i]
+			return (*Cola)[i], true
 		}
 
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("No Se encontro el proceso por pid"))
-	return structs.PCB{}
+	return structs.PCB{}, false
 
 }
 

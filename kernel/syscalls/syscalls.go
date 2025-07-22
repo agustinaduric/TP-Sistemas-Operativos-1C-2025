@@ -14,7 +14,11 @@ import (
 )
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu string) {
-	pcbSolicitante := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
+	pcbSolicitante, existe := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
+	if !existe{
+		global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en excute", NuevaSolicitudIO.PID))
+		return
+	}
 	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))// muestra PID Solicitud
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 
@@ -42,18 +46,18 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 		global.MutexBLOCKED.Unlock()
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-		global.MutexBLOCKED.Lock()
+		/*global.MutexBLOCKED.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] 
 		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
 		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
-		global.MutexBLOCKED.Unlock()
+		global.MutexBLOCKED.Unlock()*/
 		dispositivoLibre.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		comunicacion.EnviarSolicitudIO(dispositivoLibre.IP, dispositivoLibre.Puerto, SolicitudParaIO)
+		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
-		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 	}
 	structs.ProcesoEjecutando = structs.PCB{}
 }
@@ -81,7 +85,7 @@ func DUMP_MEMORY(PID int) {
 	json.NewDecoder(resp.Body).Decode(&Devolucion_DumpMemory)
 
 	var Proceso structs.PCB
-	Proceso = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
+	Proceso, _ = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
 	global.KernelLogger.Debug(fmt.Sprintf("me llego una Devolucion de Memoria"))
 	switch Devolucion_DumpMemory.Respuesta {
 	case "CONFIRMACION":
