@@ -133,6 +133,17 @@ func HandshakeCpu(w http.ResponseWriter, r *http.Request) {
 		Cant_entradas:    global.MemoriaConfig.EntriesPerPage,
 		Numeros_de_nivel: global.MemoriaConfig.NumberOfLevels,
 	}
+
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("## Tamaño de página: %d QUE SE LE PASAN A CPU", datos.Tamaño_pagina),
+	)
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("## Cantidad de entradas por página: %d QUE SE LE PASAN A CPU", datos.Cant_entradas),
+	)
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("## Niveles de paginación: %d QUE SE LE PASAN A CPU", datos.Numeros_de_nivel),
+	)
+
 	if err := json.NewEncoder(w).Encode(datos); err != nil {
 		global.MemoriaLogger.Error(
 			fmt.Sprintf("Error codificando datos para CPU: %s", err.Error()),

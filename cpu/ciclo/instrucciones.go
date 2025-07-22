@@ -15,7 +15,7 @@ import (
 func WRITE(dirLogica int, datos string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
 	pagina := dirLogica / global.Page_size // ver responsabilidad
-
+	global.CpuLogger.Debug(fmt.Sprintf("paso la division"))
 	//cache
 	if global.EntradasMaxCache > 0 {
 		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, pagina, []byte(datos))
