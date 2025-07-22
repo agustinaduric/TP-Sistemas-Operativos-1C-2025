@@ -222,7 +222,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 
 	case structs.REPLANIFICAR:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", proceso.PID))
-
+		global.IniciarMetrica("EXEC", "READY", &proceso)
 		global.MutexSemaforosCPU.Lock()
 		sem := global.SemaforosCPU[Cpu.Identificador]
 		global.MutexSemaforosCPU.Unlock()

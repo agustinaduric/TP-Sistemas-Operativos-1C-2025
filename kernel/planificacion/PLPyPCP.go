@@ -67,39 +67,42 @@ func planificador_corto_plazo() {
 			global.MutexCpuDisponible.Lock()
 			var Cpu_disponible structs.CPU_a_kernel = protocolos.Buscar_CPU_libre()
 			global.MutexCpuDisponible.Unlock()
-			if Cpu_disponible.Identificador == "" {
-				global.KernelLogger.Debug(fmt.Sprintf("no hay cpus libres, probando desalojar alguno"))
-			
-			global.MutexCpuNoDisponibles.Lock()
-			Cpu_disponible = protocolos.Buscar_CPU_Para_Desalojar(pcb_execute.EstimadoRafaga)
-			global.MutexCpuNoDisponibles.Unlock()
-			if Cpu_disponible.Identificador != "" {
-
-				protocolos.Mandar_interrupcion(Cpu_disponible)
-
-				global.MutexSemaforosCPU.Lock()
-				sem := global.SemaforosCPU[Cpu_disponible.Identificador]
-				global.MutexSemaforosCPU.Unlock()
-
-				<-sem
-				}
-			} else{global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))}
-
-			var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
-			if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
-
-					global.IniciarMetrica("READY", "EXEC", &pcb_execute)
-					//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
-
-				} else {
-
-					global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu "))
-			}
-			
+			go Ejecutando_SRT(Cpu_disponible,pcb_execute)
 
 		default:
 
 		} }
+	}
+}
+
+func Ejecutando_SRT(Cpu_disponible structs.CPU_a_kernel, pcb_execute structs.PCB){
+	if Cpu_disponible.Identificador == "" {
+		global.KernelLogger.Debug(fmt.Sprintf("no hay cpus libres, probando desalojar alguno"))
+	
+	global.MutexCpuNoDisponibles.Lock()
+	Cpu_disponible = protocolos.Buscar_CPU_Para_Desalojar(pcb_execute.EstimadoRafaga)
+	global.MutexCpuNoDisponibles.Unlock()
+	if Cpu_disponible.Identificador != "" {
+
+		protocolos.Mandar_interrupcion(Cpu_disponible)
+
+		global.MutexSemaforosCPU.Lock()
+		sem := global.SemaforosCPU[Cpu_disponible.Identificador]
+		global.MutexSemaforosCPU.Unlock()
+
+		<-sem
+		}
+	} else{global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))}
+
+	var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
+	if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
+
+			global.IniciarMetrica("READY", "EXEC", &pcb_execute)
+			//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
+
+		} else {
+
+			global.KernelLogger.Debug(fmt.Sprintf("hubo un error: no se mando bien a cpu "))
 	}
 }
 
