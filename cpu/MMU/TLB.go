@@ -20,6 +20,12 @@ func AgregarATLB(nroPagina int, nroMarco int) {
 }
 
 func EliminarEntradaConAlgoritmo() {
+	global.CpuLogger.Debug(
+		fmt.Sprintf("Entre en ELiminarEntradaCOnAlgoritmo"),
+	)
+	global.CpuLogger.Debug(
+		fmt.Sprintf("Tamaño de la TLB antes de eliminar: %d", len(global.TLB)),
+	)
 	global.TLB = global.TLB[1:]
 	//en FIFO agarro el primero
 	//en LRU tambien agarro el primero porque a medida que se referencian las entradas se van poniendo al final de la cola, entonces el primer elemento de la cola siempre es el que se referencio hace mas tiempo

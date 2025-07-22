@@ -20,7 +20,7 @@ type MetricasMemoria struct {
 
 type ProcesoTP struct {
 	PID         int
-	TablaNivel1 []Tp
+	TablaNivel1 Tp
 }
 
 type Tp struct {

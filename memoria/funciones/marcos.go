@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
-	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
 var MarcosMutex sync.Mutex
@@ -131,43 +130,37 @@ func RecolectarMarcos(pid int) []int {
 
 // Marco recorre la jerarquía según índices y devuelve el marco físico o -1.
 func Marco(pid int, indices []int) int {
-	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
-	cfg := global.MemoriaConfig
-	niveles := cfg.NumberOfLevels
-
-	if len(indices) != niveles+1 {
-		global.MemoriaLogger.Error(fmt.Sprintf("Marco: longitud de índices inválida %d, se espera %d", len(indices), niveles+1))
+	global.MemoriaLogger.Debug(fmt.Sprintf("Entre en Marco, indices=%v", indices))
+	var marco int
+	niveles := global.MemoriaConfig.NumberOfLevels
+	if len(indices) != niveles {
+		global.MemoriaLogger.Error(
+			fmt.Sprintf("Marco: longitud de índices inválida %d, se esperaban %d", len(indices), niveles),
+		)
 		return -1
 	}
+
+	// 1) Buscar la tabla del proceso
 	procTP := getProcesoTP(pid)
 	if procTP == nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("Marco: PID %d sin ProcesoTP", pid))
 		return -1
 	}
 
-	nivelActual := procTP.TablaNivel1
-	var hoja structs.Tp
-	for lvl := 1; lvl <= niveles; lvl++ {
-		idx := indices[lvl-1]
-		if idx < 0 || idx >= len(nivelActual) {
-			global.MemoriaLogger.Error(fmt.Sprintf("Marco: índice fuera de rango en nivel %d: %d", lvl, idx))
-			return -1
+	// 2) buscar en la paginacion
+	tpActual := procTP.TablaNivel1
+	for i := 0; i < niveles; i++ {
+		if tpActual.EsUltimoNivel {
+			marco = tpActual.NumeroMarco[indices[niveles-1]]
+			break
 		}
-		entrada := nivelActual[idx]
-		if lvl < niveles {
-			nivelActual = entrada.TablaSiguienteNivel
-		} else {
-			hoja = entrada
-		}
+		tpActual = tpActual.TablaSiguienteNivel[indices[i]]
 	}
-	puntero := indices[niveles]
-	if puntero < 0 || puntero >= len(hoja.NumeroMarco) {
-		global.MemoriaLogger.Error(fmt.Sprintf("Marco: puntero inválido en hoja: %d", puntero))
-		return -1
-	}
-	marco := hoja.NumeroMarco[puntero]
+
+	// 3) Métricas y log final
 	IncrementarAccesosTabla(pid)
-
-	global.MemoriaLogger.Debug(fmt.Sprintf("Marco: PID=%d, indices=%v → marco=%d", pid, indices, marco))
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("Marco: PID=%d, indices=%v → marco=%d", pid, indices, marco),
+	)
 	return marco
 }
