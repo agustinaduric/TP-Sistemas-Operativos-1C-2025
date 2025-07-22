@@ -53,7 +53,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		if dispositivoIO.PIDActual == respuestaFin.PID{
 			dispositivoIO.PIDActual = -1
 			global.KernelLogger.Debug(fmt.Sprintf("El dispositivo: %s que ocupo PID: %d esta libre", respuestaFin.NombreIO, respuestaFin.PID))
-		}
+		
 		if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
 			siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0]
 			dispositivo := syscalls.BuscarIOLibre(respuestaFin.NombreIO)
@@ -69,6 +69,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 			global.KernelLogger.Debug(fmt.Sprintf("NO hay procesos en espera para: %s", respuestaFin.NombreIO))
 		}
 		break
+	}
 	}
 
 }
