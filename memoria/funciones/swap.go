@@ -67,7 +67,7 @@ func DesuspenderProceso(pid int) error {
 
 	IncrementarSubidasMem(pid)
 	OcuparMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
-	AsignarMarcosAProcesoTPPorPID(pid)
+	InicializarProcesoTP(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf("DesuspenderProceso: inicio PID=%d", pid))
 
 	err := RecuperarProcesoDeSwap(pid)

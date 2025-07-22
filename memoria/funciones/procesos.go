@@ -143,7 +143,6 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 	}
 
 	InicializarProcesoTP(pid)
-	DumpTablas(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"InicializarProceso: PID=%d listo para ejecutar",
 		pid,
