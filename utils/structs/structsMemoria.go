@@ -25,7 +25,7 @@ type ProcesoTP struct {
 
 type Tp struct {
 	TablaSiguienteNivel []Tp
-	NumeroMarco         []int
+	MarcosEnEsteNivel   []int //En cada posicion hay un marco.ESte slice se inicializa solo si es el ultimo nivel
 	EsUltimoNivel       bool
 }
 

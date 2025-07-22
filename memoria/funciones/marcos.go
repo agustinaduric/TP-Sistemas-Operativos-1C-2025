@@ -151,7 +151,7 @@ func Marco(pid int, indices []int) int {
 	tpActual := procTP.TablaNivel1
 	for i := 0; i < niveles; i++ {
 		if tpActual.EsUltimoNivel {
-			marco = tpActual.NumeroMarco[indices[niveles-1]]
+			marco = tpActual.MarcosEnEsteNivel[indices[niveles-1]]
 			break
 		}
 		tpActual = tpActual.TablaSiguienteNivel[indices[i]]

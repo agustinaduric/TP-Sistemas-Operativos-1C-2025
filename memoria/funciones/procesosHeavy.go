@@ -66,13 +66,13 @@ func construirSubtabla(marcos []int, nivel int) structs.Tp {
 		tp.EsUltimoNivel = false
 
 	} else {
-		// nivel hoja: aquí almacenamos todos los marcos en NumeroMarco
-		tp.NumeroMarco = make([]int, len(marcos))
+		// nivel hoja: aquí almacenamos todos los marcos en MarcosEnEsteNivel
+		tp.MarcosEnEsteNivel = make([]int, len(marcos))
 		for i, m := range marcos {
-			tp.NumeroMarco[i] = m
+			tp.MarcosEnEsteNivel[i] = m
 		}
 		global.MemoriaLogger.Debug(fmt.Sprintf(
-			"  Nivel hoja. NumeroMarco=%v", tp.NumeroMarco,
+			"  Nivel hoja. NumeroMarco=%v", tp.MarcosEnEsteNivel,
 		))
 		tp.EsUltimoNivel = true
 	}
@@ -120,4 +120,26 @@ func AsignarMarcosAProcesoTPPorPID(pid int) {
 	global.MemoriaLogger.Error(fmt.Sprintf(
 		"AsignarMarcos: PID=%d no encontrado en ProcesosTP", pid,
 	))
+}
+
+func DumpTablas(pid int) {
+	procTP := getProcesoTP(pid)
+	if procTP == nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("DumpTablas: PID=%d sin ProcesoTP", pid))
+		return
+	}
+	var rec func(path string, tp structs.Tp)
+	rec = func(path string, tp structs.Tp) {
+		if tp.EsUltimoNivel {
+			global.MemoriaLogger.Info(fmt.Sprintf(
+				"Hoja %s → MarcosEnEsteNivel=%v", path, tp.MarcosEnEsteNivel,
+			))
+		} else {
+			for idx, sub := range tp.TablaSiguienteNivel {
+				rec(fmt.Sprintf("%s/%d", path, idx), sub)
+			}
+		}
+	}
+	global.MemoriaLogger.Info(fmt.Sprintf("DumpTablas: PID=%d", pid))
+	rec("", procTP.TablaNivel1)
 }
