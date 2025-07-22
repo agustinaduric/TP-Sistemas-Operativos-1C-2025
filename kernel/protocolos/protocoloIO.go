@@ -73,7 +73,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
+/*
 func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 	var ioDesconectado structs.IODesconectado
 	err := json.NewDecoder(r.Body).Decode(&ioDesconectado)
@@ -98,6 +98,41 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 			for _, pcb := range cola {
 				global.IniciarMetrica("BLOCKED", "EXIT", &pcb)
 				global.KernelLogger.Debug(fmt.Sprintf("EXIT PID %d", pcb.PID))
+			}
+		}else {
+            instancias = append(instancias, dispositivo)
+        }
+	}
+
+	if len(instancias) == 0{
+		delete(structs.IOsRegistrados, ioDesconectado.Nombre)
+		delete(structs.ColaBlockedIO, ioDesconectado.Nombre)
+		global.KernelLogger.Debug(fmt.Sprintf("todos los procesos esperando %s se fueron a EXIT", ioDesconectado.Nombre))
+	} else {
+        structs.IOsRegistrados[ioDesconectado.Nombre] = instancias
+        global.KernelLogger.Debug(fmt.Sprintf("Instancias restantes de %s: %d", ioDesconectado.Nombre, len(instancias)))
+    }
+} */
+
+func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
+	var ioDesconectado structs.IODesconectado
+	err := json.NewDecoder(r.Body).Decode(&ioDesconectado)
+	if err != nil {
+		http.Error(w, "Error en decodificar la desconexion de io: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	global.KernelLogger.Debug(fmt.Sprintf("Recibi la desconexion de: %s", ioDesconectado.Nombre))
+
+	dispositivos := structs.IOsRegistrados[ioDesconectado.Nombre]
+	instancias := make([]*structs.DispositivoIO, 0, len(dispositivos))
+
+	for _, dispositivo := range dispositivos {
+        if dispositivo.IP == ioDesconectado.IP && dispositivo.Puerto == ioDesconectado.Puerto {
+			cola := structs.ColaBlockedIO[ioDesconectado.Nombre]
+			global.KernelLogger.Debug(fmt.Sprintf("Eliminando procesos bloqueados por IO: %s",ioDesconectado.Nombre ))
+			for _, pcb := range cola {
+				global.IniciarMetrica("BLOCKED", "EXIT", &pcb)
+				//global.KernelLogger.Debug(fmt.Sprintf("EXIT PID %d", pcb.PID))
 			}
 		}else {
             instancias = append(instancias, dispositivo)

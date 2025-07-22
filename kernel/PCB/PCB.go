@@ -30,6 +30,7 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	if strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SJF") || strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SRT") {
 		proceso.EstimadoRafaga = global.ConfigCargadito.InitialEstimate
 		proceso.UltimaRafagaReal = 0
+		global.KernelLogger.Debug(fmt.Sprintf("Se crea el PCB del proceso con PID: %d", proceso.PID))
 		return proceso
 	}
 
