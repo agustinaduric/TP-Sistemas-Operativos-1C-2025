@@ -3,12 +3,12 @@ package fmemoria
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
-	"io"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 	"github.com/sisoputnfrba/tp-golang/utils/config"
@@ -174,7 +174,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error al decodificar el proceso recibido", http.StatusBadRequest)
 		return
 	}
-	rutaCompleta:="../pruebas/"+proc.PATH
+	rutaCompleta := "../pruebas/" + proc.PATH
 	instrucciones, err := CargarInstrucciones(rutaCompleta) //____---
 	if err != nil {
 		global.MemoriaLogger.Error(
@@ -250,7 +250,9 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Intentar decodificar como objeto JSON {"pid":X}
-	var reqObj struct{ PID int `json:"pid"` }
+	var reqObj struct {
+		PID int `json:"pid"`
+	}
 	if err := json.Unmarshal(data, &reqObj); err != nil {
 		// Si falla, intentar decodificar como número puro
 		var pidSolo int
@@ -297,7 +299,9 @@ func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Intentar decodificar como objeto JSON {"pid":X}
-	var reqObj struct{ PID int `json:"pid"` }
+	var reqObj struct {
+		PID int `json:"pid"`
+	}
 	if err := json.Unmarshal(data, &reqObj); err != nil {
 		// Si falla, intentar decodificar como número puro
 		var pidSolo int
@@ -340,7 +344,9 @@ func HandlerFinalizarProceso(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Intentar decodificar como objeto JSON {"pid":X}
-	var reqObj struct { PID int `json:"pid"` }
+	var reqObj struct {
+		PID int `json:"pid"`
+	}
 	if err := json.Unmarshal(data, &reqObj); err != nil {
 		// Si falla, intentar decodificar como número puro
 		var pidSolo int
@@ -383,7 +389,9 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Intentar decodificar como objeto JSON {"pid":X}
-	var reqObj struct{ PID int `json:"pid"` }
+	var reqObj struct {
+		PID int `json:"pid"`
+	}
 	if err := json.Unmarshal(data, &reqObj); err != nil {
 		// Si falla, intentar decodificar como número puro
 		var pidSolo int
@@ -434,6 +442,10 @@ func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 func DumpMemory(pid int) error { //Cabe aclarar que
 	cfg := global.MemoriaConfig
 	global.MemoriaLogger.Debug(fmt.Sprintf("DumpMemory: inicio PID=%d", pid))
+
+	global.MemoriaLogger.Info(
+		fmt.Sprintf("## PID: %d - Memory Dump solicitado", pid),
+	)
 
 	//Agarramos todos los marcos que le pertenecen al proceso
 	var marcosOcupados []int

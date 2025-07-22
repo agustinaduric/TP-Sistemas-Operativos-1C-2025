@@ -68,7 +68,7 @@ func BuscarInstruccion(pid int, pc int) (structs.Instruccion, error) {
 }
 
 func CargarInstrucciones(ruta string) ([]structs.Instruccion, error) {
-		
+
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Cargando instrucciones desde ruta: %s", ruta),
 	)
@@ -120,6 +120,11 @@ func InicializarProceso(pid int, tamanio int, instrucciones []structs.Instruccio
 		Path:          pathCompletito,
 		Instrucciones: instrucciones,
 	}
+
+	global.MemoriaLogger.Info(
+		fmt.Sprintf("## PID: %d - Proceso Creado - Tamaño: %d", pid, tamanio),
+	)
+
 	global.MemoriaLogger.Debug("  ProcesoMemoria construido con métricas a cero")
 
 	// 2. Agregar a memoria principal

@@ -50,11 +50,13 @@ func LeerMemoriaUsuario(pid int, direccionFisica int, tamanio int) []byte {
 	if fin > len(global.MemoriaUsuario) {
 		fin = len(global.MemoriaUsuario)
 	}
-
 	valor := global.MemoriaUsuario[direccionFisica:fin]
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("leerMemoriaUsuario: leyó byte en dirección %d → valor: %q", direccionFisica, valor),
+
+	global.MemoriaLogger.Info(
+		fmt.Sprintf("## PID: %d - Lectura - Dir. Física: %d - Tamaño: %d",
+			pid, direccionFisica, len(valor)),
 	)
+
 	global.MemoriaMutex.Unlock()
 	return valor
 }
@@ -77,9 +79,9 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 		global.MemoriaUsuario[direccionFisica+i] = bytesTexto[i]
 	}
 
-	global.MemoriaLogger.Debug(
-		fmt.Sprintf("escribirMemoriaUsuario: escrito texto de tamaño %d en dirección %d. Datos: %q",
-			longitud, direccionFisica, bytesTexto),
+	global.MemoriaLogger.Info(
+		fmt.Sprintf("## PID: %d - Escritura - Dir. Física: %d - Tamaño: %d",
+			pid, direccionFisica, longitud),
 	)
 
 	global.MemoriaMutex.Unlock()
