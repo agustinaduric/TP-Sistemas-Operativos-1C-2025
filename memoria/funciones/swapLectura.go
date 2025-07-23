@@ -115,17 +115,33 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 
 // parsearBloque extrae la cantidad de páginas y los bytes de página de un bloque.
 func parsearBloque(bloque []byte) (int, []byte, error) {
-	lines := bytes.SplitN(bloque, []byte("\n"), 3)
-	if len(lines) < 3 {
+	// Separamos en hasta 3 partes: [0]=“PID…”, [1]=“Cantidad…”, [2]=resto
+	parts := bytes.SplitN(bloque, []byte("\n"), 3)
+
+	// Siempre debe haber al menos dos líneas de header
+	if len(parts) < 2 {
 		return 0, nil, fmt.Errorf("parsearBloque: formato inválido")
 	}
-	// línea 0: "PID: X"
-	// línea 1: "Cantidad Paginas: N"
-	cant, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(string(lines[1]), "Cantidad Paginas:")))
+
+	// Parseamos la cantidad de páginas
+	cant, err := strconv.Atoi(strings.TrimSpace(
+		strings.TrimPrefix(string(parts[1]), "Cantidad Paginas:"),
+	))
 	if err != nil {
 		return 0, nil, fmt.Errorf("parsearBloque: count parse error: %w", err)
 	}
-	return cant, lines[2], nil
+
+	// Si no hay páginas, devolvemos slice vacío de datos
+	if cant == 0 {
+		return 0, nil, nil
+	}
+
+	// Para cant > 0, sí esperamos datos tras la 2ª línea
+	if len(parts) < 3 {
+		return 0, nil, fmt.Errorf("parsearBloque: esperaba datos de páginas, no los encontré")
+	}
+
+	return cant, parts[2], nil
 }
 
 // eliminarBloqueSwap remueve el bloque completo de pid de swap.bin.
@@ -162,7 +178,7 @@ func eliminarBloqueSwap(pid int) error {
 			out.WriteString(line)
 		}
 		// si estamos saltando y encontramos el próximo bloque, detenemos el skip
-		if skipping && strings.HasPrefix(line, "\nPID: ") {
+		if skipping && strings.HasPrefix(line, "PID: ") {
 			skipping = false
 			out.WriteString(line)
 		}

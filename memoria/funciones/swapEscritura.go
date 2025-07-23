@@ -94,7 +94,6 @@ func EScribirStringIntEnSwap(prefijo string, valor int) error {
 
 func EscribirByteEnSwap(b byte) error {
 	swapMutex.Lock()
-	swapMutex.Unlock()
 
 	// Abrimos o creamos el archivo en modo append
 	f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
@@ -113,6 +112,6 @@ func EscribirByteEnSwap(b byte) error {
 	if n != 1 {
 		return fmt.Errorf("EscribirByteEnSwap: bytes escritos inesperados: %d", n)
 	}
-
+	swapMutex.Unlock()
 	return nil
 }
