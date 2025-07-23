@@ -44,8 +44,8 @@ func planificador_corto_plazo() {
 				}
 			case "SJF":
 				global.KernelLogger.Debug("Entre a case SJF")
-				OrdenarColaPorSJF()
-				pcb_execute = structs.ColaReady[0]
+				Cola := OrdenarColaPorSJF()
+				pcb_execute = Cola[0]
 				pcb_execute.EstimadoRafagaAnt = pcb_execute.EstimadoRafaga
 				global.KernelLogger.Debug("Trato de enviar a cpu")
 				var respuesta int = protocolos.Enviar_datos_a_cpu(pcb_execute)
@@ -156,8 +156,8 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 
 			case "PMCP":
 				global.KernelLogger.Debug("Entre a case PMCP")
-				OrdenarColaPorPMCP(structs.ColaNew)
-				var pcb_a_cargar structs.PCB = structs.ColaNew[0]
+				Cola := OrdenarColaPorPMCP(structs.ColaNew)
+				var pcb_a_cargar structs.PCB = Cola[0]
 				if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
 					global.KernelLogger.Debug("El proceso fue aceptado en memoria")
 					global.IniciarMetrica("NEW", "READY", &pcb_a_cargar)
@@ -183,7 +183,7 @@ func planificador_mediano_plazo() {
 	for {
 		<-global.ProcesoEnSuspReady
 		global.KernelLogger.Debug("Llego un proceso al planificador mediano")
-		if (len(structs.ColaNew)) == 0 {
+		if (len(structs.ColaSuspReady)) == 0 {
 			global.KernelLogger.Debug("No hay procesos en la cola SUSP_READY")
 		} else {
 		switch algoritmo_planificacion {
