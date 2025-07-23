@@ -39,21 +39,18 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error en decodificar la respuesta de io: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-    proceso, existe := PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaBlocked)
-
-	if existe {
-		global.IniciarMetrica("BLOCKED", "READY", &proceso)
-		
-	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados", respuestaFin.PID))}
-
-	proceso, existe = PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaSuspBlocked)
-
-	if existe {
-		global.IniciarMetrica("SUSP_BLOCKED", "SUSP_READY", &proceso)
-	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados SUSP, esto no deberia salir", respuestaFin.PID))
-			return }
-	
 	global.KernelLogger.Info(fmt.Sprintf("## %d finalizó IO y pasa a READY", respuestaFin.PID))
+    proceso, existe := PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaBlocked)
+	if !existe {
+		proceso, existe = PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaSuspBlocked)
+		if existe {
+			global.IniciarMetrica("BLOCKED", "READY", &proceso)
+		} else {
+			global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", respuestaFin.PID))
+			return
+		}
+	}
+	
 
 	dispositivos := structs.IOsRegistrados[respuestaFin.NombreIO]
 
@@ -69,7 +66,9 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 				dispositivo.PIDActual = siguiente.PID
 				global.KernelLogger.Debug(fmt.Sprintf("PID: %d ocupo el dispositivo: %s", siguiente.PID, respuestaFin.NombreIO))
 				SolicitudParaIO := structs.Solicitud{PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}
+				global.MutexBLOCKED.Lock()
 				structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
+				global.MutexBLOCKED.Unlock()
 				comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 				global.KernelLogger.Debug(fmt.Sprintf("Solcitud IO: %s enviada, PID: %d", respuestaFin.NombreIO, siguiente.PID))
 			} else {
@@ -122,12 +121,16 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 } 
 
 func Buscar_Siguiente_IO(NombreIO string) structs.PCB {
-	for i:=0;i<len(structs.ColaBlockedIO[NombreIO]); i++{ 
-		if structs.ColaBlockedIO[NombreIO][i].Estado == "BLOCKED"{
-			siguiente := structs.ColaBlockedIO[NombreIO][i]
+	for len(structs.ColaBlockedIO[NombreIO]) > 0 {
+		if structs.ColaBlockedIO[NombreIO][0].Estado == "BLOCKED" {
+			siguiente := structs.ColaBlockedIO[NombreIO][0]
 			return siguiente
+		} else {
+			global.MutexBLOCKED.Lock()
+			structs.ColaBlockedIO[NombreIO] = structs.ColaBlockedIO[NombreIO][1:]
+			global.MutexBLOCKED.Unlock()
 		}
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("NO hay procesos en espera para: %s", NombreIO))
-	return structs.PCB{PID: -1,}
+	return structs.PCB{PID: -1}
 }

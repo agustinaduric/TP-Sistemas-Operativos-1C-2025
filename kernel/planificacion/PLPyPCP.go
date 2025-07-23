@@ -183,6 +183,9 @@ func planificador_mediano_plazo() {
 	for {
 		<-global.ProcesoEnSuspReady
 		global.KernelLogger.Debug("Llego un proceso al planificador mediano")
+		if (len(structs.ColaNew)) == 0 {
+			global.KernelLogger.Debug("No hay procesos en la cola SUSP_READY")
+		} else {
 		switch algoritmo_planificacion {
 		case "FIFO":
 			global.KernelLogger.Debug("Entre a case FIFO")
@@ -211,7 +214,7 @@ func planificador_mediano_plazo() {
 
 		default:
 
-		}
+		} }
 	}
 }
 
