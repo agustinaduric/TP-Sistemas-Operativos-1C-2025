@@ -29,7 +29,6 @@ type PCB struct {
 	EstimadoRafaga      float64
 	EstimadoRafagaAnt   float64
 	UltimaRafagaReal    float64
-	IngresoEstado       time.Time
 	MetricasEstado      map[Estado]int           // cant entradas estado
 	TiemposEstado       map[Estado]time.Duration // tiempo en cada estado
 	TiempoInicioEstado  time.Time                // para calcular cuanto tiempo estuvo en cada estado

@@ -65,6 +65,7 @@ type CPU_a_kernel struct {
 	Puerto        int
 	Identificador string
 	Disponible    bool
+	Proceso       PCB
 }
 
 type CPU_a_memoria struct {

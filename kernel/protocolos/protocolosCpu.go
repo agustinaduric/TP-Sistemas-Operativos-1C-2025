@@ -46,7 +46,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("Entre a la funcion Enviar_datos_a_cpu"))
 	global.MutexCpuDisponible.Lock()
-	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre()
+	var Cpu_disponible structs.CPU_a_kernel = Buscar_CPU_libre(pcb_a_cargar)
 	global.MutexCpuDisponible.Unlock()
 	
 	if Cpu_disponible.Identificador == "" {
@@ -91,13 +91,6 @@ func Enviar_datos_SRT_a_cpu(pcb_a_cargar structs.PCB, Cpu_disponible structs.CPU
 	}
 	log.Printf("respuesta del servidor: %s, Enviar_datos_SRT_a_cpu", resp.Status)
 
-	var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
-		CPU:     Cpu_disponible,
-		Proceso: pcb_a_cargar,
-	}
-	global.MutexCpuNoDisponibles.Lock()
-	structs.CPUs_Nodisponibles = append(structs.CPUs_Nodisponibles, CPUocupado)
-	global.MutexCpuNoDisponibles.Unlock()
 	return resp.StatusCode
 }
 
@@ -131,11 +124,12 @@ func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
 	return
 }
 
-func Buscar_CPU_libre() structs.CPU_a_kernel {
+func Buscar_CPU_libre(Proceso structs.PCB) structs.CPU_a_kernel {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Disponible {
 			structs.CPUs_Conectados[i].Disponible = false
+			structs.CPUs_Conectados[i].Proceso= Proceso
 			return structs.CPUs_Conectados[i]
 		}
 
@@ -145,23 +139,37 @@ func Buscar_CPU_libre() structs.CPU_a_kernel {
 	return structs.CPU_a_kernel{}
 }
 
-func Buscar_CPU_Para_Desalojar(Estimado float64) structs.CPU_a_kernel {
-	longitud := len(structs.CPUs_Nodisponibles)
+func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
+	Estimado := Proceso.EstimadoRafaga
+	longitud := len(structs.CPUs_Conectados)
 	var devuelvo structs.CPU_a_kernel = structs.CPU_a_kernel{}
 	for i := 0; i < longitud; i++ {
-		aux := time.Since(structs.CPUs_Nodisponibles[i].Proceso.TiempoInicioEstado)
-		tiempo_restante := structs.CPUs_Nodisponibles[i].Proceso.EstimadoRafaga - (float64(aux) - float64(structs.CPUs_Nodisponibles[i].Proceso.Auxiliar))
+		if !structs.CPUs_Conectados[i].Disponible{
+		aux := time.Since(structs.CPUs_Conectados[i].Proceso.TiempoInicioEstado)
+		tiempo_restante := structs.CPUs_Conectados[i].Proceso.EstimadoRafaga - (float64(aux) - float64(structs.CPUs_Conectados[i].Proceso.Auxiliar))
 
 		if tiempo_restante > Estimado {
 
-			devuelvo = structs.CPUs_Nodisponibles[i].CPU
+			devuelvo = structs.CPUs_Conectados[i]
 			Estimado = tiempo_restante
 		}
-
-	}
-
-	global.KernelLogger.Debug("Ninguna cpu con menor estimado")
+		}	
+	} 
+	if devuelvo.Identificador != ""{
+		ActualizarCPU_Proceso(devuelvo,Proceso)
+	}else{ global.KernelLogger.Debug("Ninguna cpu con menor estimado") }
+	
 	return devuelvo
+}
+
+func ActualizarCPU_Proceso(CPU structs.CPU_a_kernel,Proceso structs.PCB) {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Identificador == CPU.Identificador{ 
+			structs.CPUs_Conectados[i].Proceso = Proceso
+		}
+	}
+	return
 }
 
 func Buscar_CPU(identificador string) structs.CPU_a_kernel {
