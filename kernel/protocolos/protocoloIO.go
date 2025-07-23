@@ -40,21 +40,23 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
     proceso, existe := PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaBlocked)
+
 	if existe {
 		global.IniciarMetrica("BLOCKED", "READY", &proceso)
 		
 	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados", respuestaFin.PID))}
+
 	proceso, existe = PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaSuspBlocked)
 
 	if existe {
 		global.IniciarMetrica("SUSP_BLOCKED", "SUSP_READY", &proceso)
 	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados SUSP, esto no deberia salir", respuestaFin.PID))
 			return }
-	// structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
-    
+	
+	global.KernelLogger.Info(fmt.Sprintf("## %d finalizó IO y pasa a READY", respuestaFin.PID))
 
 	dispositivos := structs.IOsRegistrados[respuestaFin.NombreIO]
-	//var siguiente structs.PCB
+
 	for _,dispositivoIO:= range dispositivos{
 		if dispositivoIO.PIDActual == respuestaFin.PID{
 			dispositivoIO.PIDActual = -1

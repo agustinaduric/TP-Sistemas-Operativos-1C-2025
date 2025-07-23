@@ -38,6 +38,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 	if dispositivoLibre == nil{ // estan todos ocupados
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+		global.KernelLogger.Info(fmt.Sprintf("## %d - Bloqueado por IO: %s", pcbSolicitante.PID, NuevaSolicitudIO.NombreIO))
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		global.MutexBLOCKED.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
@@ -46,17 +47,13 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 		global.MutexBLOCKED.Unlock()
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
-		/*global.MutexBLOCKED.Lock()
-		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] 
-		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
-		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
-		global.MutexBLOCKED.Unlock()*/
 		dispositivoLibre.PIDActual = pcbSolicitante.PID
 		SolicitudParaIO := structs.Solicitud{PID: pcbSolicitante.PID, NombreIO: NuevaSolicitudIO.NombreIO, Duracion: NuevaSolicitudIO.Duracion}
 		global.KernelLogger.Debug(fmt.Sprintf("Se intenta enviar solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		comunicacion.EnviarSolicitudIO(dispositivoLibre.IP, dispositivoLibre.Puerto, SolicitudParaIO)
 		global.KernelLogger.Debug(fmt.Sprintf("Se envio solicitud a IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) //este mensaje capaz va adentro de la funcion de arriba
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
+		global.KernelLogger.Info(fmt.Sprintf("## %d - Bloqueado por IO: %s", pcbSolicitante.PID, NuevaSolicitudIO.NombreIO))
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 	}
 	structs.ProcesoEjecutando = structs.PCB{}
