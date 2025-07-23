@@ -40,22 +40,29 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
     proceso, existe := PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaBlocked)
-	if !existe {
-		global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados", respuestaFin.PID))
-		return
-	}
+	if existe {
+		global.IniciarMetrica("BLOCKED", "READY", &proceso)
+		
+	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados", respuestaFin.PID))}
+	proceso, existe = PCB.Buscar_por_pid(respuestaFin.PID, &structs.ColaSuspBlocked)
+
+	if existe {
+		global.IniciarMetrica("SUSP_BLOCKED", "SUSP_READY", &proceso)
+	}else { global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados SUSP, esto no deberia salir", respuestaFin.PID))
+			return }
 	// structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
-    global.IniciarMetrica("BLOCKED", "READY", &proceso)
+    
 
 	dispositivos := structs.IOsRegistrados[respuestaFin.NombreIO]
-	
+	//var siguiente structs.PCB
 	for _,dispositivoIO:= range dispositivos{
 		if dispositivoIO.PIDActual == respuestaFin.PID{
 			dispositivoIO.PIDActual = -1
 			global.KernelLogger.Debug(fmt.Sprintf("El dispositivo: %s que ocupo PID: %d esta libre", respuestaFin.NombreIO, respuestaFin.PID))
-		
+			
 			if len(structs.ColaBlockedIO[respuestaFin.NombreIO]) > 0 {
-				siguiente := structs.ColaBlockedIO[respuestaFin.NombreIO][0]
+				siguiente := Buscar_Siguiente_IO(respuestaFin.NombreIO)
+				if siguiente.PID == -1 { return }
 				dispositivo := syscalls.BuscarIOLibre(respuestaFin.NombreIO)
 				dispositivo.PIDActual = siguiente.PID
 				global.KernelLogger.Debug(fmt.Sprintf("PID: %d ocupo el dispositivo: %s", siguiente.PID, respuestaFin.NombreIO))
@@ -111,3 +118,14 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
         global.KernelLogger.Debug(fmt.Sprintf("Instancias restantes de %s: %d", ioDesconectado.Nombre, len(instancias)))
     }
 } 
+
+func Buscar_Siguiente_IO(NombreIO string) structs.PCB {
+	for i:=0;i<len(structs.ColaBlockedIO[NombreIO]); i++{ 
+		if structs.ColaBlockedIO[NombreIO][i].Estado == "BLOCKED"{
+			siguiente := structs.ColaBlockedIO[NombreIO][i]
+			return siguiente
+		}
+	}
+	global.KernelLogger.Debug(fmt.Sprintf("NO hay procesos en espera para: %s", NombreIO))
+	return structs.PCB{PID: -1,}
+}

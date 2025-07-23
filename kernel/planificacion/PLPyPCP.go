@@ -144,7 +144,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 			switch algoritmo_planificacion {
 			case "FIFO":
 				var pcb_a_cargar structs.PCB = structs.ColaNew[0]
-
+				global.KernelLogger.Debug("Entre a case FIFO")
 				// envio el proceso a memoria para preguntar si entra
 				if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
 					global.KernelLogger.Debug("El proceso fue aceptado en memoria")
@@ -155,6 +155,7 @@ func planificador_largo_plazo() { // DIVIDIDO EN 2 PARTES: UNA PARA LLEVAR PROCE
 				}
 
 			case "PMCP":
+				global.KernelLogger.Debug("Entre a case PMCP")
 				OrdenarColaPorPMCP(structs.ColaNew)
 				var pcb_a_cargar structs.PCB = structs.ColaNew[0]
 				if respuesta := protocolos.Enviar_proceso_a_memoria(pcb_a_cargar); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
@@ -184,6 +185,7 @@ func planificador_mediano_plazo() {
 		global.KernelLogger.Debug("Llego un proceso al planificador mediano")
 		switch algoritmo_planificacion {
 		case "FIFO":
+			global.KernelLogger.Debug("Entre a case FIFO")
 			var pcb_a_cargar structs.PCB = structs.ColaSuspReady[0]
 
 			// envio el proceso a memoria para preguntar si entra
@@ -196,6 +198,7 @@ func planificador_mediano_plazo() {
 			}
 
 		case "PMCP":
+			global.KernelLogger.Debug("Entre a case PMCP")
 			Cola :=OrdenarColaPorPMCP(structs.ColaSuspReady)
 			var pcb_a_cargar structs.PCB = Cola[0]
 			if respuesta := protocolos.MandarProcesoADesuspension(pcb_a_cargar.PID); respuesta == "OK" { // si memoria da el OK proceso, sino me salgo y espero
