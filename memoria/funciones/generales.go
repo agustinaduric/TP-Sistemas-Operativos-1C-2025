@@ -279,8 +279,8 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("HandlerDessuspenderProceso: pid=%d recibido", reqObj.PID))
 
 	if err := PedidoDeDesSuspension(reqObj.PID); err != nil {
-		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", reqObj.PID, err.Error()), http.StatusConflict)
-		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err.Error()))
+		http.Error(w, fmt.Sprintf("No se pudo des-suspender PID=%d: %s", reqObj.PID, err), http.StatusConflict)
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: PedidoDeDesSuspension falló: %s", err))
 		return
 	}
 
@@ -289,7 +289,7 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode("OK"); err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err.Error()))
+		global.MemoriaLogger.Error(fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err))
 	} else {
 		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerDessuspenderProceso: PID=%d des-suspendido exitosamente", reqObj.PID))
 	}
