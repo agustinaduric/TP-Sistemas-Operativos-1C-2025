@@ -10,6 +10,10 @@ import (
 var MarcosMutex sync.Mutex
 
 func MarcosDisponibles() int {
+	MarcosMutex.Lock()
+	global.MemoriaLogger.Debug(fmt.Sprintf("[MarcosDisponibles] Tomé MarcosMutex"))
+	MarcosMutex.Unlock()
+	global.MemoriaLogger.Debug(fmt.Sprintf("[MarcosDisponibles] Liberé MarcosMutex"))
 
 	global.MemoriaLogger.Debug("MarcosDisponibles: contando marcos libres")
 
@@ -38,9 +42,6 @@ func MarcosDisponibles() int {
 }
 
 func MarcosNecesitados(tamanioProceso int) int {
-	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
-
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("MarcosNecesitados: TamanioProceso=%d", tamanioProceso),
 	)
@@ -59,14 +60,17 @@ func MarcosNecesitados(tamanioProceso int) int {
 }
 
 func CantidadMarcos() int {
-	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
+	// Config immutable, no mutex needed
 	return global.MemoriaConfig.MemorySize / global.MemoriaConfig.PageSize
 }
 
 func LiberarMarcos(pid int) {
 	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
+	global.MemoriaLogger.Debug(fmt.Sprintf("[LiberarMarcos] Tomé MarcosMutex"))
+	defer func() {
+		MarcosMutex.Unlock()
+		global.MemoriaLogger.Debug(fmt.Sprintf("[LiberarMarcos] Liberé MarcosMutex"))
+	}()
 	global.MemoriaLogger.Debug(fmt.Sprintf("LiberarMarcos: inicio PID=%d", pid))
 
 	for marco, ocupante := range global.MapMemoriaDeUsuario {
@@ -80,24 +84,26 @@ func LiberarMarcos(pid int) {
 	}
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("LiberarMarcos: fin PID=%d", pid))
-
 }
 
 func OcuparMarcos(pid int) {
+	MarcosMutex.Lock()
+	global.MemoriaLogger.Debug(fmt.Sprintf("[OcuparMarcos] Tomé MarcosMutex"))
+	defer func() {
+		MarcosMutex.Unlock()
+		global.MemoriaLogger.Debug(fmt.Sprintf("[OcuparMarcos] Liberé MarcosMutex"))
+	}()
 
 	global.MemoriaLogger.Debug(fmt.Sprintf("OcuparMarcos: inicio PID=%d", pid))
 
-	// 1. Obtener el proceso para conocer su tamaño
-	proc, _ := BuscarProceso(pid) // asumimos que ya existe porque hay espacio
+	proc, _ := BuscarProceso(pid)
 	necesarios := MarcosNecesitados(proc.Tamanio)
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"OcuparMarcos: PID=%d requiere %d marcos (tamaño %d bytes)",
 		pid, necesarios, proc.Tamanio,
 	))
 
-	// 2. Asignar exactamente 'necesarios' marcos libres
 	asignados := 0
-
 	for idx, ocupante := range global.MapMemoriaDeUsuario {
 		if ocupante == -1 {
 			global.MapMemoriaDeUsuario[idx] = pid
@@ -118,10 +124,14 @@ func OcuparMarcos(pid int) {
 	))
 }
 
-// recolectarMarcos devuelve la lista de índices de marcos ocupados por pid
 func RecolectarMarcos(pid int) []int {
 	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
+	global.MemoriaLogger.Debug(fmt.Sprintf("[RecolectarMarcos] Tomé MarcosMutex"))
+	defer func() {
+		MarcosMutex.Unlock()
+		global.MemoriaLogger.Debug(fmt.Sprintf("[RecolectarMarcos] Liberé MarcosMutex"))
+	}()
+
 	var marcos []int
 	for idx, ocupante := range global.MapMemoriaDeUsuario {
 		if ocupante == pid {
@@ -131,11 +141,10 @@ func RecolectarMarcos(pid int) []int {
 	return marcos
 }
 
-// Marco recorre la jerarquía según índices y devuelve el marco físico o -1.
 func Marco(pid int, indices []int) int {
-	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
+
 	global.MemoriaLogger.Debug(fmt.Sprintf("Entre en Marco, indices=%v", indices))
+
 	var marco int
 	niveles := global.MemoriaConfig.NumberOfLevels
 	if len(indices) != niveles {
@@ -145,14 +154,12 @@ func Marco(pid int, indices []int) int {
 		return -1
 	}
 
-	// 1) Buscar la tabla del proceso
 	procTP := getProcesoTP(pid)
 	if procTP == nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("Marco: PID %d sin ProcesoTP", pid))
 		return -1
 	}
 
-	// 2) buscar en la paginacion
 	tpActual := procTP.TablaNivel1
 	for i := 0; i < niveles; i++ {
 		if tpActual.EsUltimoNivel {
@@ -162,7 +169,6 @@ func Marco(pid int, indices []int) int {
 		tpActual = tpActual.TablaSiguienteNivel[indices[i]]
 	}
 
-	// 3) Métricas y log final
 	IncrementarAccesosTabla(pid)
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("Marco: PID=%d, indices=%v → marco=%d", pid, indices, marco),

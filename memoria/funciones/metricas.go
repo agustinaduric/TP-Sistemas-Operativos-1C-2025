@@ -219,8 +219,12 @@ func IncrementarAccesosTabla(pid int) error {
 	old := global.Procesos[idx].Metricas.AccesosTabla
 	global.MemoriaLogger.Debug(fmt.Sprintf("Antes IncrementarAccesosTabla: PID=%d AccesosTabla=%d", pid, old))
 
+	global.MemoriaLogger.Debug(fmt.Sprintf("EStoy por calcular la longitud de los marcos recolectados"))
+	LongitudMarcosRecolectados := len(RecolectarMarcos(pid))
+	global.MemoriaLogger.Debug(fmt.Sprintf("Ya calcule la longitud de los marcos recolectados"))
+
 	// Incremento según niveles
-	for i := 0; i < CalcularAccesosTablas(len(RecolectarMarcos(pid))); i++ {
+	for i := 0; i < CalcularAccesosTablas(LongitudMarcosRecolectados); i++ {
 		global.Procesos[idx].Metricas.AccesosTabla++
 	}
 

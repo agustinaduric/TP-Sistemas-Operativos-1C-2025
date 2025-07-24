@@ -9,8 +9,7 @@ import (
 
 var swapMutex sync.Mutex
 
-//SI este archivo anda es un milagr
-
+// PedidoDeDesSuspension: no toma directamente el mutex, delega en DesuspenderProceso
 func PedidoDeDesSuspension(pid int) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("PedidoDeDesSuspension: inicio PID=%d", pid))
 
@@ -27,22 +26,21 @@ func PedidoDeDesSuspension(pid int) error {
 	}
 	global.MemoriaLogger.Debug("  espacio disponible, procediendo a DesuspenderProceso")
 
-	if err := DesuspenderProceso(pid); err != nil { //ACA LLAMA A DESUSPENDE
-		global.MemoriaLogger.Error(fmt.Sprintf("  DesuspenderProceso falló PID=%d: %s", pid, err))
-		return err
-	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf("PedidoDeDesSuspension: PID=%d des-suspendido con éxito", pid))
-	return nil
+	return DesuspenderProceso(pid)
 }
 
+// SuspenderProceso: toma swapMutex con logs de lock/unlock
 func SuspenderProceso(pid int) error {
-	global.ProcesosMutex.Lock()
-	defer global.ProcesosMutex.Unlock()
-	IncrementarBajadasSwap(pid)
-	LiberarMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
-	//LiberarPaginasProcesoTP(pid)
+	global.MemoriaLogger.Debug("[SuspenderProceso] intentando tomar swapMutex")
+	swapMutex.Lock()
+	global.MemoriaLogger.Debug("[SuspenderProceso] tomó swapMutex")
+	defer func() {
+		swapMutex.Unlock()
+		global.MemoriaLogger.Debug("[SuspenderProceso] liberó swapMutex")
+	}()
 
+	IncrementarBajadasSwap(pid)
+	LiberarMarcos(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf("SuspenderProceso: inicio PID=%d", pid))
 
 	for i := range global.Procesos {
@@ -64,11 +62,18 @@ func SuspenderProceso(pid int) error {
 	return fmt.Errorf("PID=%d no encontrado", pid)
 }
 
+// DesuspenderProceso: toma swapMutex con logs de lock/unlock
 func DesuspenderProceso(pid int) error {
-	global.ProcesosMutex.Lock()
-	defer global.ProcesosMutex.Unlock()
+	global.MemoriaLogger.Debug("[DesuspenderProceso] intentando tomar swapMutex")
+	swapMutex.Lock()
+	global.MemoriaLogger.Debug("[DesuspenderProceso] tomó swapMutex")
+	defer func() {
+		swapMutex.Unlock()
+		global.MemoriaLogger.Debug("[DesuspenderProceso] liberó swapMutex")
+	}()
+
 	IncrementarSubidasMem(pid)
-	OcuparMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
+	OcuparMarcos(pid)
 	InicializarProcesoTP(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf("DesuspenderProceso: inicio PID=%d", pid))
 
@@ -83,10 +88,12 @@ func DesuspenderProceso(pid int) error {
 		if global.Procesos[i].PID == pid {
 			global.Procesos[i].EnSwap = false
 			global.Procesos[i].Metricas.SubidasMem++
-			global.MemoriaLogger.Debug(fmt.Sprintf("  actualizado EnSwap=false, SubidasMem=%d", global.Procesos[i].Metricas.SubidasMem))
+			global.MemoriaLogger.Debug(fmt.Sprintf("  actualizado EnSwap=false, SubidasMem=%d",
+				global.Procesos[i].Metricas.SubidasMem))
 			return nil
 		}
 	}
+
 	global.MemoriaLogger.Debug("  proceso agregado a memoria principal tras des-suspensión")
 	return nil
 }
