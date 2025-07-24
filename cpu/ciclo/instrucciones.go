@@ -17,11 +17,14 @@ func WRITE(dirLogica int, datos string) {
 
 	//cache
 	if global.EntradasMaxCache > 0 {
-		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos))
+		hayEnCache, _ := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica)
+		if hayEnCache{
+			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos))
 		return
+		}
 	}
 
-	//memoria
+	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
 
 	soliEscritura := structs.Escritura{
@@ -42,12 +45,14 @@ func WRITE(dirLogica int, datos string) {
 	}
 	global.CpuLogger.Debug(fmt.Sprintf("Envie WRITE a memoria, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirFisica))
 	defer respEnvio.Body.Close()
+
 	// me responde memoria:
 	global.CpuLogger.Debug(fmt.Sprintf("Me respondio el WRITE memoria, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirFisica))
 	if respEnvio.StatusCode != 200 {
 		global.CpuLogger.Error(fmt.Sprintf("Memoria devolvio error en WRITE: %d", respEnvio.StatusCode))
 	}
-	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: ESCRIBIR en MEMORIA PRINCIPAL, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
+	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: ESCRIBIR, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
+	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos))
 }
 
 func READ(dirLogica int, tamanio int) {
@@ -62,9 +67,9 @@ func READ(dirLogica int, tamanio int) {
 		}
 	}
 
+	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
 
-	//memoria
 	soliLectura := structs.Lectura{
 		PID:       global.Proceso_Ejecutando.PID,
 		DirFisica: dirFisica,
@@ -94,5 +99,6 @@ func READ(dirLogica int, tamanio int) {
 	if global.EntradasMaxCache > 0 {
 		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, datosLeidos)
 	}
-	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: LEER desde MEMORIA PRINCIPAL, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
+	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: LEER, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
+	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datosLeidos))
 }

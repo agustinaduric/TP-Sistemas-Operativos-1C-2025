@@ -78,7 +78,7 @@ func HandshakeKernel(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerObtenerInstruccion(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerObtenerInstruccion: entrada")
 
 	var req struct {
@@ -156,7 +156,7 @@ func HandshakeCpu(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerEspacioLibre: entrada")
 
 	espacio := espacioDisponible()
@@ -175,7 +175,7 @@ func HandlerEspacioLibre(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerCargarProceso: entrada")
 	var proc structs.Proceso_a_enviar
 	if err := json.NewDecoder(r.Body).Decode(&proc); err != nil {
@@ -217,7 +217,7 @@ func HandlerCargarProceso(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("Entre a HandlerEscribirMemoria")
 	var escritura structs.Escritura
 	if err := json.NewDecoder(r.Body).Decode(&escritura); err != nil {
@@ -232,7 +232,7 @@ func HandlerEscribirMemoria(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("Entre a HandlerLeerMemoria")
 	var lectura structs.Lectura
 	if err := json.NewDecoder(r.Body).Decode(&lectura); err != nil {
@@ -248,7 +248,7 @@ func HandlerLeerMemoria(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerDessuspenderProceso: entrada")
 
 	// Leer todo el cuerpo de la petición
@@ -285,7 +285,7 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// retraso de acceso tabla luego de des-suspender
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))) * time.Millisecond)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode("OK"); err != nil {
@@ -297,7 +297,7 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 
 // HandlerSuspenderProceso adapta la solicitud para aceptar un número crudo o un objeto JSON para suspensión.
 func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.SwapDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerSuspenderProceso: entrada")
 
 	// Leer todo el cuerpo de la petición
@@ -342,7 +342,7 @@ func HandlerSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerFinalizarProceso(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerFinalizarProceso: entrada")
 
 	// Leer todo el cuerpo de la petición
@@ -387,7 +387,7 @@ func HandlerFinalizarProceso(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	global.MemoriaLogger.Debug("HandlerMemoryDump: entrada")
 
 	// Leer todo el cuerpo de la petición
@@ -431,7 +431,7 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay) * time.Millisecond)
 	var req struct {
 		PID     int
 		Indices []int
@@ -441,7 +441,7 @@ func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))))
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))) * time.Millisecond)
 
 	marco := Marco(req.PID, req.Indices) //miri enviarme indices
 	w.Header().Set("Content-Type", "application/json")

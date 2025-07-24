@@ -24,6 +24,7 @@ func Clock(entrada structs.EntradaCache) {
 			}
 			global.CpuLogger.Debug(fmt.Sprintf("Reemplazo CLOCK en posicion: %d", global.PunteroClock))
 			global.CachePaginas[global.PunteroClock] = entrada
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
 			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
 			avanzarPuntero()
 			return
@@ -40,8 +41,9 @@ func ClockM(entrada structs.EntradaCache) {
 	for i := 0; i < len(global.CachePaginas); i++ {
 		entradaActual := &global.CachePaginas[global.PunteroClock]
 		if !entradaActual.BitUso && !entradaActual.BitModificado {
-			global.CachePaginas[global.PunteroClock] = entrada
 			global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
+			global.CachePaginas[global.PunteroClock] = entrada
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
 			avanzarPuntero()
 			return
 		}
@@ -56,7 +58,7 @@ func ClockM(entrada structs.EntradaCache) {
 			EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
 			global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
 			global.CachePaginas[global.PunteroClock] = entrada
-			global.CpuLogger.Debug(fmt.Sprintf("ya reemplace la entrada"))
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
 			avanzarPuntero()
 			return
 		}

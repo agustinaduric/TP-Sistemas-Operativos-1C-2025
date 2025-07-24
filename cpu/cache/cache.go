@@ -10,7 +10,6 @@ import (
 )
 
 var cachePags = global.CachePaginas
-var contadorMissIniciales = 0
 
 func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.EntradasMaxCache = tamanio
@@ -60,10 +59,6 @@ func EscribirEnCache(pid int, dirLogica int, datos []byte) {
 		BitModificado: true,
 	}
 	if len(cachePags) < global.EntradasMaxCache {
-		if contadorMissIniciales <= global.EntradasMaxCache {
-			contadorMissIniciales++
-			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Miss - Pagina: %d", pid, pagina))
-		}
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
 		cachePags = append(cachePags, nuevaEntrada)
 		global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", pid, pagina))
