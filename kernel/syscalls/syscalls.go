@@ -15,15 +15,15 @@ import (
 
 func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu string) {
 	pcbSolicitante, existe := PCB.Buscar_por_pid(NuevaSolicitudIO.PID, &structs.ColaExecute)
-	if !existe{
+	if !existe {
 		global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en excute", NuevaSolicitudIO.PID))
 		return
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO))// muestra PID Solicitud
+	global.KernelLogger.Debug(fmt.Sprintf("El proceso: %d solicita io: %s", NuevaSolicitudIO.PID, NuevaSolicitudIO.NombreIO)) // muestra PID Solicitud
 	_, hayMatch := structs.IOsRegistrados[NuevaSolicitudIO.NombreIO]
 
 	if !hayMatch { // no esta registrado
-		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))// muestra PID encontrado
+		global.KernelLogger.Debug(fmt.Sprintf("No existe IO: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID)) // muestra PID encontrado
 		global.IniciarMetrica("EXEC", "EXIT", &pcbSolicitante)
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
 		structs.ProcesoEjecutando = structs.PCB{}
@@ -35,7 +35,7 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 
 	dispositivoLibre := BuscarIOLibre(NuevaSolicitudIO.NombreIO)
 
-	if dispositivoLibre == nil{ // estan todos ocupados
+	if dispositivoLibre == nil { // estan todos ocupados
 		global.KernelLogger.Debug(fmt.Sprintf("IO ocupado: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		global.KernelLogger.Info(fmt.Sprintf("## %d - Bloqueado por IO: %s", pcbSolicitante.PID, NuevaSolicitudIO.NombreIO))
@@ -85,10 +85,10 @@ func DUMP_MEMORY(PID int) {
 	Proceso, _ = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
 	global.KernelLogger.Debug(fmt.Sprintf("me llego una Devolucion de Memoria"))
 	switch Devolucion_DumpMemory.Respuesta {
-	case "CONFIRMACION":
+	case "OK":
 		global.IniciarMetrica("BLOCKED", "READY", &Proceso)
 
-	case "ERROR":
+	default:
 		global.IniciarMetrica("BLOCKED", "EXIT", &Proceso)
 
 	}
@@ -98,14 +98,14 @@ func DUMP_MEMORY(PID int) {
 //----------------------------------- funcion axuliar para syscall io -----------------------------------//
 
 func BuscarIOLibre(nombreIO string) *structs.DispositivoIO {
-    dispositivos, existe := structs.IOsRegistrados[nombreIO]
-    if !existe {
-        return nil
-    }
-    for _, dispositivo := range dispositivos {
-        if dispositivo.PIDActual == -1 {
-            return dispositivo
-        }
-    }
-    return nil
+	dispositivos, existe := structs.IOsRegistrados[nombreIO]
+	if !existe {
+		return nil
+	}
+	for _, dispositivo := range dispositivos {
+		if dispositivo.PIDActual == -1 {
+			return dispositivo
+		}
+	}
+	return nil
 }
