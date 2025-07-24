@@ -10,6 +10,7 @@ import (
 )
 
 var cachePags = global.CachePaginas
+var contadorMissIniciales = 0
 
 func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.EntradasMaxCache = tamanio
@@ -19,8 +20,11 @@ func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Se inicializo CachePaginas con algoritmo: %s", algoritmo))
 }
 
-func BuscarEncache(pid int, pagina int) (bool, byte) {
+func BuscarEncache(pid int, dirLogica int) (bool, byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
+
+	pagina := dirLogica / global.Page_size
+
 	global.CpuLogger.Debug(fmt.Sprintf("Comenzo busqueda en CachePaginas PID: %d, Pag: %d", pid, pagina))
 	for i := 0; i < len(cachePags); i++ {
 		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina {
@@ -33,8 +37,11 @@ func BuscarEncache(pid int, pagina int) (bool, byte) {
 	return false, 0
 }
 
-func EscribirEnCache(pid int, pagina int, datos []byte) {
+func EscribirEnCache(pid int, dirLogica int, datos []byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
+
+	pagina := dirLogica / global.Page_size
+
 	for i := range cachePags {
 		if cachePags[i].PID == pid && cachePags[i].Pagina == pagina {
 			cachePags[i].Contenido = datos
@@ -53,6 +60,10 @@ func EscribirEnCache(pid int, pagina int, datos []byte) {
 		BitModificado: true,
 	}
 	if len(cachePags) < global.EntradasMaxCache {
+		if contadorMissIniciales <= global.EntradasMaxCache {
+			contadorMissIniciales++
+			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Miss - Pagina: %d", pid, pagina))
+		}
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
 		cachePags = append(cachePags, nuevaEntrada)
 		global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", pid, pagina))
@@ -86,5 +97,5 @@ func LimpiarCacheDelProceso(pid int) {
 			i++
 		}
 	}
-	global.CpuLogger.Debug(fmt.Sprintf("LImpieza cache terminada PID: %d", pid))
+	global.CpuLogger.Debug(fmt.Sprintf("Limpieza cache terminada PID: %d", pid))
 }

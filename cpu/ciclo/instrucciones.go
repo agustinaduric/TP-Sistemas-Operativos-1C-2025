@@ -14,12 +14,10 @@ import (
 
 func WRITE(dirLogica int, datos string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
-	pagina := dirLogica / global.Page_size // ver responsabilidad
-	global.CpuLogger.Debug(fmt.Sprintf("paso la division"))
+
 	//cache
 	if global.EntradasMaxCache > 0 {
-		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, pagina, []byte(datos))
-		global.CpuLogger.Debug(fmt.Sprintf("PID: %d hizo write en cache, Pagina: %d - Dato: %s", global.Proceso_Ejecutando.PID, pagina, datos))
+		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos))
 		return
 	}
 
@@ -54,11 +52,10 @@ func WRITE(dirLogica int, datos string) {
 
 func READ(dirLogica int, tamanio int) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a READ, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
-	pagina := dirLogica / global.Page_size // ver responsabilidad
 
 	//cache
 	if global.EntradasMaxCache > 0 {
-		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, pagina)
+		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica)
 		if hayEnCache { // hit
 			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string([]byte{dato})))
 			return
@@ -95,7 +92,7 @@ func READ(dirLogica int, tamanio int) {
 		global.CpuLogger.Error(fmt.Sprintf("Error al decodificar la lectura: %s", errLectura.Error()))
 	}
 	if global.EntradasMaxCache > 0 {
-		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, pagina, datosLeidos)
+		cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, datosLeidos)
 	}
 	global.CpuLogger.Info(fmt.Sprintf("PID: %d, - Accion: LEER desde MEMORIA PRINCIPAL, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
 }
