@@ -10,6 +10,8 @@ import (
 
 var MemoriaMutex sync.Mutex
 
+var ProcesosMutex sync.Mutex
+
 var MemoriaLogger *logger.LoggerStruct
 
 var MemoriaConfig config.MemoriaConfig

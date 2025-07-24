@@ -38,6 +38,8 @@ func MarcosDisponibles() int {
 }
 
 func MarcosNecesitados(tamanioProceso int) int {
+	MarcosMutex.Lock()
+	defer MarcosMutex.Unlock()
 
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("MarcosNecesitados: TamanioProceso=%d", tamanioProceso),
@@ -57,6 +59,8 @@ func MarcosNecesitados(tamanioProceso int) int {
 }
 
 func CantidadMarcos() int {
+	MarcosMutex.Lock()
+	defer MarcosMutex.Unlock()
 	return global.MemoriaConfig.MemorySize / global.MemoriaConfig.PageSize
 }
 
@@ -80,8 +84,7 @@ func LiberarMarcos(pid int) {
 }
 
 func OcuparMarcos(pid int) {
-	MarcosMutex.Lock()
-	defer MarcosMutex.Unlock()
+
 	global.MemoriaLogger.Debug(fmt.Sprintf("OcuparMarcos: inicio PID=%d", pid))
 
 	// 1. Obtener el proceso para conocer su tamaño
@@ -130,6 +133,8 @@ func RecolectarMarcos(pid int) []int {
 
 // Marco recorre la jerarquía según índices y devuelve el marco físico o -1.
 func Marco(pid int, indices []int) int {
+	MarcosMutex.Lock()
+	defer MarcosMutex.Unlock()
 	global.MemoriaLogger.Debug(fmt.Sprintf("Entre en Marco, indices=%v", indices))
 	var marco int
 	niveles := global.MemoriaConfig.NumberOfLevels

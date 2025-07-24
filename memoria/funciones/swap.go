@@ -9,8 +9,6 @@ import (
 
 var swapMutex sync.Mutex
 
-var procesosMutex sync.Mutex
-
 //SI este archivo anda es un milagr
 
 func PedidoDeDesSuspension(pid int) error {
@@ -39,8 +37,8 @@ func PedidoDeDesSuspension(pid int) error {
 }
 
 func SuspenderProceso(pid int) error {
-	procesosMutex.Lock()
-	defer procesosMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 	IncrementarBajadasSwap(pid)
 	LiberarMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
 	//LiberarPaginasProcesoTP(pid)
@@ -67,8 +65,8 @@ func SuspenderProceso(pid int) error {
 }
 
 func DesuspenderProceso(pid int) error {
-	procesosMutex.Lock()
-	defer procesosMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 	IncrementarSubidasMem(pid)
 	OcuparMarcos(pid) //esto es en la mockeada, osea el mapmemoriadeusuario, aunque sea la mockeada es super canonica
 	InicializarProcesoTP(pid)

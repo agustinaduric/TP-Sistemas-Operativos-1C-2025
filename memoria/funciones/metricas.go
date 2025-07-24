@@ -19,8 +19,8 @@ import (
 func BuscarProcesoI(pid int) (int, bool) {
 	global.MemoriaLogger.Debug(fmt.Sprintf("BuscarProcesoI: inicio PID=%d", pid))
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	for i := range global.Procesos {
 		if global.Procesos[i].PID == pid {
@@ -42,8 +42,8 @@ func IncrementarBajadasSwap(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarBajadasSwap: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -75,8 +75,8 @@ func IncrementarInstSolicitadas(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarInstSolicitadas: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -108,8 +108,8 @@ func IncrementarSubidasMem(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarSubidasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -141,8 +141,8 @@ func IncrementarLecturasMem(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarLecturasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -174,8 +174,8 @@ func IncrementarEscriturasMem(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarEscriturasMem: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -207,8 +207,8 @@ func IncrementarAccesosTabla(pid int) error {
 		return fmt.Errorf("PID=%d no existe en memoria principal", pid)
 	}
 
-	global.MemoriaMutex.Lock()
-	defer global.MemoriaMutex.Unlock()
+	global.ProcesosMutex.Lock()
+	defer global.ProcesosMutex.Unlock()
 
 	if idx < 0 || idx >= len(global.Procesos) || global.Procesos[idx].PID != pid {
 		global.MemoriaLogger.Error(fmt.Sprintf("IncrementarAccesosTabla: inconsistencia tras BuscarProcesoI para PID=%d", pid))
@@ -252,5 +252,4 @@ func CalcularAccesosTablas(cantidadMarcos int) int {
 	}
 	return total
 }
-	*/
-
+*/
