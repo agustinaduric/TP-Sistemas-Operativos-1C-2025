@@ -114,6 +114,9 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.MetricasEstado[structs.EXEC] = proceso.MetricasEstado[structs.EXEC] + 1
 		proceso.TiempoInicioEstado = time.Now()
 		proceso.Auxiliar = float64(proceso.TiemposEstado[structs.EXEC])
+
+		KernelLogger.Debug(fmt.Sprintf("## (%d) Auxiliar: %f ", proceso.PID, proceso.Auxiliar))
+
 		MutexEXEC.Lock()
 		Push_estado(&structs.ColaExecute, *proceso)
 		MutexEXEC.Unlock()
@@ -160,10 +163,11 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 	case "FINALIZADO":
 		DetenerMetrica(estadoViejo, proceso)
 		KernelLogger.Info(fmt.Sprintf("## (%d) - Finaliza el proceso", proceso.PID))
-		KernelLogger.Info(fmt.Sprintf("## (%d) - Métricas de estado: NEW (%d) (%d), READY (%d) (%d), BLOCKED (%d) (%d), SUSP. BLOCKED (%d) (%d), SUSP. READY (%d) (%d), EXIT (%d) (%d)",
+		KernelLogger.Info(fmt.Sprintf("## (%d) - Métricas de estado: NEW (%d) (%d), READY (%d) (%d), EXEC (%d) (%d), BLOCKED (%d) (%d), SUSP. BLOCKED (%d) (%d), SUSP. READY (%d) (%d), EXIT (%d) (%d)",
 			proceso.PID,
 			proceso.MetricasEstado[structs.NEW], proceso.TiemposEstado[structs.NEW],
 			proceso.MetricasEstado[structs.READY], proceso.TiemposEstado[structs.READY],
+			proceso.MetricasEstado[structs.EXEC], proceso.TiemposEstado[structs.EXEC],
 			proceso.MetricasEstado[structs.BLOCKED], proceso.TiemposEstado[structs.BLOCKED],
 			proceso.MetricasEstado[structs.SUSP_BLOCKED], proceso.TiemposEstado[structs.SUSP_BLOCKED],
 			proceso.MetricasEstado[structs.SUSP_READY], proceso.TiemposEstado[structs.SUSP_READY],
@@ -187,6 +191,10 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		proceso.TiemposEstado[structs.EXEC] += duracion
 		proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar
 		proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
+
+		KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
+		KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))
+
 	case "BLOCKED":
 		Extraer_estado(&structs.ColaBlocked, proceso.PID)
 		duracion := time.Since(proceso.TiempoInicioEstado)

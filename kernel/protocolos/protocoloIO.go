@@ -49,7 +49,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 			global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", respuestaFin.PID))
 			return
 		}
-	}
+	}else {global.IniciarMetrica("BLOCKED", "READY", &proceso)}
 	
 
 	dispositivos := structs.IOsRegistrados[respuestaFin.NombreIO]
