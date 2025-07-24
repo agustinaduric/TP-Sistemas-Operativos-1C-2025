@@ -95,17 +95,17 @@ func Enviar_datos_SRT_a_cpu(pcb_a_cargar structs.PCB, Cpu_disponible structs.CPU
 }
 
 func Mandar_interrupcion(Cpu structs.CPU_a_kernel) {
-	var Interrupcion string = "Interrupcion"
+	var Interrupcion string = "interrupcion"
 	body, err := json.Marshal(Interrupcion)
 	if err != nil {
 		global.KernelLogger.Error("error codificando la interrupcion")
 	}
-	url := fmt.Sprintf("http://%s:%d/interupcion", Cpu.IP, Cpu.Puerto)
+	url := fmt.Sprintf("http://%s:%d/interrupcion", Cpu.IP, Cpu.Puerto)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando interrupcion al puerto:%d", Cpu.Puerto))
 	}
-	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s, Mandar Interrupcion", resp.Status))
 	return
 }
 
@@ -140,14 +140,18 @@ func Buscar_CPU_libre(Proceso structs.PCB) structs.CPU_a_kernel {
 }
 
 func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
+	
 	Estimado := Proceso.EstimadoRafaga
+	global.KernelLogger.Debug(fmt.Sprintf("ingreso a Buscar_CPU_ParaDesalojar, Estimado: %f", Estimado))
+
 	longitud := len(structs.CPUs_Conectados)
 	var devuelvo structs.CPU_a_kernel = structs.CPU_a_kernel{}
 	for i := 0; i < longitud; i++ {
 		if !structs.CPUs_Conectados[i].Disponible{
+			
 		aux := time.Since(structs.CPUs_Conectados[i].Proceso.TiempoInicioEstado)
-		tiempo_restante := structs.CPUs_Conectados[i].Proceso.EstimadoRafaga - (float64(aux) - float64(structs.CPUs_Conectados[i].Proceso.Auxiliar))
-
+		tiempo_restante := structs.CPUs_Conectados[i].Proceso.EstimadoRafaga - (float64(aux))
+		global.KernelLogger.Debug(fmt.Sprintf("VICTIMA Tiempo restante: %f", tiempo_restante))
 		if tiempo_restante > Estimado {
 
 			devuelvo = structs.CPUs_Conectados[i]

@@ -69,7 +69,7 @@ func planificador_corto_plazo() {
 				global.MutexCpuDisponible.Unlock()
 				//go Ejecutando_SRT(Cpu_disponible, pcb_execute)
 				if Cpu_disponible.Identificador == "" {
-					global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL SEGUNDO ELSE"))
+					global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL PRIMER ELSE"))
 					global.KernelLogger.Debug(fmt.Sprintf("no hay cpus libres, probando desalojar alguno"))
 			
 					global.MutexCpuNoDisponibles.Lock()
@@ -85,7 +85,7 @@ func planificador_corto_plazo() {
 						global.MutexSemaforosCPU.Unlock()
 			
 						<-sem
-						global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL SEGUNDOPUNTO1 ELSE"))
+						global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL PRIMEROPUNTO1 ELSE"))
 						var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
 						if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 			
