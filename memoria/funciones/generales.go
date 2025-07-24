@@ -450,69 +450,93 @@ func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DumpMemory(pid int) error { //Cabe aclarar que
+func DumpMemory(pid int) error {
 	cfg := global.MemoriaConfig
 	global.MemoriaLogger.Debug(fmt.Sprintf("DumpMemory: inicio PID=%d", pid))
+	global.MemoriaLogger.Info(fmt.Sprintf("## PID: %d - Memory Dump solicitado", pid))
 
-	global.MemoriaLogger.Info(
-		fmt.Sprintf("## PID: %d - Memory Dump solicitado", pid),
-	)
-
-	//Agarramos todos los marcos que le pertenecen al proceso
+	// 1) Recolectar marcos asignados
 	var marcosOcupados []int
+	global.MemoriaLogger.Debug("[DumpMemory] intentando tomar MemoriaMutex para recolectar marcos")
 	global.MemoriaMutex.Lock()
-	for indice, ocupante := range global.MapMemoriaDeUsuario {
-		if ocupante == pid {
-			marcosOcupados = append(marcosOcupados, indice)
+	global.MemoriaLogger.Debug("[DumpMemory] tomó MemoriaMutex para recolectar marcos")
+	for idx, ocup := range global.MapMemoriaDeUsuario {
+		if ocup == pid {
+			marcosOcupados = append(marcosOcupados, idx)
 		}
 	}
 	global.MemoriaMutex.Unlock()
+	global.MemoriaLogger.Debug("[DumpMemory] liberó MemoriaMutex tras recolectar marcos")
 
 	if len(marcosOcupados) == 0 {
 		global.MemoriaLogger.Error(fmt.Sprintf("DumpMemory: PID=%d sin marcos asignados", pid))
 		return fmt.Errorf("PID=%d no tiene memoria asignada", pid)
 	}
 
-	//cuando le pregunte a chatgpt cuestiones sobre el memory dump dijo que
-	//era bueno ordenarlos, asi que lo hacemos
 	sort.Ints(marcosOcupados)
 
-	//archivitp
-	timestamp := time.Now().Unix()
-	nombreArchivo := fmt.Sprintf("%d-%d.dmp", pid, timestamp)
-	rutaCompleta := filepath.Join(cfg.DumpPath, nombreArchivo)
+	// 2) Asegurar que el directorio exista
+	global.MemoriaLogger.Debug(fmt.Sprintf("[DumpMemory] asegurando existencia de directorio '%s'", cfg.DumpPath))
+	if err := os.MkdirAll(cfg.DumpPath, 0755); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("DumpMemory: fallo creando directorio '%s': %s", cfg.DumpPath, err))
+		return fmt.Errorf("no se pudo crear directorio dump: %w", err)
+	}
 
-	archivo, err := os.Create(rutaCompleta)
+	// 3) Crear el archivo de dump
+	timestamp := time.Now().Format("20060102_150405.000") // con milisegundos
+	nombre := fmt.Sprintf("%d-%s.dmp", pid, timestamp)
+	ruta := filepath.Join(cfg.DumpPath, nombre)
+	global.MemoriaLogger.Debug(fmt.Sprintf("[DumpMemory] creando archivo '%s'", ruta))
+
+	archivo, err := os.Create(ruta)
 	if err != nil {
-		global.MemoriaLogger.Error(fmt.Sprintf("DUmpMemory: fallo creando '%s': %s", rutaCompleta, err))
+		global.MemoriaLogger.Error(fmt.Sprintf("DumpMemory: fallo creando '%s': %s", ruta, err))
 		return fmt.Errorf("no se pudo crear dump: %w", err)
 	}
 	defer archivo.Close()
 
-	//y de chill recoremos memoria usuario asi eszcribimos en el archivo lo q dice cada marco, insta
-	tamañoPagina := cfg.PageSize
-	for _, numeroMarco := range marcosOcupados {
-		desplazamiento := numeroMarco * tamañoPagina
-		pagina := global.MemoriaUsuario[desplazamiento : desplazamiento+tamañoPagina]
+	// 4) Escribir cada página protegiendo MemoriaUsuario
+	pageSize := cfg.PageSize
+	for _, marco := range marcosOcupados {
+		// Tomar mutex para copiar la página
+		global.MemoriaLogger.Debug("[DumpMemory] intentando tomar MemoriaMutex para copiar página")
+		global.MemoriaMutex.Lock()
+		global.MemoriaLogger.Debug("[DumpMemory] tomó MemoriaMutex para copiar página")
 
-		escritos, err := archivo.Write(pagina)
+		inicio := marco * pageSize
+		fin := inicio + pageSize
+		if inicio < 0 || fin > len(global.MemoriaUsuario) {
+			global.MemoriaLogger.Error(fmt.Sprintf(
+				"DumpMemory: marco inválido %d → rango [%d,%d) fuera de memoria",
+				marco, inicio, fin,
+			))
+			global.MemoriaMutex.Unlock()
+			return fmt.Errorf("memoria fuera de rango al dump: marco %d", marco)
+		}
+
+		// Copiamos bajo lock
+		datos := make([]byte, pageSize)
+		copy(datos, global.MemoriaUsuario[inicio:fin])
+
+		// Liberar mutex antes de escribir en disco
+		global.MemoriaMutex.Unlock()
+		global.MemoriaLogger.Debug("[DumpMemory] liberó MemoriaMutex antes de escribir página")
+
+		// Escritura
+		escritos, err := archivo.Write(datos)
 		if err != nil {
 			global.MemoriaLogger.Error(fmt.Sprintf(
-				"DumpMemory: error escribiendo marco %d: %s",
-				numeroMarco, err,
+				"DumpMemory: error escribiendo marco %d: %s", marco, err,
 			))
 			return fmt.Errorf("error al escribir dump: %w", err)
 		}
-
 		global.MemoriaLogger.Debug(fmt.Sprintf(
-			"DumpMemory: PID=%d marco %d volcado (%d bytes)",
-			pid, numeroMarco, escritos,
+			"DumpMemory: PID=%d marco %d volcado (%d bytes)", pid, marco, escritos,
 		))
 	}
 
 	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"DumpMemory: fin PID=%d, archivo '%s' creado",
-		pid, rutaCompleta,
+		"DumpMemory: fin PID=%d, archivo '%s' creado", pid, ruta,
 	))
 	return nil
 }
