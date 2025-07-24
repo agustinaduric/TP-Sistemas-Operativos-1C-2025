@@ -77,27 +77,30 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 		}
 	}
 
-	// 2) Desde aquí, leer hasta el inicio del siguiente bloque (línea PID:)
+	// 2) Desde aquí, leer TODO el contenido hasta el inicio del siguiente bloque
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("PID: %d\n", pid))
 
+	// Leer línea por línea para mejor control
 	for {
-		chunk := make([]byte, 4096)
-		n, err := reader.Read(chunk)
-		if n > 0 {
-			// Si aparece un nuevo bloque "PID: " lo detenemos antes de escribirlo
-			if idx := bytes.Index(chunk[:n], []byte("\nPID: ")); idx >= 0 {
-				buf.Write(chunk[:idx])
-				break
-			}
-			buf.Write(chunk[:n])
-		}
+		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
+				// Si llegamos al final del archivo, agregamos lo que tengamos
+				if len(line) > 0 {
+					buf.WriteString(line)
+				}
 				break
 			}
 			return nil, fmt.Errorf("leerBloqueSwap: error leyendo bloque: %w", err)
 		}
+
+		// Si encontramos el inicio de otro bloque PID, paramos ANTES de agregarlo
+		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) {
+			break
+		}
+
+		buf.WriteString(line)
 	}
 
 	return buf.Bytes(), nil
@@ -110,9 +113,13 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 //	Marco1: <bytes> \n
 //	...
 func parsearBloque(bloque []byte) (int, []byte, error) {
+	global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] RAW (%d bytes): %q", len(bloque), bloque))
 	// 1) Separamos hasta 3 trozos por "\n"
 	parts := bytes.SplitN(bloque, []byte("\n"), 3)
-
+	global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] partes encontradas: %d", len(parts)))
+	for i, p := range parts {
+		global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] parts[%d]=%q", i, p))
+	}
 	// Verificación mínima
 	if len(parts) < 2 {
 		return 0, nil, fmt.Errorf("parsearBloque: formato inválido, %d líneas", len(parts))
