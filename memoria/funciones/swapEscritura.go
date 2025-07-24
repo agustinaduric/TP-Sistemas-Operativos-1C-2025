@@ -7,8 +7,6 @@ import (
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
 )
 
-// GuardarProcesoEnSwap escribe en swap un bloque para el proceso con formato:
-// [texto header] + [datos] todo bajo swapMutex con logs de lock/unlock
 func GuardarProcesoEnSwap(pid int) error {
 	global.MemoriaMutex.Lock()
 	marcos := RecolectarMarcos(pid)
@@ -16,24 +14,61 @@ func GuardarProcesoEnSwap(pid int) error {
 
 	pageCount := len(marcos)
 
-	// Escribir header
+	// 1. Escribir header
 	if err := EScribirStringIntEnSwap("PID: ", pid); err != nil {
 		return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 	}
-	if err := EScribirStringIntEnSwap("Cantidad Paginas: ", pageCount); err != nil {
+	if err := EScribirStringIntEnSwap("Marcos: ", pageCount); err != nil {
 		return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 	}
 
-	// Escribir cada página
-	for idx, marco := range marcos {
-		err := EscribirMarcoEnSwap(marco)
+	// 2. Asegurar línea vacía si no hay marcos
+	if pageCount == 0 {
+		f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr,
-				"GuardarProcesoEnSwap: error escribiendo página %d (marco %d) para PID %d: %v\n",
-				idx, marco, pid, err)
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 		}
+		defer f.Close()
+		if _, err := f.WriteString("\n"); err != nil {
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
+		}
+		return nil
 	}
 
+	// 3. Escribir cada marco
+	for idx, marco := range marcos {
+		// Línea tipo "Marco1:"
+		f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
+		}
+		if _, err := f.WriteString(fmt.Sprintf("Marco%d:\n", idx+1)); err != nil {
+			f.Close()
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
+		}
+		f.Close()
+
+		// Contenido binario del marco
+		if err := EscribirMarcoEnSwap(marco); err != nil {
+			return fmt.Errorf("GuardarProcesoEnSwap: error escribiendo marco %d: %w", idx+1, err)
+		}
+
+		// Asegurar salto de línea tras cada marco
+		f, err = os.OpenFile(global.MemoriaConfig.SwapPath,
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
+		}
+		if _, err := f.WriteString("\n"); err != nil {
+			f.Close()
+			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
+		}
+		f.Close()
+	}
+
+	LiberarMarcos(pid)
 	return nil
 }
 
@@ -83,13 +118,7 @@ func EScribirStringIntEnSwap(prefijo string, valor int) error {
 
 // EscribirByteEnSwap toma swapMutex por byte (aunque idealmente no) con logs
 func EscribirByteEnSwap(b byte) error {
-	global.MemoriaLogger.Debug("EscribirByteEnSwap: intentando tomar swapMutex")
-	swapMutex.Lock()
-	global.MemoriaLogger.Debug("EscribirByteEnSwap: tomó swapMutex")
-	defer func() {
-		swapMutex.Unlock()
-		global.MemoriaLogger.Debug("EscribirByteEnSwap: liberó swapMutex")
-	}()
+	global.MemoriaLogger.Debug("Entre en [EscribirByteEnSwap]")
 
 	f, err := os.OpenFile(global.MemoriaConfig.SwapPath,
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0664)

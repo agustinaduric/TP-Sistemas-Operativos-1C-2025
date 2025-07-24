@@ -40,7 +40,6 @@ func SuspenderProceso(pid int) error {
 	}()
 
 	IncrementarBajadasSwap(pid)
-	LiberarMarcos(pid)
 	global.MemoriaLogger.Debug(fmt.Sprintf("SuspenderProceso: inicio PID=%d", pid))
 
 	for i := range global.Procesos {
