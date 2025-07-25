@@ -108,7 +108,7 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 		}
 
 		// Si encontramos el inicio de otro bloque PID, paramos ANTES de agregarlo
-		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) {
+		if strings.HasPrefix(line, "PID: ") {
 			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Encontrada cabecera siguiente '%s', detengo lectura de este bloque", line))
 			break
 		}
