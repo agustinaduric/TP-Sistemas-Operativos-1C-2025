@@ -53,6 +53,7 @@ func SuspenderProceso(pid int) error {
 				return err
 			}
 			global.MemoriaLogger.Debug("SuspenderProceso: proceso guardado en swap.bin")
+			//VisualizadorDeSwap()
 			return nil
 		}
 	}
