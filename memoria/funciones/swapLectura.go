@@ -16,6 +16,8 @@ import (
 // RecuperarProcesoDeSwap busca en swap el bloque para pid, restaura páginas y elimina el bloque
 func RecuperarProcesoDeSwap(pid int) error {
 
+	global.MemoriaMutex.Lock()
+	defer global.MemoriaMutex.Unlock()
 	// 1) Leer bloque completo
 	bloque, err := leerBloqueSwap(pid)
 	if err != nil {
@@ -36,13 +38,11 @@ func RecuperarProcesoDeSwap(pid int) error {
 
 	// 4) Restaurar datos en memoria principal bajo MemoriaMutex
 	pageSize := int(global.MemoriaConfig.PageSize)
-	global.MemoriaMutex.Lock()
 	for i := 0; i < pageCount; i++ {
 		marco := marcos[i]
 		inicio := marco * pageSize
 		copy(global.MemoriaUsuario[inicio:inicio+pageSize], pageBytes[i*pageSize:(i+1)*pageSize])
 	}
-	global.MemoriaMutex.Unlock()
 
 	// 5) Eliminar bloque de swap
 	if err := eliminarBloqueSwap(pid); err != nil {
@@ -96,7 +96,7 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 		}
 
 		// Si encontramos el inicio de otro bloque PID, paramos ANTES de agregarlo
-		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) {
+		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) || (err == io.EOF) {
 			break
 		}
 
