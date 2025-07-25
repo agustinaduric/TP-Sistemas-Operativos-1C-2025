@@ -17,19 +17,21 @@ func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Se inicializo CachePaginas con algoritmo: %s", algoritmo))
 }
 
-func BuscarEncache(pid int, dirLogica int) (bool, []byte) {
+func BuscarEncache(pid int, dirLogica int, tamanio int) (bool, []byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
-
+	var desplazamiento int = dirLogica % global.Page_size
 	pagina := dirLogica / global.Page_size
-
+	var dato[]byte
 	global.CpuLogger.Debug(fmt.Sprintf("Comenzo busqueda en CachePaginas PID: %d, Pag: %d", pid, pagina))
 	for i := 0; i < len(global.CachePaginas); i++ {
 		if global.CachePaginas[i].PID == pid && global.CachePaginas[i].Pagina == pagina {
 			global.CachePaginas[i].BitUso = true
 			//longitudContenido := len(global.CachePaginas[i].Contenido)-1
 			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Hit - Pagina: %d ", pid, pagina))
+			for j := dirLogica ; j< desplazamiento ; j++{
+			dato = append(dato,global.CachePaginas[i].Contenido[j])
 			//return true, global.CachePaginas[i].Contenido[longitudContenido]
-			return true, global.CachePaginas[i].Contenido
+			return true, dato }
 		}
 	}
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Miss - Pagina: %d ", pid, pagina))
@@ -38,12 +40,12 @@ func BuscarEncache(pid int, dirLogica int) (bool, []byte) {
 
 func EscribirEnCache(pid int, dirLogica int, datos []byte, bitModificado bool) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
-
+	var desplazamiento int = dirLogica % global.Page_size
 	pagina := dirLogica / global.Page_size
-
 	for i := range global.CachePaginas {
 		if global.CachePaginas[i].PID == pid && global.CachePaginas[i].Pagina == pagina {
-			global.CachePaginas[i].Contenido = datos
+			for j:= dirLogica ; j< desplazamiento ; j++{
+			global.CachePaginas[i].Contenido[j] = datos[j-dirLogica]}
 			global.CachePaginas[i].BitUso = true
 			global.CachePaginas[i].BitModificado = bitModificado
 			global.CpuLogger.Debug("Ya existe esa entrada")

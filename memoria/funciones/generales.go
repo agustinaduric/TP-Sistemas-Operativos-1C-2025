@@ -44,6 +44,7 @@ func LevantarServidorMemoria() {
 	mux.HandleFunc("/finalizar-proceso", HandlerFinalizarProceso)
 	mux.HandleFunc("/memory-dump", HandlerMemoryDump)
 	mux.HandleFunc("/solicitud-marco", HandlerSolicitudMarco)
+	mux.HandleFunc("/pagina", HandlerSolicitudPagina)
 
 	puerto := config.IntToStringConPuntos(global.MemoriaConfig.PortMemory)
 	global.MemoriaLogger.Debug(
@@ -545,3 +546,16 @@ func DumpMemory(pid int) error {
 	))
 	return nil
 }
+ func HandlerSolicitudPagina(w http.ResponseWriter, r *http.Request) {
+	var direccionFisica int
+	if err := json.NewDecoder(r.Body).Decode(&direccionFisica); err != nil {
+		global.MemoriaLogger.Error(fmt.Sprintf("Error decodificando DF: %s", err.Error()))
+		http.Error(w, "Error al decodificar la solicitud de instruccion", http.StatusBadRequest)
+		return
+	}
+	pagina := 0 // fmemoria.ObtenerPagina(direccionFisica) (pongo 0 para poder hacer el resto)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(pagina); err != nil {
+		http.Error(w, "Error al codificar respuesta de pagina", http.StatusInternalServerError)
+	}
+ }

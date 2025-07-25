@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 	"github.com/sisoputnfrba/tp-golang/cpu/cache"
@@ -17,7 +18,7 @@ func WRITE(dirLogica int, datos string) {
 
 	//cache
 	if global.EntradasMaxCache > 0 {
-		hayEnCache, _ := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica)
+		hayEnCache, _ := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica , 0)
 		if hayEnCache{
 			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos), true)
 		return
@@ -26,6 +27,8 @@ func WRITE(dirLogica int, datos string) {
 
 	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
+
+	paginaCompleta := SolicitarPagina(dirFisica)
 
 	soliEscritura := structs.Escritura{
 		PID:       global.Proceso_Ejecutando.PID,
@@ -52,7 +55,7 @@ func WRITE(dirLogica int, datos string) {
 		global.CpuLogger.Error(fmt.Sprintf("Memoria devolvio error en WRITE: %d", respEnvio.StatusCode))
 	}
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: ESCRIBIR, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
-	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos),true)
+	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, true)
 }
 
 func READ(dirLogica int, tamanio int) {
@@ -60,7 +63,7 @@ func READ(dirLogica int, tamanio int) {
 
 	//cache
 	if global.EntradasMaxCache > 0 {
-		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica)
+		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica, tamanio)
 		if hayEnCache { // hit
 			//global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string([]byte{dato})))
 			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string(dato)))
@@ -70,6 +73,8 @@ func READ(dirLogica int, tamanio int) {
 
 	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
+
+	paginaCompleta := SolicitarPagina(dirFisica)
 
 	soliLectura := structs.Lectura{
 		PID:       global.Proceso_Ejecutando.PID,
@@ -99,5 +104,28 @@ func READ(dirLogica int, tamanio int) {
 	}
 	
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: LEER, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
-	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datosLeidos), false)
+	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, false)
+}
+
+func SolicitarPagina(direccionFisica int)[]byte{
+	body, err := json.Marshal(direccionFisica)
+	if err != nil {
+		global.CpuLogger.Error(fmt.Sprintf("error codificando la DF: %s", err.Error()))
+	}
+	url := fmt.Sprintf("http://%s:%d/pagina", global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		global.CpuLogger.Error(fmt.Sprintf("error enviando DF: %d", direccionFisica))
+		return []byte{}
+	}
+	defer resp.Body.Close()
+
+	var pagina []byte
+	decoder := json.NewDecoder(resp.Body)
+	errRecepcion := decoder.Decode(&pagina)
+	if errRecepcion != nil {
+		global.CpuLogger.Error(fmt.Sprintf("error al decodificar la pagina: %s\n", errRecepcion.Error()))
+		os.Exit(1)
+	}
+	return pagina
 }
