@@ -189,11 +189,14 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		Extraer_estado(&structs.ColaExecute, proceso.PID)
 		duracion := time.Since(proceso.TiempoInicioEstado)
 		proceso.TiemposEstado[structs.EXEC] += duracion
+
+		if !proceso.Desalojado {
+			
 		proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar
 		proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
 
 		KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
-		KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))
+		KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))} else { proceso.Desalojado = false}
 
 	case "BLOCKED":
 		Extraer_estado(&structs.ColaBlocked, proceso.PID)

@@ -22,6 +22,8 @@ var Proceso_Ejecutando structs.PIDyPC_Enviar_CPU
 
 // var InstruccionRecibida = make(chan int)
 var Proceso_reconectado = make(chan int)
+var Ciclofinalizado = make(chan int)
+var SyscallEnviada = make(chan int)
 
 var Hubo_syscall bool
 var Hubo_interrupcion bool

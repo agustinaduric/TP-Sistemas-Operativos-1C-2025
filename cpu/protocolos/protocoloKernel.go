@@ -42,6 +42,7 @@ func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
 	}
 	log.Printf("respuesta del servidor: %s", resp.Status)
+	if global.Hayinterrupcion{ global.SyscallEnviada<-0}
 	global.TLB = nil
 }
 

@@ -26,6 +26,7 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 	proceso.PC = 0
 	proceso.TiemposEstado = make(map[structs.Estado]time.Duration)
 	proceso.MetricasEstado = make(map[structs.Estado]int)
+	proceso.Desalojado = false
 
 	if strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SJF") || strings.EqualFold(global.ConfigCargadito.SchedulerAlgorithm, "SRT") {
 		proceso.EstimadoRafaga = global.ConfigCargadito.InitialEstimate
@@ -44,11 +45,12 @@ func Crear(PATH string, Tamanio int) structs.PCB {
 }
 
 func Buscar_por_pid(PID int, Cola *structs.ColaProcesos) (structs.PCB, bool) {
-
-	for i := 0; i < len(*Cola); i++ {
-		if (*Cola)[i].PID == PID {
+	aux := make(structs.ColaProcesos, len(*Cola))
+	copy(aux, *Cola)
+	for i := 0; i < len(aux); i++ {
+		if aux[i].PID == PID {
 			global.KernelLogger.Debug(fmt.Sprintf("Se encontro el proceso por pid"))
-			return (*Cola)[i], true
+			return aux[i], true
 		}
 
 	}

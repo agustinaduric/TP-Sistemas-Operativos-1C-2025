@@ -12,17 +12,19 @@ import (
 )
 
 func Ciclo() {
-	global.Hubo_interrupcion = false
+	global.Hayinterrupcion = false
 	global.Hubo_syscall = false
 	global.CpuLogger.Debug("Inicio de ciclo")
 
 	for {
 		fetch() // busca la siguiente instrucción.
 		decode_and_execute()
-		CheckInterrupt() // se fija si hay interrupciones.
-		if global.Hubo_syscall || global.Hubo_interrupcion {
-			break
+		go CheckInterrupt() // se fija si hay interrupciones.
+		if  global.Hayinterrupcion {
+			global.Ciclofinalizado<-0
+			return
 		}
+		if global.Hubo_syscall { return }
 	}
 }
 
@@ -69,7 +71,7 @@ func decode_and_execute() {
 			},
 		}
 		global.Hubo_syscall = true
-		protocolos.Enviar_syscall(devolucion)
+		go protocolos.Enviar_syscall(devolucion)
 		
 	case "INIT_PROC":
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: INIT_PROC - %s - %s", global.Proceso_Ejecutando.PID, global.Instruccion_ejecutando[1], global.Instruccion_ejecutando[2]))
@@ -81,7 +83,7 @@ func decode_and_execute() {
 			Tamaño:        global.String_a_int(global.Instruccion_ejecutando[2]),
 			Identificador: global.Nombre,
 		}
-		protocolos.Enviar_syscall(devolucion)
+		go protocolos.Enviar_syscall(devolucion)
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d se envio a kernel para el init_proc", global.Proceso_Ejecutando.PID))
 		global.Proceso_Ejecutando.PC++
 		<-global.Proceso_reconectado
@@ -98,7 +100,7 @@ func decode_and_execute() {
 		}
 		global.Proceso_Ejecutando.PC++
 		global.Hubo_syscall = true
-		protocolos.Enviar_syscall(devolucion)
+		go protocolos.Enviar_syscall(devolucion)
 
 	case "EXIT":
 		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
@@ -110,24 +112,37 @@ func decode_and_execute() {
 			Identificador: global.Nombre,
 		}
 		//global.Proceso_Ejecutando.PC++
-		global.Hubo_interrupcion = true
-		protocolos.Enviar_syscall(devolucion)
+		go protocolos.Enviar_syscall(devolucion)
+		global.Hubo_syscall = true
+		
 	}
 
 }
 
 func CheckInterrupt() {
 	if global.Hayinterrupcion {
+		if global.Hubo_syscall{
+			var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
+				PID:           global.Proceso_Ejecutando.PID,
+				PC:            global.Proceso_Ejecutando.PC,
+				Motivo:        "REPLANIFICARPLUS",
+				Identificador: global.Nombre}
+			<-global.Ciclofinalizado
+			<-global.SyscallEnviada
+			protocolos.Enviar_syscall(devolucion)
+			
+			return
+		} else{
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,
 			PC:            global.Proceso_Ejecutando.PC,
 			Motivo:        "REPLANIFICAR",
 			Identificador: global.Nombre}
-		global.Hubo_interrupcion = true
+		<-global.Ciclofinalizado
 		protocolos.Enviar_syscall(devolucion)
 		
 		return
-
+		}
 	}
 	return
 }

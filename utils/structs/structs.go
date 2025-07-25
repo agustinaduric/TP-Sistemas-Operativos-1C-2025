@@ -35,6 +35,7 @@ type PCB struct {
 	IOPendiente         string                   // nombre de IO en la que esta bloqueado
 	IOPendienteDuracion time.Duration
 	Auxiliar            float64
+	Desalojado			bool
 	//Registros        RegistrosCPU
 }
 

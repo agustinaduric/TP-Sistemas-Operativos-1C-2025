@@ -204,7 +204,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	global.KernelLogger.Debug("me llego una Devolucion del CPU")
 	log.Printf("PID devuelto: %d", Devolucion.PID)
 	global.KernelLogger.Debug(fmt.Sprintf("PID devuelto: %d", Devolucion.PID))
-	proceso, _ := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
+	proceso,_ := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
 	PCB.Actualizar_PC(proceso.PID, Devolucion.PC)
 	proceso.PC = Devolucion.PC
 	Cpu := Buscar_CPU(Devolucion.Identificador)
@@ -234,12 +234,19 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 
 	case structs.REPLANIFICAR:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", proceso.PID))
-		global.IniciarMetrica("EXEC", "READY", &proceso)
-		global.MutexSemaforosCPU.Lock()
+		proceso.Desalojado = true
 		sem := global.SemaforosCPU[Cpu.Identificador]
-		global.MutexSemaforosCPU.Unlock()
-
+		global.KernelLogger.Info(fmt.Sprintf("Mandando señal de cpu desalojada"))
 		sem <- struct{}{}
+		
+		global.IniciarMetrica("EXEC", "READY", &proceso)
+		
+	case structs.REPLANIFICARPLUS:
+		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", Devolucion.PID))
+		sem := global.SemaforosCPU[Cpu.Identificador]
+		global.KernelLogger.Info(fmt.Sprintf("Mandando señal de cpu desalojada"))
+		sem <- struct{}{}
+		
 	}
 	return
 }

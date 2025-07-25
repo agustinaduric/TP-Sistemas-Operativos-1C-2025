@@ -14,6 +14,7 @@ const (
 	DUMP_MEMORY  string = "DUMP_MEMORY"
 	EXIT_PROC    string = "EXIT"
 	REPLANIFICAR string = "REPLANIFICAR"
+	REPLANIFICARPLUS string = "REPLANIFICARPLUS"
 )
 
 //Tengo dudas de donde meter al offset, asi q no lo meti

@@ -80,9 +80,9 @@ func planificador_corto_plazo() {
 						global.KernelLogger.Debug(fmt.Sprintf("se encontro cpu: %s para desalojar", Cpu_disponible.Identificador))
 						protocolos.Mandar_interrupcion(Cpu_disponible)
 			
-						global.MutexSemaforosCPU.Lock()
+						
 						sem := global.SemaforosCPU[Cpu_disponible.Identificador]
-						global.MutexSemaforosCPU.Unlock()
+						
 			
 						<-sem
 						global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL PRIMEROPUNTO1 ELSE"))
