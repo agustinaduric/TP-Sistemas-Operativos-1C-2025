@@ -12,8 +12,10 @@ func GuardarProcesoEnSwap(pid int) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("[GuardarProcesoEnSwap] Inicio PID=%d", pid))
 
 	global.MemoriaMutex.Lock()
+
+	defer global.MemoriaMutex.Unlock()
+
 	marcos := RecolectarMarcos(pid)
-	global.MemoriaMutex.Unlock()
 	global.MemoriaLogger.Debug(fmt.Sprintf("[GuardarProcesoEnSwap] Marcos recolectados: %v", marcos))
 
 	pageCount := len(marcos)
@@ -112,9 +114,7 @@ func EscribirMarcoEnSwap(marco int) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("[EscribirMarcoEnSwap] Inicio marco=%d, pageSize=%d", marco, pageSize))
 
 	// rango
-	global.MemoriaMutex.Lock()
 	memLen := len(global.MemoriaUsuario)
-	global.MemoriaMutex.Unlock()
 	global.MemoriaLogger.Debug(fmt.Sprintf("[EscribirMarcoEnSwap] MemoriaUsuario len=%d", memLen))
 
 	if marco < 0 || marco*pageSize+pageSize > memLen {
@@ -123,9 +123,7 @@ func EscribirMarcoEnSwap(marco int) error {
 
 	// copiar datos
 	buf := make([]byte, pageSize)
-	global.MemoriaMutex.Lock()
 	copy(buf, global.MemoriaUsuario[marco*pageSize:(marco+1)*pageSize])
-	global.MemoriaMutex.Unlock()
 	global.MemoriaLogger.Debug(fmt.Sprintf("[EscribirMarcoEnSwap] Copiado buffer para marco %d: %v", marco, buf))
 
 	// volcar datos

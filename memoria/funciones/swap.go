@@ -45,7 +45,6 @@ func SuspenderProceso(pid int) error {
 	for i := range global.Procesos {
 		if global.Procesos[i].PID == pid {
 			global.Procesos[i].EnSwap = true
-			global.Procesos[i].Metricas.BajadasSwap++
 			global.MemoriaLogger.Debug(fmt.Sprintf("  marcado EnSwap, BajadasSwap=%d", global.Procesos[i].Metricas.BajadasSwap))
 
 			if err := GuardarProcesoEnSwap(pid); err != nil {
@@ -86,7 +85,6 @@ func DesuspenderProceso(pid int) error {
 	for i := range global.Procesos {
 		if global.Procesos[i].PID == pid {
 			global.Procesos[i].EnSwap = false
-			global.Procesos[i].Metricas.SubidasMem++
 			global.MemoriaLogger.Debug(fmt.Sprintf("  actualizado EnSwap=false, SubidasMem=%d",
 				global.Procesos[i].Metricas.SubidasMem))
 			return nil
