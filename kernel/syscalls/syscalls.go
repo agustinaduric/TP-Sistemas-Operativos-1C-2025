@@ -83,7 +83,7 @@ func DUMP_MEMORY(PID int) {
 
 	var Proceso structs.PCB
 	Proceso, _ = PCB.Buscar_por_pid(Devolucion_DumpMemory.PID, &structs.ColaBlocked)
-	global.KernelLogger.Debug(fmt.Sprintf("me llego una Devolucion de Memoria"))
+	global.KernelLogger.Debug(fmt.Sprintf("me llego una Devolucion de Memoria: %s", Devolucion_DumpMemory.Respuesta))
 	switch Devolucion_DumpMemory.Respuesta {
 	case "OK":
 		global.IniciarMetrica("BLOCKED", "READY", &Proceso)
