@@ -285,7 +285,7 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// retraso de acceso tabla luego de des-suspender
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))) * time.Millisecond)
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay*CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))) * time.Millisecond)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode("OK"); err != nil {
@@ -423,8 +423,13 @@ func HandlerMemoryDump(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode("OK"); err != nil {
+	resp := structs.Devolucion_DumpMemory{
+		PID:       reqObj.PID,
+		Respuesta: "OK",
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("HandlerMemoryDump: respuesta JSON falló: %s", err))
+		http.Error(w, "Error enviando respuesta", http.StatusInternalServerError)
 	} else {
 		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerMemoryDump: dump generado para PID=%d", reqObj.PID))
 	}
@@ -441,7 +446,7 @@ func HandlerSolicitudMarco(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//retraso de acceso tabla
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay * CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))) * time.Millisecond)
+	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay*CalcularAccesosTablas(len(RecolectarMarcos(req.PID)))) * time.Millisecond)
 
 	marco := Marco(req.PID, req.Indices) //miri enviarme indices
 	w.Header().Set("Content-Type", "application/json")

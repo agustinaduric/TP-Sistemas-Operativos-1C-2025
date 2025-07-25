@@ -2,6 +2,7 @@ package fmemoria
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/sisoputnfrba/tp-golang/memoria/global"
@@ -93,4 +94,18 @@ func DesuspenderProceso(pid int) error {
 
 	global.MemoriaLogger.Debug("  proceso agregado a memoria principal tras des-suspensión")
 	return nil
+}
+
+func LimpiarSwap() {
+	path := global.MemoriaConfig.SwapPath
+	if err := os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+
+			global.MemoriaLogger.Debug("LimpiarSwap: no había swap previo, nada que borrar")
+		} else {
+			global.MemoriaLogger.Debug(fmt.Sprintf("LimpiarSwap: error borrando '%s': %v", path, err))
+		}
+	} else {
+		global.MemoriaLogger.Debug(fmt.Sprintf("Swap Previo ELiminado"))
+	}
 }

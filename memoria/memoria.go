@@ -14,5 +14,6 @@ func main() {
 	fmemoria.IniciarConfiguracionMemoria(configPath)
 	global.MemoriaLogger = fmemoria.ConfigurarLog()
 	fmemoria.IniciarMemoriaUsuario()
+	fmemoria.LimpiarSwap()
 	fmemoria.LevantarServidorMemoria()
 }
