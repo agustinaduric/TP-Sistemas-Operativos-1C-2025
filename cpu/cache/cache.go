@@ -17,7 +17,7 @@ func InicializarCachePaginas(tamanio int, algoritmo string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Se inicializo CachePaginas con algoritmo: %s", algoritmo))
 }
 
-func BuscarEncache(pid int, dirLogica int) (bool, byte) {
+func BuscarEncache(pid int, dirLogica int) (bool, []byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
 
 	pagina := dirLogica / global.Page_size
@@ -26,13 +26,14 @@ func BuscarEncache(pid int, dirLogica int) (bool, byte) {
 	for i := 0; i < len(global.CachePaginas); i++ {
 		if global.CachePaginas[i].PID == pid && global.CachePaginas[i].Pagina == pagina {
 			global.CachePaginas[i].BitUso = true
-			longitudContenido := len(global.CachePaginas[i].Contenido)-1
+			//longitudContenido := len(global.CachePaginas[i].Contenido)-1
 			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Hit - Pagina: %d ", pid, pagina))
-			return true, global.CachePaginas[i].Contenido[longitudContenido]
+			//return true, global.CachePaginas[i].Contenido[longitudContenido]
+			return true, global.CachePaginas[i].Contenido
 		}
 	}
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Miss - Pagina: %d ", pid, pagina))
-	return false, 0
+	return false, []byte{}
 }
 
 func EscribirEnCache(pid int, dirLogica int, datos []byte, bitModificado bool) {
