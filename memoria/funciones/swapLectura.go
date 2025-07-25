@@ -54,25 +54,32 @@ func RecuperarProcesoDeSwap(pid int) error {
 
 func leerBloqueSwap(pid int) ([]byte, error) {
 	path := global.MemoriaConfig.SwapPath
+	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Abriendo swap en '%s'", path))
 	f, err := os.Open(path)
 	if err != nil {
+		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error abriendo '%s': %v", path, err))
 		return nil, fmt.Errorf("leerBloqueSwap: no pudo abrir %s: %w", path, err)
 	}
 	defer f.Close()
 
 	marker := fmt.Sprintf("PID: %d", pid)
+	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Buscando marcador '%s'", marker))
 	reader := bufio.NewReader(f)
 
 	// 1) Avanzar hasta encontrar la línea "PID: <pid>"
 	for {
 		line, err := reader.ReadString('\n')
+		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Leyendo línea de cabecera: %q (err=%v)", line, err))
 		if err != nil {
 			if err == io.EOF {
+				global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] EOF antes de encontrar PID=%d", pid))
 				return nil, fmt.Errorf("leerBloqueSwap: PID=%d no encontrado", pid)
 			}
+			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error lectura inicial: %v", err))
 			return nil, fmt.Errorf("leerBloqueSwap: lectura fallida: %w", err)
 		}
 		if strings.HasPrefix(line, marker) {
+			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Encontrado marcador en línea: %q", line))
 			break
 		}
 	}
@@ -80,29 +87,36 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 	// 2) Desde aquí, leer TODO el contenido hasta el inicio del siguiente bloque
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("PID: %d\n", pid))
+	global.MemoriaLogger.Debug("[leerBloqueSwap] Iniciando acumulación de bloque en buffer")
 
 	// Leer línea por línea para mejor control
 	for {
 		line, err := reader.ReadString('\n')
+		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Leyendo línea de bloque: %q (err=%v)", line, err))
+
 		if err != nil {
 			if err == io.EOF {
-				// Si llegamos al final del archivo, agregamos lo que tengamos
 				if len(line) > 0 {
+					global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] EOF con datos parciales: %q, lo añado", line))
 					buf.WriteString(line)
 				}
+				global.MemoriaLogger.Debug("[leerBloqueSwap] EOF alcanzado, fin de bloque")
 				break
 			}
+			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error leyendo bloque: %v", err))
 			return nil, fmt.Errorf("leerBloqueSwap: error leyendo bloque: %w", err)
 		}
 
 		// Si encontramos el inicio de otro bloque PID, paramos ANTES de agregarlo
-		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) || (err == io.EOF) {
+		if strings.HasPrefix(line, "PID: ") && !strings.HasPrefix(line, marker) {
+			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Encontrada cabecera siguiente '%s', detengo lectura de este bloque", line))
 			break
 		}
 
 		buf.WriteString(line)
 	}
 
+	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Bloque leído (%d bytes)", buf.Len()))
 	return buf.Bytes(), nil
 }
 
