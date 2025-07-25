@@ -14,10 +14,14 @@ import (
 
 func Clock(entrada structs.EntradaCache) {
 	global.CpuLogger.Debug("Entro a clock")
-	for i := 0; i < len(global.CachePaginas); i++ {
+	for {
+		global.CpuLogger.Debug("pase el for")
 		entradaActual := &global.CachePaginas[global.PunteroClock]
+		global.CpuLogger.Debug(fmt.Sprintf("contenido: %s y su bit de uso es %t", string(entradaActual.Contenido), entradaActual.BitUso))
 		if !entradaActual.BitUso {
+			global.CpuLogger.Debug("pase el if bit uso 0")
 			if entradaActual.BitModificado {
+				global.CpuLogger.Debug("pase el if modificado")
 				global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada, se la mando a memoria antes de reemplazar"))
 				EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
 				global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
@@ -29,6 +33,7 @@ func Clock(entrada structs.EntradaCache) {
 			avanzarPuntero()
 			return
 		}
+		global.CpuLogger.Debug("NO pase por el if bit uso")
 		entradaActual.BitUso = false
 		global.CpuLogger.Debug("Bit de uso pasa a 0 y continuo")
 		avanzarPuntero()
@@ -37,36 +42,37 @@ func Clock(entrada structs.EntradaCache) {
 
 func ClockM(entrada structs.EntradaCache) {
 	global.CpuLogger.Debug("Entro a clock-m")
-	// primera vuelta (U = 0 y M = 0)
-	for i := 0; i < len(global.CachePaginas); i++ {
-		entradaActual := &global.CachePaginas[global.PunteroClock]
-		if !entradaActual.BitUso && !entradaActual.BitModificado {
-			global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
-			global.CachePaginas[global.PunteroClock] = entrada
-			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
+	for {
+		// primera vuelta (U = 0 y M = 0)
+		for i := 0; i < len(global.CachePaginas); i++ {
+			entradaActual := &global.CachePaginas[global.PunteroClock]
+			if !entradaActual.BitUso && !entradaActual.BitModificado {
+				global.CpuLogger.Debug(fmt.Sprintf("Reemplazo, U= 0 y M=0"))
+				global.CachePaginas[global.PunteroClock] = entrada
+				global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
+				avanzarPuntero()
+				return
+			}
+			entradaActual.BitUso = false
 			avanzarPuntero()
-			return
 		}
-		entradaActual.BitUso = false
-		avanzarPuntero()
-	}
-	//segunda vuelta
-	for i := 0; i < len(global.CachePaginas); i++ {
-		entradaActual := &global.CachePaginas[global.PunteroClock]
-		if !entradaActual.BitUso && entradaActual.BitModificado {
-			global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada U=0 M=1, se la mando a memoria antes de reemplazar"))
-			EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
-			global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
-			global.CachePaginas[global.PunteroClock] = entrada
-			global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
+		//segunda vuelta
+		for i := 0; i < len(global.CachePaginas); i++ {
+			entradaActual := &global.CachePaginas[global.PunteroClock]
+			if !entradaActual.BitUso && entradaActual.BitModificado {
+				global.CpuLogger.Debug(fmt.Sprintf("Entrada modificada U=0 M=1, se la mando a memoria antes de reemplazar"))
+				EnviarEscribirAMemoria(global.ConfigCargadito.IpMemory, global.ConfigCargadito.PortMemory, entradaActual)
+				global.CpuLogger.Debug(fmt.Sprintf("Se envio la entrada a memoria antes de reemplazar"))
+				global.CachePaginas[global.PunteroClock] = entrada
+				global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", entrada.PID, entrada.Pagina))
+				avanzarPuntero()
+				return
+			}
+			entradaActual.BitUso = false
+			global.CpuLogger.Debug("Bit de uso pasa a 0 y continuo")
 			avanzarPuntero()
-			return
 		}
-		entradaActual.BitUso = false
-		global.CpuLogger.Debug("Bit de uso pasa a 0 y continuo")
-		avanzarPuntero()
 	}
-	global.CpuLogger.Error(fmt.Sprintf("NO hay victima para clock-m"))
 }
 
 func avanzarPuntero() {
@@ -106,5 +112,5 @@ func EnviarEscribirAMemoria(ip string, puerto int, entrada *structs.EntradaCache
 	if resp.StatusCode != 200 {
 		log.Printf("Memoria respondio con error en Memory Update: %d", resp.StatusCode)
 	}
-	global.CpuLogger.Info(fmt.Sprintf("PID: %d - Memory Update - Pagina: %d - Marco: %d", entrada.PID, entrada.Pagina, marco))
+	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Memory Update - Pagina: %d - Marco: %d", entrada.PID, entrada.Pagina, marco))
 }

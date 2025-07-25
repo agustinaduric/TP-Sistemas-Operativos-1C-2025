@@ -60,10 +60,10 @@ func BuscarEntradaTLB(nroPagina int) global.ResultadoBusqueda {
 func ConsultarMarcoEnTLB(nroPagina int) global.RespuestaTLB {
 	var respuesta global.ResultadoBusqueda = BuscarEntradaTLB(nroPagina)
 	if respuesta == global.SEARCH_OK {
-		global.CpuLogger.Info(fmt.Sprintf("PID: <%d> - TLB HIT - Pagina: <%d>", global.Proceso_Ejecutando.PID, nroPagina))
+		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - TLB HIT - Pagina: %d", global.Proceso_Ejecutando.PID, nroPagina))
 		return global.HIT
 	}
-	global.CpuLogger.Info(fmt.Sprintf("PID: <%d> - TLB MISS - Pagina: <%d>", global.Proceso_Ejecutando.PID, nroPagina))
+	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - TLB MISS - Pagina: %d", global.Proceso_Ejecutando.PID, nroPagina))
 	return global.MISS
 }
 

@@ -28,7 +28,6 @@ func SolicitarInstruccion() {
 		log.Printf("error enviando proceso de PID:%d puerto:%d", global.Proceso_Ejecutando.PID, global.ConfigCargadito.PortMemory)
 		return
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
 	defer resp.Body.Close()
 
 	var instruccion structs.Instruccion

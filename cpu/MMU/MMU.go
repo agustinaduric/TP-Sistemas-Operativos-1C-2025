@@ -16,7 +16,7 @@ func DL_a_DF(direccion_logica int) int {
 
 	var nro_marco int = ObtenerMarco(nro_pagina)
 
-	global.CpuLogger.Info(fmt.Sprintf("PID: <%d> - OBTENER MARCO - Página: <%d> - Marco: <%d>", global.Proceso_Ejecutando.PID, nro_pagina, nro_marco))
+	global.CpuLogger.Info(fmt.Sprintf("## PID: %d - OBTENER MARCO - Página: %d - Marco: %d", global.Proceso_Ejecutando.PID, nro_pagina, nro_marco))
 
 	var direccion_fisica int = (nro_marco * global.Page_size) + desplazamiento
 	return direccion_fisica
