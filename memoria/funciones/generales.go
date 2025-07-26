@@ -546,16 +546,16 @@ func DumpMemory(pid int) error {
 	))
 	return nil
 }
- func HandlerSolicitudPagina(w http.ResponseWriter, r *http.Request) {
+func HandlerSolicitudPagina(w http.ResponseWriter, r *http.Request) {
 	var direccionFisica int
 	if err := json.NewDecoder(r.Body).Decode(&direccionFisica); err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("Error decodificando DF: %s", err.Error()))
 		http.Error(w, "Error al decodificar la solicitud de instruccion", http.StatusBadRequest)
 		return
 	}
-	pagina := 0 // fmemoria.ObtenerPagina(direccionFisica) (pongo 0 para poder hacer el resto)
+	pagina := ObtenerPagina(direccionFisica)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(pagina); err != nil {
 		http.Error(w, "Error al codificar respuesta de pagina", http.StatusInternalServerError)
 	}
- }
+}

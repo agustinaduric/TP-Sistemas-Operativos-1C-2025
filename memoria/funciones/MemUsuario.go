@@ -86,3 +86,41 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 
 	global.MemoriaMutex.Unlock()
 }
+
+func ObtenerPagina(direccionFisica int) []byte {
+	// 1) Obtener el tamaño de página
+	tamanioPagina := int(global.MemoriaConfig.PageSize)
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"[ObtenerPagina] Dirección física recibida: %d, Tamaño de página: %d",
+		direccionFisica, tamanioPagina,
+	))
+
+	// 2) Calcular número de página e índices de inicio y fin
+	numeroPagina := int(direccionFisica / tamanioPagina)
+	inicio := numeroPagina * tamanioPagina
+	fin := inicio + tamanioPagina
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"[ObtenerPagina] Página calculada: %d (bytes %d a %d)",
+		numeroPagina, inicio, fin-1,
+	))
+
+	// 3) Verificar que no se excedan los límites de memoria
+	totalMemoria := len(global.MemoriaUsuario)
+	if fin > totalMemoria {
+		global.MemoriaLogger.Error(fmt.Sprintf(
+			"[ObtenerPagina] Índice final %d excede tamaño de memoria (%d)",
+			fin, totalMemoria,
+		))
+		return []byte{}
+	}
+
+	// 4) Copiar los datos de la página
+	datosPagina := make([]byte, tamanioPagina)
+	copy(datosPagina, global.MemoriaUsuario[inicio:fin])
+	global.MemoriaLogger.Debug(fmt.Sprintf(
+		"[ObtenerPagina] Datos de la página %d extraídos: %v",
+		numeroPagina, datosPagina,
+	))
+
+	return datosPagina
+}
