@@ -53,7 +53,6 @@ func ClockM(entrada structs.EntradaCache) {
 				avanzarPuntero()
 				return
 			}
-			entradaActual.BitUso = false
 			avanzarPuntero()
 		}
 		//segunda vuelta
@@ -80,6 +79,7 @@ func avanzarPuntero() {
 	if global.PunteroClock >= global.EntradasMaxCache {
 		global.PunteroClock = 0
 		global.CpuLogger.Debug("El puntero de clock volvio a cero")
+		return
 	}
 	global.CpuLogger.Debug("El puntero de clock avanzo")
 }

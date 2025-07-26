@@ -64,7 +64,7 @@ func EscribirEnCache(pid int, dirLogica int, datos []byte, bitModificado bool) {
 		Pagina:        pagina,
 		Contenido:     datos,
 		BitUso:        true,
-		BitModificado: true,
+		BitModificado: bitModificado,
 	}
 	if len(global.CachePaginas) < global.EntradasMaxCache {
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
