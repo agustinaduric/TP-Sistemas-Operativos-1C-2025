@@ -74,6 +74,11 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 		)
 		return
 	}
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("[PrepararEscritura] PID=%d, bytes a escribir en %d..%d: %v",
+			pid, direccionFisica, limite-1, bytesTexto,
+		),
+	)
 
 	for i := 0; i < longitud; i++ {
 		global.MemoriaUsuario[direccionFisica+i] = bytesTexto[i]
@@ -82,6 +87,14 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 	global.MemoriaLogger.Info(
 		fmt.Sprintf("## PID: %d - Escritura - Dir. Física: %d - Tamaño: %d",
 			pid, direccionFisica, longitud),
+	)
+	// 3) Leer de nuevo el bloque escrito y mostrarlo en Debug
+	escrito := make([]byte, longitud)
+	copy(escrito, global.MemoriaUsuario[direccionFisica:limite])
+	global.MemoriaLogger.Debug(
+		fmt.Sprintf("[VerificarEscritura] PID=%d, bytes leídos en %d..%d: %v",
+			pid, direccionFisica, limite-1, escrito,
+		),
 	)
 
 	global.MemoriaMutex.Unlock()
