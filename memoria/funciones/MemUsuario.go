@@ -90,7 +90,7 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 	)
 	// 3) Leer de nuevo el bloque escrito y mostrarlo en Debug
 	escrito := make([]byte, longitud)
-	copy(escrito, global.MemoriaUsuario[direccionFisica:limite])
+	copy(escrito, global.MemoriaUsuario[direccionFisica:limite-1])
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("[VerificarEscritura] PID=%d, bytes leídos en %d..%d: %v",
 			pid, direccionFisica, limite-1, escrito,
@@ -110,26 +110,26 @@ func ObtenerPagina(direccionFisica int) []byte {
 
 	// 2) Calcular número de página e índices de inicio y fin
 	numeroPagina := int(direccionFisica / tamanioPagina)
-	inicio := numeroPagina * tamanioPagina
-	fin := inicio + tamanioPagina
+	//inicio := numeroPagina * tamanioPagina
+	//fin := inicio + tamanioPagina
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"[ObtenerPagina] Página calculada: %d (bytes %d a %d)",
-		numeroPagina, inicio, fin-1,
+		numeroPagina, direccionFisica, direccionFisica+tamanioPagina,
 	))
 
 	// 3) Verificar que no se excedan los límites de memoria
 	totalMemoria := len(global.MemoriaUsuario)
-	if fin > totalMemoria {
+	if (direccionFisica + tamanioPagina - 1) > totalMemoria {
 		global.MemoriaLogger.Error(fmt.Sprintf(
 			"[ObtenerPagina] Índice final %d excede tamaño de memoria (%d)",
-			fin, totalMemoria,
+			(direccionFisica + tamanioPagina), totalMemoria,
 		))
 		return []byte{}
 	}
 
 	// 4) Copiar los datos de la página
 	datosPagina := make([]byte, tamanioPagina)
-	copy(datosPagina, global.MemoriaUsuario[inicio:fin])
+	copy(datosPagina, global.MemoriaUsuario[direccionFisica:direccionFisica+tamanioPagina])
 	global.MemoriaLogger.Debug(fmt.Sprintf(
 		"[ObtenerPagina] Datos de la página %d extraídos: %v",
 		numeroPagina, datosPagina,

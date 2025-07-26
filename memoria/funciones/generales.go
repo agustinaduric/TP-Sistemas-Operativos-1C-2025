@@ -547,6 +547,7 @@ func DumpMemory(pid int) error {
 	return nil
 }
 func HandlerSolicitudPagina(w http.ResponseWriter, r *http.Request) {
+	global.MemoriaLogger.Debug(fmt.Sprintf("INGRESE al HandlerSolicitudPagina"))
 	var direccionFisica int
 	if err := json.NewDecoder(r.Body).Decode(&direccionFisica); err != nil {
 		global.MemoriaLogger.Error(fmt.Sprintf("Error decodificando DF: %s", err.Error()))
