@@ -44,6 +44,9 @@ func ObtenerMarco(nro_pagina int) int {
 }
 
 func SolicitarMarco(indice []int) int {
+
+	global.CpuLogger.Debug("ENTRE A SOLICITAR MARCO")
+
 	var Solicitud global.SolicitudDeMarco = global.SolicitudDeMarco{
 		PID:     global.Proceso_Ejecutando.PID,
 		Indices: indice,
