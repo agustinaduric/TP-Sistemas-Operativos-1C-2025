@@ -76,7 +76,7 @@ func ClockM(entrada structs.EntradaCache) {
 
 func avanzarPuntero() {
 	global.PunteroClock++
-	if global.PunteroClock >= global.EntradasMaxCache {
+	if global.PunteroClock >= global.ConfigCargadito.CacheEntries {
 		global.PunteroClock = 0
 		global.CpuLogger.Debug("El puntero de clock volvio a cero")
 		return

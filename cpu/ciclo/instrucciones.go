@@ -15,17 +15,25 @@ import (
 
 func WRITE(dirLogica int, datos string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
-
+	
 	//cache
 	if global.ConfigCargadito.CacheEntries != 0 {
-	if global.EntradasMaxCache > 0 {
+	
 		hayEnCache, _ := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica, 0)
 		if hayEnCache {
 			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos), true)
 			return
-		}
+		} else{
+			dirFisica := mmu.DL_a_DF(dirLogica)
+			paginaCompleta := SolicitarPagina(dirFisica)
+			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, false)
+			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos), true)
+			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: ESCRIBIR desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string(datos)))
+			return
+		  }
+		
 	}
-	}
+	
 
 	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
@@ -56,10 +64,6 @@ func WRITE(dirLogica int, datos string) {
 	}
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: ESCRIBIR, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
 	
-	if global.ConfigCargadito.CacheEntries != 0 {
-	paginaCompleta := SolicitarPagina(dirFisica)
-	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, true)
-	}
 }
 
 func READ(dirLogica int, tamanio int) {
@@ -67,14 +71,21 @@ func READ(dirLogica int, tamanio int) {
 
 	//cache
 	if global.ConfigCargadito.CacheEntries != 0 {
-	if global.EntradasMaxCache > 0 {
+	
 		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica, tamanio)
 		if hayEnCache { // hit
 			//global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string([]byte{dato})))
 			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string(dato)))
 			return
+		}else{
+			dirFisica := mmu.DL_a_DF(dirLogica)
+			paginaCompleta := SolicitarPagina(dirFisica)
+			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, false)
+			dato := cache.LeerEncache(global.Proceso_Ejecutando.PID, dirLogica, tamanio)
+			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Acción: LEER desde CACHE - Dirección Física: %d - Valor: %s", global.Proceso_Ejecutando.PID, dirLogica, string(dato)))
+			return
 		}
-	}
+	
     }
 
 	//tlb - memoria
@@ -109,10 +120,6 @@ func READ(dirLogica int, tamanio int) {
 
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: LEER, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
 	
-	if global.ConfigCargadito.CacheEntries != 0 {
-	paginaCompleta := SolicitarPagina(dirFisica)
-	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, false)
-	}
 }
 
 func SolicitarPagina(direccionFisica int) []byte {

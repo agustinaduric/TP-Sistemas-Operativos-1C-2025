@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -103,7 +102,6 @@ func decode_and_execute() {
 		go protocolos.Enviar_syscall(devolucion)
 
 	case "EXIT":
-		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Ejecutando: EXIT", global.Proceso_Ejecutando.PID))
 		var devolucion structs.DevolucionCpu = structs.DevolucionCpu{
 			PID:           global.Proceso_Ejecutando.PID,

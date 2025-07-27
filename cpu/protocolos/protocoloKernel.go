@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
@@ -44,6 +45,7 @@ func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
 	log.Printf("respuesta del servidor: %s", resp.Status)
 	if global.Hayinterrupcion{ global.SyscallEnviada<-0}
 	global.TLB = nil
+	cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 }
 
 func Ocurrio_Interrupcion(w http.ResponseWriter, r *http.Request) {

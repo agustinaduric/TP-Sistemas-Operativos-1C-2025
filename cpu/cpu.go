@@ -21,7 +21,7 @@ func main() {
 	go fCpu.LevantarServidorCPU()
 	protocolos.Conectarse_con_Kernel(global.Nombre)
 	protocolos.Conectarse_con_Memoria(global.Nombre)
-	cache.InicializarCachePaginas(global.ConfigCargadito.CacheEntries, global.ConfigCargadito.CacheReplacement)
+	cache.InicializarCachePaginas(global.ConfigCargadito.CacheReplacement)
 	mmu.Inicializar_TLB()
 	global.WgCPU.Wait()
 }

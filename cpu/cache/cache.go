@@ -9,10 +9,9 @@ import (
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
 )
 
-func InicializarCachePaginas(tamanio int, algoritmo string) {
-	global.EntradasMaxCache = tamanio
+func InicializarCachePaginas(algoritmo string) {
 	global.AlgoritmoCache = algoritmo
-	global.CachePaginas = make([]structs.EntradaCache, 0, global.EntradasMaxCache)
+	global.CachePaginas = make([]structs.EntradaCache, 0, global.ConfigCargadito.CacheEntries)
 	global.PunteroClock = 0
 	global.CpuLogger.Debug(fmt.Sprintf("Se inicializo CachePaginas con algoritmo: %s", algoritmo))
 }
@@ -20,7 +19,7 @@ func InicializarCachePaginas(tamanio int, algoritmo string) {
 func BuscarEncache(pid int, dirLogica int, tamanio int) (bool, []byte) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
 	dato := make([]byte, tamanio)
-	var desplazamiento int = dirLogica + len(dato) - 1
+	var desplazamiento int = dirLogica % global.Page_size
 	global.CpuLogger.Debug(fmt.Sprintf("Desplazamiento: %d", desplazamiento))
 	pagina := dirLogica / global.Page_size
 
@@ -30,9 +29,9 @@ func BuscarEncache(pid int, dirLogica int, tamanio int) (bool, []byte) {
 			global.CachePaginas[i].BitUso = true
 			//longitudContenido := len(global.CachePaginas[i].Contenido)-1
 			global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Hit - Pagina: %d ", pid, pagina))
-			for j := 0; j <= desplazamiento-dirLogica; j++ {
+			for j := desplazamiento; j <= (desplazamiento + tamanio -1); j++ {
 				//dato[j] = append(dato, global.CachePaginas[i].Contenido[j])
-				dato[j] = global.CachePaginas[i].Contenido[j]
+				dato[j-desplazamiento] = global.CachePaginas[i].Contenido[j]
 				//return true, global.CachePaginas[i].Contenido[longitudContenido]
 				
 			}
@@ -45,12 +44,12 @@ func BuscarEncache(pid int, dirLogica int, tamanio int) (bool, []byte) {
 
 func EscribirEnCache(pid int, dirLogica int, datos []byte, bitModificado bool) {
 	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
-	var desplazamiento int = dirLogica + len(datos) - 1
+	var desplazamiento int = dirLogica % global.Page_size
 	pagina := dirLogica / global.Page_size
 	for i := range global.CachePaginas {
 		if global.CachePaginas[i].PID == pid && global.CachePaginas[i].Pagina == pagina {
-			for j := 0; j <= desplazamiento-dirLogica; j++ {
-				global.CachePaginas[i].Contenido[j] = datos[j]
+			for j := desplazamiento; j <= ((len(datos) - 1) + desplazamiento); j++ {
+				global.CachePaginas[i].Contenido[j] = datos[j-desplazamiento]
 			}
 			global.CachePaginas[i].BitUso = true
 			global.CachePaginas[i].BitModificado = bitModificado
@@ -66,7 +65,7 @@ func EscribirEnCache(pid int, dirLogica int, datos []byte, bitModificado bool) {
 		BitUso:        true,
 		BitModificado: bitModificado,
 	}
-	if len(global.CachePaginas) < global.EntradasMaxCache {
+	if len(global.CachePaginas) < global.ConfigCargadito.CacheEntries {
 		global.CpuLogger.Debug("Hay espacio en la cache, no reemplazo")
 		global.CachePaginas = append(global.CachePaginas, nuevaEntrada)
 		global.CpuLogger.Info(fmt.Sprintf("PID: %d - Cache Add - Pagina: %d", pid, pagina))
@@ -101,4 +100,30 @@ func LimpiarCacheDelProceso(pid int) {
 		}
 	}
 	global.CpuLogger.Debug(fmt.Sprintf("Limpieza cache terminada PID: %d", pid))
+}
+
+func LeerEncache(pid int, dirLogica int, tamanio int)  []byte {
+	time.Sleep(time.Duration(global.ConfigCargadito.CacheDelay) * time.Millisecond)
+	dato := make([]byte, tamanio)
+	var desplazamiento int = dirLogica % global.Page_size
+	global.CpuLogger.Debug(fmt.Sprintf("Desplazamiento: %d", desplazamiento))
+	pagina := dirLogica / global.Page_size
+
+	global.CpuLogger.Debug(fmt.Sprintf("Comenzo busqueda en CachePaginas PID: %d, Pag: %d", pid, pagina))
+	for i := 0; i < len(global.CachePaginas); i++ {
+		if global.CachePaginas[i].PID == pid && global.CachePaginas[i].Pagina == pagina {
+			global.CachePaginas[i].BitUso = true
+			//longitudContenido := len(global.CachePaginas[i].Contenido)-1
+			//global.CpuLogger.Info(fmt.Sprintf("## PID: %d - Cache Hit - Pagina: %d ", pid, pagina))
+			for j := desplazamiento; j <=  (desplazamiento + tamanio - 1); j++ {
+				//dato[j] = append(dato, global.CachePaginas[i].Contenido[j])
+				dato[j-desplazamiento] = global.CachePaginas[i].Contenido[j]
+				//return true, global.CachePaginas[i].Contenido[longitudContenido]
+				
+			}
+			return  dato
+		}
+	}
+	global.CpuLogger.Info(fmt.Sprintf("No se encontro en LeerEnCache, no se deberia ver esto"))
+	return []byte{}
 }

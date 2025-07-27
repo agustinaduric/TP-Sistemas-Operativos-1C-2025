@@ -79,7 +79,6 @@ var PunteroClock int
 
 var AlgoritmoCache string
 
-var EntradasMaxCache int
 
 //-----------------------------------------------------------FUNCIONES AUXULIARES-----------------------------------------------------------------------------------------------
 
