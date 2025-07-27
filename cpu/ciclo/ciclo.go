@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+
+	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 	"github.com/sisoputnfrba/tp-golang/cpu/protocolos"
 	"github.com/sisoputnfrba/tp-golang/utils/structs"
@@ -70,6 +72,7 @@ func decode_and_execute() {
 			},
 		}
 		global.Hubo_syscall = true
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		go protocolos.Enviar_syscall(devolucion)
 		
 	case "INIT_PROC":
@@ -82,6 +85,7 @@ func decode_and_execute() {
 			Tamaño:        global.String_a_int(global.Instruccion_ejecutando[2]),
 			Identificador: global.Nombre,
 		}
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		go protocolos.Enviar_syscall(devolucion)
 		global.CpuLogger.Info(fmt.Sprintf("## PID: %d se envio a kernel para el init_proc", global.Proceso_Ejecutando.PID))
 		global.Proceso_Ejecutando.PC++
@@ -99,6 +103,7 @@ func decode_and_execute() {
 		}
 		global.Proceso_Ejecutando.PC++
 		global.Hubo_syscall = true
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		go protocolos.Enviar_syscall(devolucion)
 
 	case "EXIT":
@@ -110,6 +115,7 @@ func decode_and_execute() {
 			Identificador: global.Nombre,
 		}
 		//global.Proceso_Ejecutando.PC++
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		go protocolos.Enviar_syscall(devolucion)
 		global.Hubo_syscall = true
 		
@@ -127,6 +133,7 @@ func CheckInterrupt() {
 				Identificador: global.Nombre}
 			<-global.Ciclofinalizado
 			<-global.SyscallEnviada
+			cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 			protocolos.Enviar_syscall(devolucion)
 			
 			return
@@ -137,6 +144,7 @@ func CheckInterrupt() {
 			Motivo:        "REPLANIFICAR",
 			Identificador: global.Nombre}
 		<-global.Ciclofinalizado
+		cache.LimpiarCacheDelProceso(global.Proceso_Ejecutando.PID)
 		protocolos.Enviar_syscall(devolucion)
 		
 		return
