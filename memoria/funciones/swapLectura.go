@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -15,11 +14,13 @@ import (
 
 // RecuperarProcesoDeSwap busca en swap el bloque para pid, restaura páginas y elimina el bloque
 func RecuperarProcesoDeSwap(pid int) error {
+	proc, _ := BuscarProceso(pid)
+	saltos := proc.Metricas.BajadasSwap - 1
 
 	global.MemoriaMutex.Lock()
 	defer global.MemoriaMutex.Unlock()
 	// 1) Leer bloque completo
-	bloque, err := leerBloqueSwap(pid)
+	bloque, err := leerBloqueSwap(pid, saltos)
 	if err != nil {
 		return fmt.Errorf("RecuperarProcesoDeSwap: %w", err)
 	}
@@ -44,79 +45,45 @@ func RecuperarProcesoDeSwap(pid int) error {
 		copy(global.MemoriaUsuario[inicio:inicio+pageSize], pageBytes[i*pageSize:(i+1)*pageSize])
 	}
 
-	// 5) Eliminar bloque de swap
-	if err := eliminarBloqueSwap(pid); err != nil {
-		return fmt.Errorf("RecuperarProcesoDeSwap: %w", err)
-	}
-
 	return nil
 }
 
-func leerBloqueSwap(pid int) ([]byte, error) {
-	path := global.MemoriaConfig.SwapPath
-	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Abriendo swap en '%s'", path))
-	f, err := os.Open(path)
+func leerBloqueSwap(pid int, skip int) ([]byte, error) {
+	f, err := os.Open(global.MemoriaConfig.SwapPath)
 	if err != nil {
-		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error abriendo '%s': %v", path, err))
-		return nil, fmt.Errorf("leerBloqueSwap: no pudo abrir %s: %w", path, err)
+		return nil, err
 	}
 	defer f.Close()
-
-	marker := fmt.Sprintf("PID: %d", pid)
-	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Buscando marcador '%s'", marker))
 	reader := bufio.NewReader(f)
+	marker := fmt.Sprintf("PID: %d", pid)
 
-	// 1) Avanzar hasta encontrar la línea "PID: <pid>"
-	for {
+	// saltar skip apariciones
+	for saltos := 0; saltos <= skip; {
 		line, err := reader.ReadString('\n')
-		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Leyendo línea de cabecera: %q (err=%v)", line, err))
 		if err != nil {
-			if err == io.EOF {
-				global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] EOF antes de encontrar PID=%d", pid))
-				return nil, fmt.Errorf("leerBloqueSwap: PID=%d no encontrado", pid)
-			}
-			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error lectura inicial: %v", err))
-			return nil, fmt.Errorf("leerBloqueSwap: lectura fallida: %w", err)
+			return nil, fmt.Errorf("leerBloqueSwap: %w", err)
 		}
 		if strings.HasPrefix(line, marker) {
-			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Encontrado marcador en línea: %q", line))
-			break
+			saltos++
 		}
 	}
 
-	// 2) Desde aquí, leer TODO el contenido hasta el inicio del siguiente bloque
+	// ahora reader está justo después de la cabecera de la (skip+1)-ésima aparición
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("PID: %d\n", pid))
-	global.MemoriaLogger.Debug("[leerBloqueSwap] Iniciando acumulación de bloque en buffer")
-
-	// Leer línea por línea para mejor control
 	for {
 		line, err := reader.ReadString('\n')
-		global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Leyendo línea de bloque: %q (err=%v)", line, err))
-
-		if err != nil {
-			if err == io.EOF {
-				if len(line) > 0 {
-					global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] EOF con datos parciales: %q, lo añado", line))
-					buf.WriteString(line)
-				}
-				global.MemoriaLogger.Debug("[leerBloqueSwap] EOF alcanzado, fin de bloque")
-				break
-			}
-			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Error leyendo bloque: %v", err))
-			return nil, fmt.Errorf("leerBloqueSwap: error leyendo bloque: %w", err)
+		if err != nil && err != io.EOF {
+			return nil, err
 		}
-
-		// Si encontramos el inicio de otro bloque PID, paramos ANTES de agregarlo
 		if strings.HasPrefix(line, "PID: ") {
-			global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Encontrada cabecera siguiente '%s', detengo lectura de este bloque", line))
 			break
 		}
-
 		buf.WriteString(line)
+		if err == io.EOF {
+			break
+		}
 	}
-
-	global.MemoriaLogger.Debug(fmt.Sprintf("[leerBloqueSwap] Bloque leído (%d bytes)", buf.Len()))
 	return buf.Bytes(), nil
 }
 
@@ -127,104 +94,54 @@ func leerBloqueSwap(pid int) ([]byte, error) {
 //	Marco1: <bytes> \n
 //	...
 func parsearBloque(bloque []byte) (int, []byte, error) {
-	global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] RAW (%d bytes): %q", len(bloque), bloque))
-	// 1) Separamos hasta 3 trozos por "\n"
-	parts := bytes.SplitN(bloque, []byte("\n"), 3)
-	global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] partes encontradas: %d", len(parts)))
-	for i, p := range parts {
-		global.MemoriaLogger.Debug(fmt.Sprintf("[parsearBloque] parts[%d]=%q", i, p))
-	}
-	// Verificación mínima
-	if len(parts) < 2 {
-		return 0, nil, fmt.Errorf("parsearBloque: formato inválido, %d líneas", len(parts))
+	r := bufio.NewReader(bytes.NewReader(bloque))
+
+	// 1) Saltar la línea "PID: <pid>\n"
+	if _, err := r.ReadString('\n'); err != nil {
+		return 0, nil, fmt.Errorf("parsearBloque: no pude leer cabecera PID: %w", err)
 	}
 
-	// 2) Extraemos el count de la cabecera "Cantidad Paginas: N"
-	header := strings.TrimSpace(string(parts[1]))
+	// 2) Leer y parsear "Cantidad Paginas:<N>\n"
+	headerLine, err := r.ReadString('\n')
+	if err != nil {
+		return 0, nil, fmt.Errorf("parsearBloque: no pude leer cabecera Cantidad Paginas: %w", err)
+	}
+	headerLine = strings.TrimSpace(headerLine)
 	const pref = "Cantidad Paginas:"
-	if !strings.HasPrefix(header, pref) {
-		return 0, nil, fmt.Errorf("parsearBloque: cabecera inválida '%s'", header)
+	if !strings.HasPrefix(headerLine, pref) {
+		return 0, nil, fmt.Errorf("parsearBloque: cabecera inválida '%s'", headerLine)
 	}
-	numStr := strings.TrimSpace(strings.TrimPrefix(header, pref))
-	cant, err := strconv.Atoi(numStr)
+	numStr := strings.TrimSpace(strings.TrimPrefix(headerLine, pref))
+	pageCount, err := strconv.Atoi(numStr)
 	if err != nil {
-		return 0, nil, fmt.Errorf("parsearBloque: count parse error: %w", err)
-	}
-	if cant == 0 {
-		return 0, nil, nil
+		return 0, nil, fmt.Errorf("parsearBloque: error al convertir pageCount: %w", err)
 	}
 
-	// 3) Determinamos los datos binarios:
-	//    a) Si SplitN devolvió 3 partes, el tercer elemento es todo el data[].
-	//    b) Si sólo devolvió 2, buscamos manualmente donde acaba la 2ª línea.
-	var data []byte
-	if len(parts) >= 3 {
-		data = parts[2]
-	} else {
-		// Ubicar el segundo '\n' en todo el bloque
-		first := bytes.Index(bloque, []byte("\n"))
-		if first < 0 {
-			return 0, nil, fmt.Errorf("parsearBloque: no hay primer '\\n'")
+	// 3) Saltar la línea vacía tras cabeceras (si existe)
+	if next, _ := r.Peek(1); len(next) > 0 && next[0] == '\n' {
+		r.ReadByte() // descarta '\n'
+	}
+
+	// 4) Leer cada bloque de marco:
+	pageSize := int(global.MemoriaConfig.PageSize)
+	total := pageCount * pageSize
+	data := make([]byte, total)
+
+	for i := 0; i < pageCount; i++ {
+		// 4.1) Saltar línea "MarcoX:\n"
+		if _, err := r.ReadString('\n'); err != nil {
+			return 0, nil, fmt.Errorf("parsearBloque: no pude leer etiqueta Marco en página %d: %w", i, err)
 		}
-		second := bytes.Index(bloque[first+1:], []byte("\n"))
-		if second < 0 {
-			return 0, nil, fmt.Errorf("parsearBloque: no hay segundo '\\n'")
+		// 4.2) Leer exactamente pageSize bytes
+		off := i * pageSize
+		if _, err := io.ReadFull(r, data[off:off+pageSize]); err != nil {
+			return 0, nil, fmt.Errorf("parsearBloque: error leyendo datos de página %d: %w", i, err)
 		}
-		data = bloque[first+1+second+1:]
-	}
-
-	return cant, data, nil
-}
-
-// eliminarBloqueSwap remueve TODO el bloque del proceso pid, basándose en el prefijo "PID: <pid>"
-func eliminarBloqueSwap(pid int) error {
-	orig := global.MemoriaConfig.SwapPath
-	tmp := filepath.Join(filepath.Dir(orig), "swap.tmp")
-
-	in, err := os.Open(orig)
-	if err != nil {
-		return fmt.Errorf("eliminarBloqueSwap: %w", err)
-	}
-	defer in.Close()
-
-	out, err := os.Create(tmp)
-	if err != nil {
-		return fmt.Errorf("eliminarBloqueSwap: %w", err)
-	}
-	defer out.Close()
-
-	scanner := bufio.NewReader(in)
-	marker := fmt.Sprintf("PID: %d", pid)
-	skipping := false
-
-	for {
-		line, err := scanner.ReadString('\n')
-		if err != nil && err != io.EOF {
-			return fmt.Errorf("eliminarBloqueSwap: %w", err)
-		}
-
-		if strings.HasPrefix(line, marker) {
-			// empezamos a saltar el bloque completo
-			skipping = true
-			// saltamos esta línea también
-		} else if skipping && strings.HasPrefix(line, "PID: ") {
-			// encontramos el siguiente bloque, dejamos de saltar
-			skipping = false
-			// este nuevo bloque lo escribimos
-			out.WriteString(line)
-		} else if !skipping {
-			out.WriteString(line)
-		}
-
-		if err == io.EOF {
-			break
+		// 4.3) Saltar la línea de separación tras datos (un '\n')
+		if sep, _ := r.Peek(1); len(sep) > 0 && sep[0] == '\n' {
+			r.ReadByte()
 		}
 	}
 
-	in.Close()
-	out.Close()
-	if err := os.Rename(tmp, orig); err != nil {
-		return fmt.Errorf("eliminarBloqueSwap: %w", err)
-	}
-	return nil
+	return pageCount, data, nil
 }
