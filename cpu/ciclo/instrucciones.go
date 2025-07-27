@@ -55,8 +55,11 @@ func WRITE(dirLogica int, datos string) {
 		global.CpuLogger.Error(fmt.Sprintf("Memoria devolvio error en WRITE: %d", respEnvio.StatusCode))
 	}
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: ESCRIBIR, Direccion fisica: %d, Valor Escrito: %s", global.Proceso_Ejecutando.PID, dirFisica, datos))
+	
+	if global.ConfigCargadito.CacheEntries != 0 {
 	paginaCompleta := SolicitarPagina(dirFisica)
 	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, true)
+	}
 }
 
 func READ(dirLogica int, tamanio int) {
@@ -105,8 +108,11 @@ func READ(dirLogica int, tamanio int) {
 	}
 
 	global.CpuLogger.Info(fmt.Sprintf("## PID: %d, - Accion: LEER, Direccion fisica: %d, Valor Leido: %s", global.Proceso_Ejecutando.PID, dirFisica, string(datosLeidos)))
+	
+	if global.ConfigCargadito.CacheEntries != 0 {
 	paginaCompleta := SolicitarPagina(dirFisica)
 	cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, paginaCompleta, false)
+	}
 }
 
 func SolicitarPagina(direccionFisica int) []byte {
