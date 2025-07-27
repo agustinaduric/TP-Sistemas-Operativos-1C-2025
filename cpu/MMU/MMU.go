@@ -23,7 +23,7 @@ func DL_a_DF(direccion_logica int) int {
 }
 
 func ObtenerMarco(nro_pagina int) int {
-	if global.ConfigCargadito.TlbEntries != 0{
+	if global.ConfigCargadito.TlbEntries  != 0 {
 		if ConsultarMarcoEnTLB(nro_pagina) == global.HIT {
 			return global.MarcoEncontrado
 		}
@@ -37,7 +37,7 @@ func ObtenerMarco(nro_pagina int) int {
 	}
 	nro_marco := SolicitarMarco(entradasPorNivel)
 	global.CpuLogger.Debug(fmt.Sprintf("marco obtenido. Pagina: %d , Marco: %d", nro_pagina, nro_marco))
-	if global.ConfigCargadito.TlbEntries != 0{
+	if global.ConfigCargadito.TlbEntries  != 0{
 	AgregarATLB(nro_pagina, nro_marco)
 	}
 	return nro_marco

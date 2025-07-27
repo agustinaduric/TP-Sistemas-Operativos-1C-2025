@@ -7,7 +7,7 @@ type CPUConfig struct{
 	PortMemory int `json:"port_memory"`
 	IpKernel string `json:"ip_kernel"`
 	PortKernel int `json:"port_kernel"`
-	TlbEntries int `json:"tbl_entries"`
+	TlbEntries int `json:"tlb_entries"`
 	TlbReplacement string `json:"tlb_replacement"`
 	CacheEntries int `json:"cache_entries"`
 	CacheReplacement string `json:"cache_replacement"`

@@ -39,9 +39,6 @@ var Entries_per_page int // idem
 
 //-----------------------------------------------------------TLB-----------------------------------------------------------------------------------------------
 
-var MAX_ENTRADAS int
-var ALGORITMO_TLB string
-
 type ResultadoBusqueda int
 
 const (

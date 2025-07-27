@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	mmu "github.com/sisoputnfrba/tp-golang/cpu/MMU"
 	"github.com/sisoputnfrba/tp-golang/cpu/cache"
 	fCpu "github.com/sisoputnfrba/tp-golang/cpu/funciones"
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
@@ -22,6 +21,5 @@ func main() {
 	protocolos.Conectarse_con_Kernel(global.Nombre)
 	protocolos.Conectarse_con_Memoria(global.Nombre)
 	cache.InicializarCachePaginas(global.ConfigCargadito.CacheReplacement)
-	mmu.Inicializar_TLB()
 	global.WgCPU.Wait()
 }

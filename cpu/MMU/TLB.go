@@ -7,13 +7,8 @@ import (
 	"github.com/sisoputnfrba/tp-golang/cpu/global"
 )
 
-func Inicializar_TLB() {
-	global.MAX_ENTRADAS = global.ConfigCargadito.TlbEntries
-	global.ALGORITMO_TLB = global.ConfigCargadito.TlbReplacement
-}
-
 func AgregarATLB(nroPagina int, nroMarco int) {
-	if len(global.TLB) == global.MAX_ENTRADAS {
+	if len(global.TLB) == global.ConfigCargadito.TlbEntries {
 		EliminarEntradaConAlgoritmo()
 	}
 	AgregarNuevaEntrada(nroPagina, nroMarco)
@@ -68,5 +63,5 @@ func ConsultarMarcoEnTLB(nroPagina int) global.RespuestaTLB {
 }
 
 func AlgoritmoEsLRU() bool {
-	return strings.EqualFold(global.ALGORITMO_TLB, "LRU")
+	return strings.EqualFold(global.ConfigCargadito.TlbReplacement, "LRU")
 }
