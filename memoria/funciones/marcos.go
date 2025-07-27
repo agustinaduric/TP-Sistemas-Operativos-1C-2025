@@ -80,9 +80,18 @@ func LiberarMarcos(pid int) {
 				"LiberarMarcos: marco %d liberado (antes ocupado por PID=%d)",
 				marco, pid,
 			))
+			inicio := marco * global.MemoriaConfig.PageSize
+			fin := inicio + global.MemoriaConfig.PageSize
+			for i := inicio; i < fin; i++ {
+				global.MemoriaUsuario[i] = 0
+
+			}
+			global.MemoriaLogger.Debug(fmt.Sprintf(
+				"LiberarMarcos: memoria de bytes [%d..%d) reseteada a cero",
+				inicio, fin,
+			))
 		}
 	}
-
 	global.MemoriaLogger.Debug(fmt.Sprintf("LiberarMarcos: fin PID=%d", pid))
 }
 
@@ -117,9 +126,25 @@ func OcuparMarcos(pid int) {
 			}
 		}
 	}
-
+	for marco, ocupante := range global.MapMemoriaDeUsuario {
+		if ocupante == pid {
+			global.MemoriaLogger.Debug(fmt.Sprintf(
+				"OcuparMarcos: marco %d Limpiado (Apto a escribir por PID=%d)",
+				marco, pid,
+			))
+			inicio := marco * global.MemoriaConfig.PageSize
+			fin := inicio + global.MemoriaConfig.PageSize
+			for i := inicio; i < fin; i++ {
+				global.MemoriaUsuario[i] = 0
+				global.MemoriaLogger.Debug(fmt.Sprintf(
+					"OcuparMarcos: memoria de bytes [%d..%d) reseteada a cero",
+					inicio, fin,
+				))
+			}
+		}
+	}
 	global.MemoriaLogger.Debug(fmt.Sprintf(
-		"OcuparMarcos: fin PID=%d — se asignaron %d marcos",
+		"OcuparMarcos: fin PID=%d — se limpiaron %d marcos",
 		pid, asignados,
 	))
 }

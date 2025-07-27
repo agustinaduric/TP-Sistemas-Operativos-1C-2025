@@ -90,7 +90,7 @@ func EscribirMemoriaUsuario(pid int, direccionFisica int, bytesTexto []byte) {
 	)
 	// 3) Leer de nuevo el bloque escrito y mostrarlo en Debug
 	escrito := make([]byte, longitud)
-	copy(escrito, global.MemoriaUsuario[direccionFisica:limite-1])
+	copy(escrito, global.MemoriaUsuario[direccionFisica:limite])
 	global.MemoriaLogger.Debug(
 		fmt.Sprintf("[VerificarEscritura] PID=%d, bytes leídos en %d..%d: %v",
 			pid, direccionFisica, limite-1, escrito,
