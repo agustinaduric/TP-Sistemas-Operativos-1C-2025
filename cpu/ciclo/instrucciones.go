@@ -17,12 +17,14 @@ func WRITE(dirLogica int, datos string) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a WRITE, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
 
 	//cache
+	if global.ConfigCargadito.CacheEntries != 0 {
 	if global.EntradasMaxCache > 0 {
 		hayEnCache, _ := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica, 0)
 		if hayEnCache {
 			cache.EscribirEnCache(global.Proceso_Ejecutando.PID, dirLogica, []byte(datos), true)
 			return
 		}
+	}
 	}
 
 	//tlb - memoria
@@ -61,6 +63,7 @@ func READ(dirLogica int, tamanio int) {
 	global.CpuLogger.Debug(fmt.Sprintf("Entro a READ, PID: %d, Direccion: %d", global.Proceso_Ejecutando.PID, dirLogica))
 
 	//cache
+	if global.ConfigCargadito.CacheEntries != 0 {
 	if global.EntradasMaxCache > 0 {
 		hayEnCache, dato := cache.BuscarEncache(global.Proceso_Ejecutando.PID, dirLogica, tamanio)
 		if hayEnCache { // hit
@@ -69,6 +72,7 @@ func READ(dirLogica int, tamanio int) {
 			return
 		}
 	}
+    }
 
 	//tlb - memoria
 	dirFisica := mmu.DL_a_DF(dirLogica)
