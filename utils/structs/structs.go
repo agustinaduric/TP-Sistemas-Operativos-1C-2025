@@ -36,6 +36,8 @@ type PCB struct {
 	IOPendienteDuracion time.Duration
 	Auxiliar            float64
 	Desalojado			bool
+	TiempoRestante      float64
+	TiempoGlobal     	float64
 	//Registros        RegistrosCPU
 }
 

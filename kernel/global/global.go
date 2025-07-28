@@ -196,14 +196,21 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		proceso.TiemposEstado[structs.EXEC] += duracion
 
 		if !proceso.Desalojado {
-
-			proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar
+			if proceso.TiempoRestante != 0{proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar + (proceso.EstimadoRafaga-proceso.TiempoRestante +proceso.TiempoGlobal)
+			 }else {proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar }
 			proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
-
+			
+			proceso.TiempoRestante= 0
+			proceso.TiempoGlobal =0
 			KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
+			proceso.UltimaRafagaReal=0
 			KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))
 		} else {
-			proceso.Desalojado = false
+			aux := time.Since(proceso.TiempoInicioEstado)
+			proceso.TiempoRestante = proceso.EstimadoRafaga - (float64(aux))
+			proceso.TiempoGlobal = proceso.TiempoGlobal + (float64(aux))
+
+			//proceso.Desalojado = false
 		}
 
 	case "BLOCKED":

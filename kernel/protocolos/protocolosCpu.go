@@ -150,6 +150,13 @@ func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
 	var devuelvo structs.CPU_a_kernel = structs.CPU_a_kernel{}
 	for i := 0; i < longitud; i++ {
 		if !structs.CPUs_Conectados[i].Disponible{
+		 if structs.CPUs_Conectados[i].Proceso.Desalojado{
+			if structs.CPUs_Conectados[i].Proceso.TiempoRestante > Estimado {
+
+				devuelvo = structs.CPUs_Conectados[i]
+				Estimado = structs.CPUs_Conectados[i].Proceso.TiempoRestante
+			}
+		 }else{
 			
 		aux := time.Since(structs.CPUs_Conectados[i].Proceso.TiempoInicioEstado)
 		tiempo_restante := structs.CPUs_Conectados[i].Proceso.EstimadoRafaga - (float64(aux))
@@ -158,6 +165,7 @@ func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
 
 			devuelvo = structs.CPUs_Conectados[i]
 			Estimado = tiempo_restante
+		}
 		}
 		}	
 	} 
@@ -213,6 +221,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	switch Devolucion.Motivo {
 
 	case structs.INIT_PROC:
+		proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
 		global.KernelLogger.Debug(fmt.Sprintf("intentando reconectarse al cpu id: %s", Cpu.Identificador))
@@ -220,16 +229,19 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		global.KernelLogger.Debug(fmt.Sprintf("se manda intento de reconectar"))
 
 	case structs.DUMP_MEMORY:
+		proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: DUMP_MEMORY", proceso.PID))
 		global.IniciarMetrica("EXEC", "BLOCKED", &proceso)
 		go global.Habilitar_CPU_con_plani_corto(Cpu.Identificador)
 		syscalls.DUMP_MEMORY(Devolucion.PID)
 
 	case structs.IO:
+		proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: IO", proceso.PID))
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO) ,Cpu.Identificador)
 
 	case structs.EXIT_PROC:
+		proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: EXIT", proceso.PID))
 		global.IniciarMetrica("EXEC", "EXIT", &proceso)
 		go global.Habilitar_CPU_con_plani_corto(Cpu.Identificador)
