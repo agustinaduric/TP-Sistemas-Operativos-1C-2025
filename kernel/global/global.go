@@ -44,6 +44,8 @@ var MutexSUSP_BLOCKED sync.Mutex
 var MutexSUSP_READY sync.Mutex
 var MutexEXIT sync.Mutex
 
+var MutexBLOCKED_IO sync.Mutex
+
 //-----------------------------------------------FUNCIONES AUXILIARES-------------------------------------------------------
 
 func Pop_estado(Cola *structs.ColaProcesos) structs.PCB {
@@ -191,12 +193,15 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		proceso.TiemposEstado[structs.EXEC] += duracion
 
 		if !proceso.Desalojado {
-			
-		proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar
-		proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
 
-		KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
-		KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))} else { proceso.Desalojado = false}
+			proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar
+			proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
+
+			KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
+			KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))
+		} else {
+			proceso.Desalojado = false
+		}
 
 	case "BLOCKED":
 		Extraer_estado(&structs.ColaBlocked, proceso.PID)
@@ -224,10 +229,10 @@ func IniciarContadorDeSuspension(proceso *structs.PCB, contador int) {
 	time.Sleep(time.Duration(ConfigCargadito.SuspensionTime) * time.Millisecond)
 	//KernelLogger.Debug(fmt.Sprintf("Estado: %s", proceso.Estado))
 	//proceso.Estado != structs.BLOCKED
-	if ((!Esta_en_block(proceso.PID)) || (proceso.MetricasEstado[structs.BLOCKED] != contador)) {
+	if (!Esta_en_block(proceso.PID)) || (proceso.MetricasEstado[structs.BLOCKED] != contador) {
 		return
 	} //si el estado ya no es BLOCKED no hago nada y finalizo el hilo contador
-	
+
 	KernelLogger.Debug(fmt.Sprintf("Termino el conteo de suspension del proceso de PID: %d", proceso.PID))
 	//si el estado sigue siendo blocked lo mando a memoria para que lo swapee y cambio su estado a SUSP_BLOCKED
 	IniciarMetrica("BLOCKED", "SUSP_BLOCKED", proceso)
@@ -264,21 +269,18 @@ func MandarProcesoASuspension(PID int) string {
 	return respuesta
 }
 
-func Esta_en_block(PID int) bool{
-		for i := 0; i < len(structs.ColaBlocked); i++ {
-			if (structs.ColaBlocked)[i].PID == PID {
-				//KernelLogger.Debug(fmt.Sprintf("PID: %d esta en la cola Bloqueados", PID))
-				return true
-			}
-	
+func Esta_en_block(PID int) bool {
+	for i := 0; i < len(structs.ColaBlocked); i++ {
+		if (structs.ColaBlocked)[i].PID == PID {
+			//KernelLogger.Debug(fmt.Sprintf("PID: %d esta en la cola Bloqueados", PID))
+			return true
 		}
-		//KernelLogger.Debug(fmt.Sprintf("PID: %d NO esta en la cola Bloqueados", PID))
-		return false
-	
+
+	}
+	//KernelLogger.Debug(fmt.Sprintf("PID: %d NO esta en la cola Bloqueados", PID))
+	return false
 
 }
-
-
 
 func Habilitar_CPU_con_plani_corto(identificador string) {
 	longitud := len(structs.CPUs_Conectados)
@@ -293,4 +295,3 @@ func Habilitar_CPU_con_plani_corto(identificador string) {
 	}
 	return
 }
-

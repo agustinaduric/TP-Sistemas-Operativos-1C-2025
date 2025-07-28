@@ -40,11 +40,11 @@ func SolicitarSyscallIO(NuevaSolicitudIO structs.Solicitud, identificador_cpu st
 		global.IniciarMetrica("EXEC", "BLOCKED", &pcbSolicitante)
 		global.KernelLogger.Info(fmt.Sprintf("## %d - Bloqueado por IO: %s", pcbSolicitante.PID, NuevaSolicitudIO.NombreIO))
 		go global.Habilitar_CPU_con_plani_corto(identificador_cpu)
-		global.MutexBLOCKED.Lock()
+		global.MutexBLOCKED_IO.Lock()
 		colaDeBloqueados := structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO]
 		global.Push_estado(&colaDeBloqueados, pcbSolicitante)
 		structs.ColaBlockedIO[NuevaSolicitudIO.NombreIO] = colaDeBloqueados
-		global.MutexBLOCKED.Unlock()
+		global.MutexBLOCKED_IO.Unlock()
 	} else { // libre
 		global.KernelLogger.Debug(fmt.Sprintf("IO libre: %s, PID: %d", NuevaSolicitudIO.NombreIO, pcbSolicitante.PID))
 		dispositivoLibre.PIDActual = pcbSolicitante.PID

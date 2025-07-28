@@ -66,9 +66,9 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 				dispositivo.PIDActual = siguiente.PID
 				global.KernelLogger.Debug(fmt.Sprintf("PID: %d ocupo el dispositivo: %s", siguiente.PID, respuestaFin.NombreIO))
 				SolicitudParaIO := structs.Solicitud{PID: siguiente.PID, NombreIO: dispositivo.Nombre, Duracion: siguiente.IOPendienteDuracion}
-				global.MutexBLOCKED.Lock()
+				global.MutexBLOCKED_IO.Lock()
 				structs.ColaBlockedIO[respuestaFin.NombreIO] = structs.ColaBlockedIO[respuestaFin.NombreIO][1:]
-				global.MutexBLOCKED.Unlock()
+				global.MutexBLOCKED_IO.Unlock()
 				comunicacion.EnviarSolicitudIO(dispositivo.IP, dispositivo.Puerto, SolicitudParaIO)
 				global.KernelLogger.Debug(fmt.Sprintf("Solcitud IO: %s enviada, PID: %d", respuestaFin.NombreIO, siguiente.PID))
 			} else {
@@ -108,7 +108,9 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 		cola := structs.ColaBlockedIO[ioDesconectado.Nombre]
 			global.KernelLogger.Debug("Eliminando procesos en cola de espera...")
 			delete(structs.IOsRegistrados, ioDesconectado.Nombre)
+			global.MutexBLOCKED_IO.Lock()
 			delete(structs.ColaBlockedIO, ioDesconectado.Nombre)
+			global.MutexBLOCKED_IO.Unlock()
 			for _, pcb := range cola {
 				global.IniciarMetrica("BLOCKED", "EXIT", &pcb)
 				global.KernelLogger.Debug(fmt.Sprintf("EXIT PID %d", pcb.PID))
@@ -126,9 +128,9 @@ func Buscar_Siguiente_IO(NombreIO string) structs.PCB {
 			siguiente := structs.ColaBlockedIO[NombreIO][0]
 			return siguiente
 		} else {
-			global.MutexBLOCKED.Lock()
+			global.MutexBLOCKED_IO.Lock()
 			structs.ColaBlockedIO[NombreIO] = structs.ColaBlockedIO[NombreIO][1:]
-			global.MutexBLOCKED.Unlock()
+			global.MutexBLOCKED_IO.Unlock()
 		}
 	}
 	global.KernelLogger.Debug(fmt.Sprintf("NO hay procesos en espera para: %s", NombreIO))
