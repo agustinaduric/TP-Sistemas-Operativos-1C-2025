@@ -34,6 +34,9 @@ var (
 	MutexSemaforosCPU sync.Mutex
 )
 
+var Contador int = 0
+var MutexContador sync.Mutex
+
 //-----------------------------------------------MUTEX COLAS-------------------------------------------------------
 
 var MutexNEW sync.Mutex

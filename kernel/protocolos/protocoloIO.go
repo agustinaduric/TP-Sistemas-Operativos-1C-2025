@@ -95,14 +95,25 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 	for _, dispositivo := range dispositivos {
         if dispositivo.IP == ioDesconectado.IP && dispositivo.Puerto == ioDesconectado.Puerto {
 			if dispositivo.PIDActual !=-1 { // si hay uno ejecutando, lo mato
-			proceso, _ := PCB.Buscar_por_pid(dispositivo.PIDActual, &structs.ColaBlocked)
-			global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
-			global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
+			proceso, existe := PCB.Buscar_por_pid(dispositivo.PIDActual, &structs.ColaBlocked)
+			if !existe {
+				proceso, existe = PCB.Buscar_por_pid(dispositivo.PIDActual, &structs.ColaSuspBlocked)
+				if existe {
+					global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
+					global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
+				} else {
+					global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", dispositivo.PIDActual))
+					return
+				}
+			}else {
+				global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
+				global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
 			}
 		}else {
             instancias = append(instancias, dispositivo)
         }
 	}
+}
 
 	if len(instancias) == 0{
 		cola := structs.ColaBlockedIO[ioDesconectado.Nombre]
@@ -120,7 +131,8 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
         structs.IOsRegistrados[ioDesconectado.Nombre] = instancias
         global.KernelLogger.Debug(fmt.Sprintf("Instancias restantes de %s: %d", ioDesconectado.Nombre, len(instancias)))
     }
-} 
+}
+ 
 
 func Buscar_Siguiente_IO(NombreIO string) structs.PCB {
 	for len(structs.ColaBlockedIO[NombreIO]) > 0 {

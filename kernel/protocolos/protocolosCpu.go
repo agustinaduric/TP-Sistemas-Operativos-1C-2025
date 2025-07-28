@@ -127,10 +127,12 @@ func Reconectarse_CPU(Cpu structs.CPU_a_kernel) {
 func Buscar_CPU_libre(Proceso structs.PCB) structs.CPU_a_kernel {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
-		if structs.CPUs_Conectados[i].Disponible {
-			structs.CPUs_Conectados[i].Disponible = false
-			structs.CPUs_Conectados[i].Proceso= Proceso
-			return structs.CPUs_Conectados[i]
+		indice := (i + global.Contador) % longitud // siempre da un numero entre 0 y longitud-1
+		if structs.CPUs_Conectados[indice].Disponible {
+			structs.CPUs_Conectados[indice].Disponible = false
+			structs.CPUs_Conectados[indice].Proceso= Proceso
+			global.Contador = (indice + 1) % longitud // la siguiente busqueda empezaria desde el que le sigue al seleccionado
+			return structs.CPUs_Conectados[indice]
 		}
 
 	}
