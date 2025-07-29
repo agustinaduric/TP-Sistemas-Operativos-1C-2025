@@ -159,6 +159,7 @@ func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
 		 }else{
 			
 		aux := time.Since(structs.CPUs_Conectados[i].Proceso.TiempoInicioEstado)
+		global.KernelLogger.Debug(fmt.Sprintf("VICTIMA aux: %f", (float64(aux))))
 		tiempo_restante := structs.CPUs_Conectados[i].Proceso.EstimadoRafaga - (float64(aux))
 		global.KernelLogger.Debug(fmt.Sprintf("VICTIMA Tiempo restante: %f", tiempo_restante))
 		if tiempo_restante > Estimado {
@@ -170,7 +171,7 @@ func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
 		}	
 	} 
 	if devuelvo.Identificador != ""{
-		ActualizarCPU_Proceso(devuelvo,Proceso)
+		
 	}else{ global.KernelLogger.Debug("Ninguna cpu con menor estimado") }
 	
 	return devuelvo

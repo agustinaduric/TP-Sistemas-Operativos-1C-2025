@@ -90,6 +90,7 @@ func planificador_corto_plazo() {
 						if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 			
 							global.IniciarMetrica("READY", "EXEC", &pcb_execute)
+							protocolos.ActualizarCPU_Proceso(Cpu_disponible,pcb_execute)
 							//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 			
 						} else {
@@ -101,12 +102,14 @@ func planificador_corto_plazo() {
 						global.KernelLogger.Debug(fmt.Sprintf("no hay cpus para desalojar"))
 					}
 				} else {
+					
 					global.KernelLogger.Debug(fmt.Sprintf("ENTRO EN EL SEGUNDO ELSE"))
 					global.KernelLogger.Debug(fmt.Sprintf("Se encontro la cpu libre: %s", Cpu_disponible.Identificador))
 					var respuesta int = protocolos.Enviar_datos_SRT_a_cpu(pcb_execute, Cpu_disponible)
 					if respuesta == 200 { // ==200 si memoria confirmo, !=200 si hubo algun error
 			
 						global.IniciarMetrica("READY", "EXEC", &pcb_execute)
+						protocolos.ActualizarCPU_Proceso(Cpu_disponible,pcb_execute)
 						//structs.ProcesoEjecutando = pcb_execute       esto creo que ya no lo vamos a usar
 			
 					} else {
