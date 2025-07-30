@@ -22,4 +22,5 @@ func main() {
 	protocolos.Conectarse_con_Memoria(global.Nombre)
 	cache.InicializarCachePaginas(global.ConfigCargadito.CacheReplacement)
 	global.WgCPU.Wait()
+	global.CpuLogger.Close()
 }

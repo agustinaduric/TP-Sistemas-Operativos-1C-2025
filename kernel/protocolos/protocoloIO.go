@@ -46,7 +46,7 @@ func HandlerFinalizarIO(w http.ResponseWriter, r *http.Request) {
 		if existe {
 			global.IniciarMetrica("BLOCKED", "READY", &proceso)
 		} else {
-			global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", respuestaFin.PID))
+			global.KernelLogger.Debug(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", respuestaFin.PID))
 			return
 		}
 	}else {global.IniciarMetrica("BLOCKED", "READY", &proceso)}
@@ -101,7 +101,7 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 					global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
 					global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
 				} else {
-					global.KernelLogger.Error(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", dispositivo.PIDActual))
+					global.KernelLogger.Debug(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", dispositivo.PIDActual))
 					return
 				}
 			}else {

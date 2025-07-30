@@ -16,4 +16,5 @@ func main() {
 	fio.RegistrarEnKernel(nombre, ConfigCargadito)
 	go fio.EsperarDesconexion(nombre, ConfigCargadito.PortIo, ConfigCargadito.IpIo)
 	fio.LevantarIO(ConfigCargadito)
+	globalIO.IOLogger.Close()
 }
