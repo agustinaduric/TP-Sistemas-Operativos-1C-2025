@@ -291,11 +291,23 @@ func OrdenarColaPorPMCP(cola structs.ColaProcesos) structs.ColaProcesos {
 func OrdenarColaPorSJF() structs.ColaProcesos {
 	aux := make(structs.ColaProcesos, len(structs.ColaReady))
 	copy(aux, structs.ColaReady)
-	sort.Slice(structs.ColaReady, func(i, j int) bool {
-		if structs.ColaReady[i].EstimadoRafaga != structs.ColaReady[j].EstimadoRafaga {
-			return structs.ColaReady[i].EstimadoRafaga < structs.ColaReady[j].EstimadoRafaga
-		}
-		return structs.ColaReady[i].TiempoInicioEstado.Before(structs.ColaReady[j].TiempoInicioEstado)
+	sort.Slice(aux, func(i, j int) bool {
+		
+        var opcionI , opcionJ float64
+        if aux[i].TiempoRestante != 0 {
+            opcionI = aux[i].TiempoRestante
+        } else {
+            opcionI = aux[i].EstimadoRafaga
+        }
+        if aux[j].TiempoRestante != 0 {
+            opcionJ = aux[j].TiempoRestante
+        } else {
+            opcionJ = aux[j].EstimadoRafaga
+        }
+		 if opcionI != opcionJ {
+            return opcionI < opcionJ 
+        }
+		return aux[i].TiempoInicioEstado.Before(aux[j].TiempoInicioEstado)
 	})
 	return aux
 }

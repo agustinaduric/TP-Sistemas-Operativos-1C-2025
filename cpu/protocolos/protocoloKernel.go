@@ -29,7 +29,7 @@ func Conectarse_con_Kernel(identificador string) {
 	if err != nil {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	global.CpuLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
 }
 
 func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
@@ -43,7 +43,7 @@ func Enviar_syscall(DevolucionSyscall structs.DevolucionCpu) {
 	if err != nil {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortKernel)
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	global.CpuLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
 	if global.Hayinterrupcion{ global.SyscallEnviada<-0}
 	
 	

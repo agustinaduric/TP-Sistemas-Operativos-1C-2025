@@ -55,7 +55,7 @@ func Conectarse_con_Memoria(identificador string) {
 	if err != nil {
 		log.Printf("error enviando CPU:%s a puerto:%d", os.Args[1], global.ConfigCargadito.PortMemory)
 	}
-	log.Printf("respuesta del servidor: %s", resp.Status)
+	global.CpuLogger.Debug(fmt.Sprintf("respuesta del servidor: %s", resp.Status))
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
@@ -65,10 +65,6 @@ func Conectarse_con_Memoria(identificador string) {
 		os.Exit(1)
 	}
 
-	//DISCLAIMER ESTO LO AGREGUE YO NARDO, RESPONSABLE DE CPU REVISAR
-	//No encontre en ninguna parte en las q las inicializes y eso hacia q se pongan en 0 y que
-	//NO se pueda dividr
-	//pene
 	global.Page_size = int(global.Datos_Memoria.Tamaño_pagina)
 	global.Entries_per_page = global.Datos_Memoria.Cant_entradas
 	global.Number_of_levels = global.Datos_Memoria.Numeros_de_nivel

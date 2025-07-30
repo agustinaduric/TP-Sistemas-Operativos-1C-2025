@@ -120,6 +120,9 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		proceso.TiempoInicioEstado = time.Now()
 		proceso.Auxiliar = float64(proceso.TiemposEstado[structs.EXEC])
 
+		if !proceso.Desalojado {proceso.TiempoRestante= proceso.EstimadoRafaga}
+		
+
 		KernelLogger.Debug(fmt.Sprintf("## (%d) Auxiliar: %f ", proceso.PID, proceso.Auxiliar))
 
 		MutexEXEC.Lock()
@@ -153,8 +156,8 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		MutexSUSP_READY.Lock()
 		Push_estado(&structs.ColaSuspReady, *proceso)
 		MutexSUSP_READY.Unlock()
-		ProcesoEnSuspReady <- 0
 		KernelLogger.Info(fmt.Sprintf("## (%d) Pasa del estado %s al estado SUSP_READY", proceso.PID, estadoViejo))
+		ProcesoEnSuspReady <- 0
 	case "EXIT":
 		DetenerMetrica(estadoViejo, proceso)
 		proceso.Estado = structs.EXIT
@@ -170,13 +173,13 @@ func IniciarMetrica(estadoViejo string, estadoNuevo string, proceso *structs.PCB
 		KernelLogger.Info(fmt.Sprintf("## (%d) - Finaliza el proceso", proceso.PID))
 		KernelLogger.Info(fmt.Sprintf("## (%d) - Métricas de estado: NEW (%d) (%d), READY (%d) (%d), EXEC (%d) (%d), BLOCKED (%d) (%d), SUSP. BLOCKED (%d) (%d), SUSP. READY (%d) (%d), EXIT (%d) (%d)",
 			proceso.PID,
-			proceso.MetricasEstado[structs.NEW], proceso.TiemposEstado[structs.NEW],
-			proceso.MetricasEstado[structs.READY], proceso.TiemposEstado[structs.READY],
-			proceso.MetricasEstado[structs.EXEC], proceso.TiemposEstado[structs.EXEC],
-			proceso.MetricasEstado[structs.BLOCKED], proceso.TiemposEstado[structs.BLOCKED],
-			proceso.MetricasEstado[structs.SUSP_BLOCKED], proceso.TiemposEstado[structs.SUSP_BLOCKED],
-			proceso.MetricasEstado[structs.SUSP_READY], proceso.TiemposEstado[structs.SUSP_READY],
-			proceso.MetricasEstado[structs.EXIT], proceso.TiemposEstado[structs.EXIT]))
+			proceso.MetricasEstado[structs.NEW], proceso.TiemposEstado[structs.NEW].Milliseconds(),
+			proceso.MetricasEstado[structs.READY], proceso.TiemposEstado[structs.READY].Milliseconds(),
+			proceso.MetricasEstado[structs.EXEC], proceso.TiemposEstado[structs.EXEC].Milliseconds(),
+			proceso.MetricasEstado[structs.BLOCKED], proceso.TiemposEstado[structs.BLOCKED].Milliseconds(),
+			proceso.MetricasEstado[structs.SUSP_BLOCKED], proceso.TiemposEstado[structs.SUSP_BLOCKED].Milliseconds(),
+			proceso.MetricasEstado[structs.SUSP_READY], proceso.TiemposEstado[structs.SUSP_READY].Milliseconds(),
+			proceso.MetricasEstado[structs.EXIT], proceso.TiemposEstado[structs.EXIT].Milliseconds()))
 	}
 }
 
@@ -196,18 +199,19 @@ func DetenerMetrica(estadoViejo string, proceso *structs.PCB) {
 		proceso.TiemposEstado[structs.EXEC] += duracion
 
 		if !proceso.Desalojado {
-			if proceso.TiempoRestante != 0{proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar + (proceso.EstimadoRafaga-proceso.TiempoRestante +proceso.TiempoGlobal)
+			if proceso.TiempoRestante != 0{proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar + proceso.TiempoGlobal
 			 }else {proceso.UltimaRafagaReal = float64(proceso.TiemposEstado[structs.EXEC]) - proceso.Auxiliar }
 			proceso.EstimadoRafaga = (float64(ConfigCargadito.Alpha) * proceso.UltimaRafagaReal) + ((1 - float64(ConfigCargadito.Alpha)) * proceso.EstimadoRafagaAnt)
 			
 			proceso.TiempoRestante= 0
 			proceso.TiempoGlobal =0
 			KernelLogger.Debug(fmt.Sprintf("## (%d) UltimaRafagaReal: %f ", proceso.PID, proceso.UltimaRafagaReal))
-			proceso.UltimaRafagaReal=0
+			
 			KernelLogger.Debug(fmt.Sprintf("## (%d) EstimadoRafaga: %f ", proceso.PID, proceso.EstimadoRafaga))
 		} else {
 			aux := time.Since(proceso.TiempoInicioEstado)
-			proceso.TiempoRestante = proceso.EstimadoRafaga - (float64(aux))
+			proceso.TiempoRestante = proceso.TiempoRestante - (float64(aux))
+			KernelLogger.Debug(fmt.Sprintf("## (%d) TiempoRestante: %f ", proceso.PID, proceso.TiempoRestante))
 			proceso.TiempoGlobal = proceso.TiempoGlobal + (float64(aux))
 
 			//proceso.Desalojado = false
@@ -305,3 +309,19 @@ func Habilitar_CPU_con_plani_corto(identificador string) {
 	}
 	return
 }
+
+func Deshabilitar_CPU_con_plani_corto(identificador string) {
+	longitud := len(structs.CPUs_Conectados)
+	for i := 0; i < longitud; i++ {
+		if structs.CPUs_Conectados[i].Identificador == identificador {
+			structs.CPUs_Conectados[i].Disponible = false
+			//KernelLogger.Debug(fmt.Sprintf("Se habilita la cpu: %s y se manda señal al plani corto", identificador))
+			//ProcesoListo <- 0
+			return
+		}
+
+	}
+	return
+}
+
+

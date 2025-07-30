@@ -22,7 +22,7 @@ func PedidoDeDesSuspension(pid int) error {
 	global.MemoriaLogger.Debug(fmt.Sprintf("  proceso hallado Tamanio=%d", proc.Tamanio))
 
 	if !hayEspacio(proc.Tamanio) {
-		global.MemoriaLogger.Error(fmt.Sprintf("  espacio insuficiente para PID=%d (necesita %d bytes)", pid, proc.Tamanio))
+		global.MemoriaLogger.Debug(fmt.Sprintf("  espacio insuficiente para PID=%d (necesita %d bytes)", pid, proc.Tamanio))
 		return fmt.Errorf("espacio insuficiente para PID=%d", pid)
 	}
 	global.MemoriaLogger.Debug("  espacio disponible, procediendo a DesuspenderProceso")

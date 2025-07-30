@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 	"github.com/sisoputnfrba/tp-golang/kernel/PCB"
@@ -64,7 +63,7 @@ func Enviar_datos_a_cpu(pcb_a_cargar structs.PCB) int {
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
-	log.Printf("respuesta del servidor: %s , ENVIAR_DATOS_A_CPU", resp.Status)
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s , ENVIAR_DATOS_A_CPU", resp.Status))
 	/* var CPUocupado structs.CPU_nodisponible = structs.CPU_nodisponible{
 		CPU:     Cpu_disponible,
 		Proceso: pcb_a_cargar,
@@ -89,7 +88,7 @@ func Enviar_datos_SRT_a_cpu(pcb_a_cargar structs.PCB, Cpu_disponible structs.CPU
 	if err != nil {
 		global.KernelLogger.Error(fmt.Sprintf("error enviando proceso de PID:%d puerto:%d", pcb_a_cargar.PID, Cpu_disponible.Puerto))
 	}
-	log.Printf("respuesta del servidor: %s, Enviar_datos_SRT_a_cpu", resp.Status)
+	global.KernelLogger.Debug(fmt.Sprintf("respuesta del servidor: %s, Enviar_datos_SRT_a_cpu", resp.Status))
 
 	return resp.StatusCode
 }
@@ -142,19 +141,27 @@ func Buscar_CPU_libre(Proceso structs.PCB) structs.CPU_a_kernel {
 }
 
 func Buscar_CPU_Para_Desalojar(Proceso structs.PCB) structs.CPU_a_kernel {
+	var Estimado float64
+	if Proceso.Desalojado{Estimado = Proceso.TiempoRestante
+	}else {Estimado = Proceso.EstimadoRafaga}
+	global.KernelLogger.Debug(fmt.Sprintf("(%d) ingreso a Buscar_CPU_ParaDesalojar, Estimado: %f, Tiempo Restante: %f", Proceso.PID,Proceso.EstimadoRafaga, Proceso.TiempoRestante))
+
 	
-	Estimado := Proceso.EstimadoRafaga
-	global.KernelLogger.Debug(fmt.Sprintf("ingreso a Buscar_CPU_ParaDesalojar, Estimado: %f", Estimado))
+	global.KernelLogger.Debug(fmt.Sprintf("estoy comparando con : %f", Estimado))
 
 	longitud := len(structs.CPUs_Conectados)
 	var devuelvo structs.CPU_a_kernel = structs.CPU_a_kernel{}
 	for i := 0; i < longitud; i++ {
 		if !structs.CPUs_Conectados[i].Disponible{
-		 if structs.CPUs_Conectados[i].Proceso.Desalojado{
-			if structs.CPUs_Conectados[i].Proceso.TiempoRestante > Estimado {
-
+		 if structs.CPUs_Conectados[i].Proceso.Desalojado{		
+			aux := time.Since(structs.CPUs_Conectados[i].Proceso.TiempoInicioEstado)
+			tiempo_restante := structs.CPUs_Conectados[i].Proceso.TiempoRestante -	(float64(aux))
+			global.KernelLogger.Debug(fmt.Sprintf("VICTIMA Tiempo restante: %f", tiempo_restante))
+			
+			
+			if tiempo_restante > Estimado {
 				devuelvo = structs.CPUs_Conectados[i]
-				Estimado = structs.CPUs_Conectados[i].Proceso.TiempoRestante
+				Estimado = tiempo_restante
 			}
 		 }else{
 			
@@ -181,6 +188,7 @@ func ActualizarCPU_Proceso(CPU structs.CPU_a_kernel,Proceso structs.PCB) {
 	longitud := len(structs.CPUs_Conectados)
 	for i := 0; i < longitud; i++ {
 		if structs.CPUs_Conectados[i].Identificador == CPU.Identificador{ 
+			structs.CPUs_Conectados[i].Disponible= false
 			structs.CPUs_Conectados[i].Proceso = Proceso
 		}
 	}
@@ -213,7 +221,6 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	}
 
 	global.KernelLogger.Debug("me llego una Devolucion del CPU")
-	log.Printf("PID devuelto: %d", Devolucion.PID)
 	global.KernelLogger.Debug(fmt.Sprintf("PID devuelto: %d", Devolucion.PID))
 	proceso,_ := PCB.Buscar_por_pid(Devolucion.PID, &structs.ColaExecute)
 	PCB.Actualizar_PC(proceso.PID, Devolucion.PC)
@@ -222,7 +229,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	switch Devolucion.Motivo {
 
 	case structs.INIT_PROC:
-		proceso.Desalojado = false
+		//proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: INIT_PROC", proceso.PID))
 		syscalls.INIT_PROC(Devolucion.ArchivoInst, Devolucion.Tamaño)
 		global.KernelLogger.Debug(fmt.Sprintf("intentando reconectarse al cpu id: %s", Cpu.Identificador))
@@ -237,7 +244,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		syscalls.DUMP_MEMORY(Devolucion.PID)
 
 	case structs.IO:
-		proceso.Desalojado = false
+		//proceso.Desalojado = false
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Solicitó syscall: IO", proceso.PID))
 		syscalls.SolicitarSyscallIO((Devolucion.SolicitudIO) ,Cpu.Identificador)
 
@@ -251,7 +258,7 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", proceso.PID))
 		proceso.Desalojado = true
 		sem := global.SemaforosCPU[Cpu.Identificador]
-		global.KernelLogger.Info(fmt.Sprintf("Mandando señal de cpu desalojada"))
+		global.KernelLogger.Debug(fmt.Sprintf("Mandando señal de cpu desalojada"))
 		sem <- struct{}{}
 		
 		global.IniciarMetrica("EXEC", "READY", &proceso)
@@ -259,7 +266,8 @@ func Recibir_devolucion_CPU(w http.ResponseWriter, r *http.Request) {
 	case structs.REPLANIFICARPLUS:
 		global.KernelLogger.Info(fmt.Sprintf("## (%d) - Desalojado por algoritmo SJF/SRT", Devolucion.PID))
 		sem := global.SemaforosCPU[Cpu.Identificador]
-		global.KernelLogger.Info(fmt.Sprintf("Mandando señal de cpu desalojada"))
+		global.KernelLogger.Debug(fmt.Sprintf("Mandando señal de cpu desalojada"))
+		go global.Deshabilitar_CPU_con_plani_corto(Cpu.Identificador)
 		sem <- struct{}{}
 		
 	}

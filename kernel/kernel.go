@@ -27,6 +27,7 @@ func main() {
 	PrimerProceso()
 	global.KernelLogger.Debug(fmt.Sprintf("se creo el primer proceso"))
 	global.WgKernel.Wait()
+	global.KernelLogger.Close()
 }
 
 func PrimerProceso() {
