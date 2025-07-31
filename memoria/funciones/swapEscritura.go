@@ -71,7 +71,7 @@ func GuardarProcesoEnSwap(pid int) error {
 		if err != nil {
 			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
 		}
-		label := fmt.Sprintf("Marco%d:\n", idx+1)
+		label := fmt.Sprintf("Pagina%d:\n", idx+1)
 		if _, err := f.WriteString(label); err != nil {
 			f.Close()
 			return fmt.Errorf("GuardarProcesoEnSwap: %w", err)
