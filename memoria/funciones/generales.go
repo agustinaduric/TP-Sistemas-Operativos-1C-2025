@@ -285,9 +285,6 @@ func HandlerDesSuspenderProceso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// retraso de acceso tabla luego de des-suspender
-	time.Sleep(time.Duration(global.MemoriaConfig.MemoryDelay*CalcularAccesosTablas(len(RecolectarMarcos(reqObj.PID)))) * time.Millisecond)
-
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode("OK"); err != nil {
 		global.MemoriaLogger.Debug(fmt.Sprintf("HandlerDessuspenderProceso: error codificando respuesta OK: %s", err))
