@@ -102,15 +102,15 @@ func HandlerDesconexionIO(w http.ResponseWriter, r *http.Request){
 					global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
 				} else {
 					global.KernelLogger.Debug(fmt.Sprintf("No existe PID %d en bloqueados ni en bloqueadosSUSP", dispositivo.PIDActual))
-					return // ANALIZAR
+					//return // ANALIZAR
 				}
 			}else {
 				global.IniciarMetrica("BLOCKED", "EXIT", &proceso)
 				global.KernelLogger.Debug(fmt.Sprintf("EXIT PID: %d por estar ejecutando en io desconectado", dispositivo.PIDActual))
 			}
-		}else {
-            instancias = append(instancias, dispositivo) // este va abajo
-        }
+		}
+	}else {
+		instancias = append(instancias, dispositivo) 
 	}
 }
 
