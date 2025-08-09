@@ -87,7 +87,7 @@ go run cpu.go "1" ./config/prueba5.config.json
 go run io.go "DISCO" ./config/io.config.json
 ```
 
-### EStabilidad General
+### Estabilidad General
 
 ```bash
 # Memoria
